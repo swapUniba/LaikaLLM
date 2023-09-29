@@ -250,7 +250,7 @@ def trainer_main():
 
     dataframe = pd.DataFrame(dataframe_dict)
 
-    log_wandb({"task_templates": wandb.Table(dataframe)})
+    log_wandb({"task_templates": wandb.Table(dataframe=dataframe)})
 
     rec_model = T5FineTuned.from_pretrained(
         checkpoint,
