@@ -34,7 +34,7 @@ if __name__ == '__main__':
     # set default exp name
     if args.exp_name is None:
         # replace '/' with '_' to avoid creation of subdir (google/flan-t5-small -> google_flan-t5-small)
-        args.exp_name = f"{args.checkpoint.replace('/', '_')}_{args.epochs}"
+        args.exp_name = f"{args.checkpoint.replace('/', '_')}_{args.n_epochs}"
 
     if args.log_wandb:
 
