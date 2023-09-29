@@ -97,19 +97,16 @@ class AmazonDataset:
         data_df["user_id"] = "user_" + data_df["user_id"]
         data_df["item_sequence"] = "item_" + data_df["item_sequence"]
 
+        self.original_df = data_df
         self.train_df, self.val_df, self.test_df = self._split_data(data_df)
 
     @cached_property
     def all_users(self):
-        return pd.unique(self.train_df["user_id"].tolist() +
-                         self.val_df["user_id"].tolist() +
-                         self.test_df["user_id"].tolist())
+        return pd.unique(self.original_df["user_id"])
 
     @cached_property
     def all_items(self):
-        return pd.unique(self.train_df["item_sequence"].explode().tolist() +
-                         self.val_df["input_item_seq"].explode().tolist() + self.val_df["target_item"].tolist() +
-                         self.test_df["input_item_seq"].explode().tolist() + self.test_df["target_item"].tolist())
+        return pd.unique(self.original_df["item_sequence"].explode())
 
     @staticmethod
     def _split_data(exploded_data_df: pd.DataFrame):
