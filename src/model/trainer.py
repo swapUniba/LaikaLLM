@@ -263,7 +263,7 @@ def trainer_main():
     # validation only at last epoch
     trainer.train(train)
 
-    for template_id in SequentialTask.templates.keys():
+    for template_id in SequentialTask.templates_dict.keys():
 
         print(f"Validating on {template_id}")
 
