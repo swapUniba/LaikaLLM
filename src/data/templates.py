@@ -9,15 +9,17 @@ PromptTarget = namedtuple("PromptTarget", ["input_prompt", "target_text"])
 
 class Task(ABC):
     # keys are integers, values are PromptTarget objects
-    templates = {}
+    templates_dict = {}
 
     def __init__(self, force_template_id: int = None):
         if force_template_id is not None:
             try:
-                self.templates = {force_template_id: self.templates[force_template_id]}
+                self.templates_dict = {force_template_id: self.templates_dict[force_template_id]}
             except KeyError:
                 raise KeyError(f"Prompt template id {force_template_id} not found! "
-                               f"Available prompt ids are {list(self.templates.keys())}") from None
+                               f"Available prompt ids are {list(self.templates_dict.keys())}") from None
+
+        self.all_templates = list(self.templates_dict.values())
 
     @abstractmethod
     def __call__(self, *args, **kwargs):
@@ -28,7 +30,7 @@ class Task(ABC):
 
 
 class SequentialTask(Task):
-    templates = {
+    templates_dict = {
         0: PromptTarget(
             input_prompt="sequential_rec:\n\n"
                          "Predict the next element of the following sequence for {} ->\n"
@@ -71,7 +73,7 @@ class SequentialTask(Task):
     def __call__(self, user_id: str, order_history: List[str], target_item_id: str):
 
         # random.choice applied to dict with int key returns a value
-        input_prompt, target = random.choice(self.templates)
+        input_prompt, target = random.choice(self.all_templates)
 
         # random select of string separator for titles sequence and the prompt to use
         separator = " , " if random.getrandbits(1) else " ; "
