@@ -109,6 +109,12 @@ class RecTrainer:
                         "train/loss": train_loss / i
                     })
 
+            train_loss /= total_n_batch
+
+            log_wandb({
+                "train/loss": train_loss
+            })
+
             pbar.close()
 
             if validation_dataset is not None:
@@ -132,10 +138,6 @@ class RecTrainer:
                     print(f"{monitor_str} improved, model saved into {self.output_path}!")
             else:
                 self.rec_model.save_pretrained(self.output_path)
-
-            log_wandb({
-                "train/loss": train_loss
-            })
 
         elapsed_time = (time.time() - start) / 60
         print(" Train completed! Check models saved into 'models' dir ".center(100, "*"))
@@ -201,7 +203,7 @@ class RecTrainer:
 
         pbar_val.close()
 
-        val_loss /= len(pbar_val)
+        val_loss /= total_n_batch
         val_metric = metric(np.array(total_preds).squeeze(), np.array(total_truths))
 
         # val_loss is computed for the entire batch, not for each sample, that's why is safe
