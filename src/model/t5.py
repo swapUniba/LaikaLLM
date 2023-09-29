@@ -38,7 +38,6 @@ class T5FineTuned(T5ForConditionalGeneration):
         # Set maximum 512 whole words in a source text
         self.whole_word_embeddings = nn.Embedding(
             512, self.config.d_model,  # config.d_model is 768 for base
-            padding_idx=self.tokenizer.pad_token_id
         ).to(device)
 
         self.post_init()
