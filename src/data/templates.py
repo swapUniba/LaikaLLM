@@ -1,10 +1,28 @@
 from abc import ABC, abstractmethod
 import random
 from collections import namedtuple
-from typing import List
+from typing import List, NamedTuple
 
 
-PromptTarget = namedtuple("PromptTarget", ["input_prompt", "target_text"])
+class PromptTarget:
+
+    def __init__(self, input_prompt: str, target_text: str):
+        self.input_prompt = input_prompt
+        self.target_text = target_text
+
+    # iter just so that this class can be unpacked,
+    # e.g. input_prompt, target_text = PromptTarget(...)
+    def __iter__(self):
+        return iter((self.input_prompt, self.target_text))
+
+    def __str__(self):
+        string = " Input ".center(50, "#") + "\n"
+        string += self.input_prompt + "\n"
+        string += " Target ".center(50, "#") + "\n"
+        string += self.target_text
+
+        return string
+
 
 
 class Task(ABC):

@@ -275,7 +275,7 @@ def trainer_main():
             "val/template_id": template_id,
             "val/loss": val_loss,
             f"val/{metric_name}": metric_val,
-            "val/template_prompt": SequentialTask.templates_dict[template_id]
+            "val/template_prompt": str(SequentialTask.templates_dict[template_id])
         })
 
 
