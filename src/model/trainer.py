@@ -169,7 +169,7 @@ class RecTrainer:
         pbar_val = tqdm(preprocessed_val.iter(batch_size=self.eval_batch_size),
                         total=total_n_batch)
 
-        metric: Metric = Accuracy()
+        metric: Metric = Hit(k=10)
         val_loss = 0
         total_preds = []
         total_truths = []
@@ -192,9 +192,6 @@ class RecTrainer:
             if round(100 * (i / total_n_batch)) > progress:
                 preds_so_far = np.array(total_preds)
                 truths_so_far = np.array(total_truths)
-
-                if len(preds_so_far.squeeze().shape) > 1:
-                    metric = Hit()
 
                 result = metric(preds_so_far.squeeze(), truths_so_far)
                 pbar_val.set_description(f"Val Loss -> {(val_loss / i):.6f}, "
@@ -271,10 +268,14 @@ def trainer_main():
         rec_model.set_eval_task(SequentialTask(force_template_id=template_id))
         res = trainer.validation(val)
 
+        val_loss = res["loss"]
+        metric_name, metric_val = res["metric"]
+
         log_wandb({
-            "val/template": template_id,
-            "val/hit@10": res["metric"],
-            "val/loss": res["loss"],
+            "val/template_id": template_id,
+            "val/loss": val_loss,
+            f"val/{metric_name}": metric_val,
+            "val/template_prompt": SequentialTask.templates_dict[template_id]
         })
 
 
