@@ -19,8 +19,8 @@ class T5FineTuned(T5ForConditionalGeneration):
     def __init__(self,
                  config,
                  training_tasks: List[Task],
-                 eval_task: Task,
                  all_unique_labels: np.ndarray[str],
+                 eval_task: Task = None,
                  device: str = "cpu"):
 
         super().__init__(config)
@@ -176,3 +176,11 @@ class T5FineTuned(T5ForConditionalGeneration):
         val_loss = output.loss
 
         return mapped_predictions, target_text, val_loss
+
+    def eval(self: T) -> T:
+
+        if self.eval_task is None:
+            raise ValueError("Model can't be set in eval mode since no eval_task is set! "
+                             "Pass it when initializing the model or with `set_eval_task()`")
+
+        return super().eval()
