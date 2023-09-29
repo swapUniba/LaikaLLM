@@ -106,7 +106,7 @@ class RecTrainer:
                     pbar.set_description(f"Epoch {epoch + 1}, Loss -> {(train_loss / i):.6f}")
                     progress += 1
                     log_wandb({
-                        "train/loss": train_loss
+                        "train/loss": train_loss / i
                     })
 
             pbar.close()
