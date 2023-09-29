@@ -1,6 +1,6 @@
 from __future__ import annotations
 import random
-from typing import List, TypeVar
+from typing import List
 
 import numpy as np
 import torch
@@ -13,8 +13,6 @@ from sentence_transformers import util
 from src.data.templates import Task
 
 # sim_model = SentenceTransformer('all-MiniLM-L6-v2', device="cuda:0")
-
-T = TypeVar('T', bound='Module')
 
 
 class T5FineTuned(T5ForConditionalGeneration):
@@ -141,6 +139,10 @@ class T5FineTuned(T5ForConditionalGeneration):
     @torch.no_grad()
     def valid_step(self, batch):
 
+        if self.eval_task is None:
+            raise ValueError("Model can't perform valid_step since no eval_task is set! "
+                             "Pass it when initializing the model or with `set_eval_task()`")
+
         num_return_sequences = 10
         max_new_tokens = 50
         num_beams = 30
@@ -181,11 +183,3 @@ class T5FineTuned(T5ForConditionalGeneration):
         val_loss = output.loss
 
         return mapped_predictions, target_text, val_loss
-
-    def eval(self: T) -> T:
-
-        if self.eval_task is None:
-            raise ValueError("Model can't be set in eval mode since no eval_task is set! "
-                             "Pass it when initializing the model or with `set_eval_task()`")
-
-        return super().eval()
