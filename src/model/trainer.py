@@ -5,6 +5,7 @@ from typing import Optional, Literal, Callable, Dict
 
 import datasets
 import numpy as np
+from datasets import Dataset
 from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 
@@ -103,8 +104,8 @@ class RecTrainer:
                 # tqdm update integer percentage (1%, 2%) when float percentage is over .5 threshold (1.501 -> 2%)
                 # so we print infos in the same way
                 if round(100 * (i / total_n_batch)) > progress:
-                    pbar.set_description(f"Epoch {epoch + 1}, Loss -> {(train_loss / i):.6f}")
 
+                    pbar.set_description(f"Epoch {epoch + 1}, Loss -> {(train_loss / i):.6f}")
                     progress += 1
 
             pbar.close()
@@ -129,7 +130,7 @@ class RecTrainer:
 
                     print(f"{monitor_str} improved, model saved into {self.output_path}!")
             else:
-                self.rec_model.save(self.output_path)
+                self.rec_model.save_pretrained(self.output_path)
 
         print(" Train completed! Check models saved into 'models' dir ".center(100, "*"))
         print(f"Time -> {time.time() - start}")
@@ -215,6 +216,11 @@ if __name__ == "__main__":
 
     train = ds_dict["train"]
     val = ds_dict["validation"]
+
+    # REDUCE FOR TESTING
+    train = Dataset.from_dict(train[:5000])
+    val = Dataset.from_dict(val[:5000])
+
     sampling_fn = ds.sample_train_sequence
 
     train_task_list = [SequentialTask()]
@@ -222,7 +228,7 @@ if __name__ == "__main__":
 
     print(eval_task)
 
-    rec_model = T5FineTuned(
+    rec_model = T5FineTuned.from_pretrained(
         checkpoint,
         training_tasks=train_task_list,
         eval_task=eval_task,

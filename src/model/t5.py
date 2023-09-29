@@ -3,7 +3,7 @@ from typing import List
 
 import numpy as np
 import torch
-from torch import nn
+from torch import nn, Tensor
 from torch.nn.utils.rnn import pad_sequence
 from transformers import T5ForConditionalGeneration, T5Config, Adafactor, T5TokenizerFast
 from sentence_transformers import SentenceTransformer
@@ -11,40 +11,43 @@ from sentence_transformers import util
 
 from src.data.templates import Task
 
+sim_model = SentenceTransformer('all-MiniLM-L6-v2', device="cuda:0")
 
-class T5FineTuned:
+
+class T5FineTuned(T5ForConditionalGeneration):
 
     def __init__(self,
-                 checkpoint: str,
+                 config,
                  training_tasks: List[Task],
                  eval_task: Task,
                  all_unique_labels: np.ndarray[str],
                  device: str = "cpu"):
 
-        self.model = T5ForConditionalGeneration.from_pretrained(checkpoint).to(device)
-        self.tokenizer = T5TokenizerFast.from_pretrained(checkpoint)
+        super().__init__(config)
 
-        # Set maximum 512 whole words in a source text
-        self.whole_word_embeddings = nn.Embedding(
-            512, self.model.config.d_model,  # config.d_model is 768 for base
-            padding_idx=self.tokenizer.pad_token_id
-        ).to(device)
-        torch.nn.init.xavier_uniform_(self.whole_word_embeddings.weight)
+        self.tokenizer = T5TokenizerFast.from_pretrained(config.name_or_path)
 
         self.training_tasks = training_tasks
         self.eval_task = eval_task
 
         self.all_unique_labels = all_unique_labels
-        self.sim_model = SentenceTransformer('all-MiniLM-L6-v2', device=device)
-        self.encoded_all_labels = self.sim_model.encode(list(self.all_unique_labels),
-                                                        convert_to_tensor=True,
-                                                        show_progress_bar=True)
+        self.encoded_all_labels = sim_model.encode(list(self.all_unique_labels),
+                                                   convert_to_tensor=True,
+                                                   show_progress_bar=True)
 
-        self.device = device
+        # Set maximum 512 whole words in a source text
+        self.whole_word_embeddings = nn.Embedding(
+            512, self.config.d_model,  # config.d_model is 768 for base
+            padding_idx=self.tokenizer.pad_token_id
+        ).to(device)
+
+        self.post_init()
+
+        self.to(device)
 
     def get_suggested_optimizer(self):
         return Adafactor(
-            list(self.model.parameters()),
+            list(self.parameters()),
             lr=1e-3,
             eps=(1e-30, 1e-3),
             clip_threshold=1.0,
@@ -65,7 +68,7 @@ class T5FineTuned:
         item_sequence = sample["input_item_seq"]
         target_item = sample["target_item"]
 
-        task = random.choice(self.training_tasks) if self.model.training else self.eval_task
+        task = random.choice(self.training_tasks) if self.training else self.eval_task
 
         input_text, target_text = task(user_id, item_sequence, target_item)
 
@@ -105,23 +108,29 @@ class T5FineTuned:
 
             input_dict["labels"] = lm_labels.to(self.device)
 
-        if not self.model.training:
+        if not self.training:
             input_dict["target_item"] = batch["target_item"]
 
         return input_dict
 
+    def _inject_personalization(self, token_inputs_embeds: Tensor, whole_word_ids: Tensor):
+
+        whole_word_embeds = self.whole_word_embeddings(whole_word_ids)
+        assert whole_word_embeds.shape[-1] == token_inputs_embeds.shape[-1]
+        inputs_embeds = token_inputs_embeds + whole_word_embeds
+
+        return inputs_embeds
+
     def train_step(self, batch):
 
-        inputs_embeds = self.model.shared(batch["input_ids"])  # embedding step - add HERE
+        inputs_embeds = self.shared(batch["input_ids"])  # embedding step - add HERE
 
         if "whole_word_ids" in batch:
-            whole_word_embeds = self.whole_word_embeddings(batch["whole_word_ids"])
-            assert whole_word_embeds.shape[-1] == inputs_embeds.shape[-1]
-            inputs_embeds = inputs_embeds + whole_word_embeds
+            inputs_embeds = self._inject_personalization(inputs_embeds, batch["whole_word_ids"])
 
-        output = self.model(inputs_embeds=inputs_embeds,
-                            attention_mask=batch["attention_mask"],
-                            labels=batch["labels"])
+        output = self(inputs_embeds=inputs_embeds,
+                      attention_mask=batch["attention_mask"],
+                      labels=batch["labels"])
 
         return output.loss
 
@@ -135,10 +144,18 @@ class T5FineTuned:
         early_stopping = True
 
         target_text = batch.pop("target_item")
-        output = self.model(**batch)
 
-        beam_outputs = self.model.generate(
-            input_ids=batch["input_ids"],
+        inputs_embeds = self.shared(batch["input_ids"])
+        if "whole_word_ids" in batch:
+            whole_word_ids = batch.pop("whole_word_ids")
+            inputs_embeds = self._inject_personalization(inputs_embeds, whole_word_ids)
+
+        output = self(inputs_embeds=inputs_embeds,
+                      attention_mask=batch["attention_mask"],
+                      labels=batch["labels"])
+
+        beam_outputs = self.generate(
+            inputs_embeds=inputs_embeds,
             attention_mask=batch["attention_mask"],
             num_return_sequences=num_return_sequences,
             max_new_tokens=max_new_tokens,
@@ -148,7 +165,7 @@ class T5FineTuned:
         )
 
         generated_sents = self.tokenizer.batch_decode(beam_outputs, skip_special_tokens=True)
-        encoded_preds = self.sim_model.encode(generated_sents, show_progress_bar=False, convert_to_tensor=True)
+        encoded_preds = sim_model.encode(generated_sents, show_progress_bar=False, convert_to_tensor=True)
 
         sim = util.cos_sim(encoded_preds, self.encoded_all_labels).cpu()
         mapped_predictions = self.all_unique_labels[sim.argmax(axis=1)]
@@ -159,16 +176,3 @@ class T5FineTuned:
         val_loss = output.loss
 
         return mapped_predictions, target_text, val_loss
-
-    def train(self):
-        return self.model.train()
-
-    def eval(self):
-        return self.model.eval()
-
-    @property
-    def config(self):
-        return self.model.config
-
-    def save(self, output_path):
-        return self.model.save_pretrained(output_path)
