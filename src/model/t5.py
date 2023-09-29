@@ -10,6 +10,7 @@ from transformers import T5ForConditionalGeneration, Adafactor, T5TokenizerFast
 from sentence_transformers import SentenceTransformer
 from sentence_transformers import util
 
+from src import ExperimentConfig
 from src.data.templates import Task
 
 # sim_model = SentenceTransformer('all-MiniLM-L6-v2', device="cuda:0")
@@ -127,7 +128,7 @@ class T5FineTuned(T5ForConditionalGeneration):
 
         inputs_embeds = self.shared(batch["input_ids"])  # embedding step - add HERE
 
-        if "whole_word_ids" in batch:
+        if "whole_word_ids" in batch and "train" in ExperimentConfig.inject_personalization:
             inputs_embeds = self._inject_personalization(inputs_embeds, batch["whole_word_ids"])
 
         output = self(inputs_embeds=inputs_embeds,
@@ -152,7 +153,7 @@ class T5FineTuned(T5ForConditionalGeneration):
         target_text = batch.pop("target_item")
 
         inputs_embeds = self.shared(batch["input_ids"])
-        if "whole_word_ids" in batch:
+        if "whole_word_ids" in batch and "eval" in ExperimentConfig.inject_personalization:
             whole_word_ids = batch.pop("whole_word_ids")
             inputs_embeds = self._inject_personalization(inputs_embeds, whole_word_ids)
 

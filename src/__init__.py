@@ -1,6 +1,7 @@
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Tuple
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_PATH = str(Path(os.path.join(THIS_DIR, "..")).resolve())
@@ -17,7 +18,7 @@ class ExperimentConfig:
     checkpoint: str = "google/flan-t5-small"
     n_epochs: int = 10
     integer_ids: bool = False
-    inject_personalization: bool = False
+    inject_personalization: Tuple[str] = ()
     train_batch_size: int = 4
     eval_batch_size: int = 2
     device: str = "cuda:0"

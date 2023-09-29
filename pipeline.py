@@ -16,7 +16,8 @@ if __name__ == '__main__':
                         help='')
     parser.add_argument('--integer_ids', action=argparse.BooleanOptionalAction, default=False,
                         help='')
-    parser.add_argument('--inject_personalization', action=argparse.BooleanOptionalAction, default=False,
+    parser.add_argument('--inject_personalization', type=str, nargs="+", default=(),
+                        choices=["train", "eval"],
                         help='',)
     parser.add_argument('--train_batch_size', type=int, default=4,
                         help='',)
@@ -30,6 +31,9 @@ if __name__ == '__main__':
                         help='',)
 
     args = parser.parse_args()
+
+    # nargs = "+" returns a list if set, we want a tuple instead in order to be type coherent
+    args.inject_personalization = tuple(args.inject_personalization)
 
     # set default exp name
     if args.exp_name is None:
@@ -54,5 +58,5 @@ if __name__ == '__main__':
 
     seed_everything(ExperimentConfig.random_seed)
 
-    with init_wandb(project="P5-Thesis", name=ExperimentConfig.exp_name, config=args):
-        trainer_main()
+    # with init_wandb(project="P5-Thesis", name=ExperimentConfig.exp_name, config=args):
+    #     trainer_main()
