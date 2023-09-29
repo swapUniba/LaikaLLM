@@ -5,12 +5,10 @@ from typing import Optional, Literal, Callable, Dict
 
 import datasets
 import numpy as np
-from datasets import Dataset
-from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 
-from src import MODELS_DIR
-from src.utils import seed_everything
+from src import MODELS_DIR, ExperimentConfig
+from src.utils import log_wandb
 from src.data.amazon_dataset import AmazonDataset
 from src.data.templates import SequentialTask
 from src.evaluate.metrics import Metric, Accuracy, Hit
@@ -107,6 +105,9 @@ class RecTrainer:
 
                     pbar.set_description(f"Epoch {epoch + 1}, Loss -> {(train_loss / i):.6f}")
                     progress += 1
+                    log_wandb({
+                        "train/loss": train_loss
+                    })
 
             pbar.close()
 
@@ -132,9 +133,19 @@ class RecTrainer:
             else:
                 self.rec_model.save_pretrained(self.output_path)
 
+            log_wandb({
+                "train/loss": train_loss
+            })
+
+        elapsed_time = (time.time() - start) / 60
         print(" Train completed! Check models saved into 'models' dir ".center(100, "*"))
-        print(f"Time -> {time.time() - start}")
+        print(f"Time -> {elapsed_time}")
         print(f"Best epoch -> {best_epoch}")
+
+        log_wandb({
+            "train/elapsed_time": elapsed_time,
+            "train/best_epoch": best_epoch
+        })
 
     def validation(self, validation_dataset: datasets.Dataset):
 
@@ -198,16 +209,14 @@ class RecTrainer:
         return {"loss": val_loss, "metric": (metric, val_metric)}
 
 
-if __name__ == "__main__":
+def trainer_main():
 
-    n_epochs = 10
-    batch_size = 4
-    eval_batch_size = 2
-    device = "cuda:0"
-    checkpoint = "google/flan-t5-small"
-    random_seed = 42
-
-    seed_everything(random_seed)
+    n_epochs = ExperimentConfig.n_epochs
+    batch_size = ExperimentConfig.train_batch_size
+    eval_batch_size = ExperimentConfig.eval_batch_size
+    device = ExperimentConfig.device
+    checkpoint = ExperimentConfig.checkpoint
+    random_seed = ExperimentConfig.random_seed
 
     ds = AmazonDataset(dataset_name="toys")
 
@@ -218,20 +227,16 @@ if __name__ == "__main__":
     val = ds_dict["validation"]
 
     # REDUCE FOR TESTING
-    train = Dataset.from_dict(train[:5000])
-    val = Dataset.from_dict(val[:5000])
+    # train = Dataset.from_dict(train[:5000])
+    # val = Dataset.from_dict(val[:5000])
 
     sampling_fn = ds.sample_train_sequence
 
     train_task_list = [SequentialTask()]
-    eval_task = train_task_list[0]
-
-    print(eval_task)
 
     rec_model = T5FineTuned.from_pretrained(
         checkpoint,
         training_tasks=train_task_list,
-        eval_task=eval_task,
         all_unique_labels=all_unique_labels,
         device=device
     )
@@ -249,11 +254,26 @@ if __name__ == "__main__":
         eval_batch_size=eval_batch_size,
         random_seed=random_seed,
         train_sampling_fn=sampling_fn,
-        monitor_strategy="loss"
+        monitor_strategy="loss",
+        output_name=ExperimentConfig.exp_name
     )
 
     # validation only at last epoch
     trainer.train(train)
-    trainer.validation(val)
 
-    print(trainer.output_name)
+    for template_id in SequentialTask.templates.keys():
+
+        print(f"Validating on {template_id}")
+
+        rec_model.set_eval_task(SequentialTask(force_template_id=template_id))
+        res = trainer.validation(val)
+
+        log_wandb({
+            "val/template": template_id,
+            "val/hit@10": res["metric"],
+            "val/loss": res["loss"],
+        })
+
+
+if __name__ == "__main__":
+    trainer_main()

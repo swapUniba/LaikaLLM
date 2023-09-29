@@ -1,8 +1,13 @@
 import os
 import random
+from contextlib import contextmanager
 
 import numpy as np
 import torch
+import torch.backends.cudnn
+import wandb
+
+from src import ExperimentConfig
 
 
 def seed_everything(seed: int):
@@ -28,3 +33,20 @@ def seed_everything(seed: int):
     print(f"Random seed set as {seed}")
 
     return seed
+
+
+def log_wandb(parameters_to_log: dict):
+    if ExperimentConfig.log_wandb:
+        wandb.log(parameters_to_log)
+
+
+@contextmanager
+def init_wandb(**kwargs):
+    if ExperimentConfig.log_wandb:
+        project = kwargs.pop("project", "P5-Thesis")
+        exp_name = kwargs.pop("name", None)
+
+        with wandb.init(project=project, name=exp_name, **kwargs):
+            yield
+    else:
+        yield

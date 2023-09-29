@@ -4,6 +4,7 @@ torchvision==0.15.2+cu117
 transformers[torch]
 torchmetrics
 scikit-learn
+wandb
 sentencepiece==0.1.99
 numpy~=1.24.3
 tqdm==4.65.0

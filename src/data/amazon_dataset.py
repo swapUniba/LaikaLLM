@@ -13,7 +13,7 @@ import pandas as pd
 from datasets import Dataset
 from tqdm import tqdm
 
-from src import DATA_DIR
+from src import DATA_DIR, ExperimentConfig
 
 
 def parse(path):
@@ -69,8 +69,16 @@ class AmazonDataset:
         }
 
         for user_idx, item_list_idxs in tqdm(user_items.items(), desc="Creating tabular data..."):
-            df_dict["user_id"].extend([self.user_idx2id[user_idx] for _ in range(len(item_list_idxs))])
-            df_dict["item_sequence"].extend([self.item_idx2id[item_idx] for item_idx in item_list_idxs])
+
+            if ExperimentConfig.integer_ids is True:
+                user_col_repeated = [user_idx for _ in range(len(item_list_idxs))]
+                item_col_value = item_list_idxs
+            else:
+                user_col_repeated = [self.user_idx2id[user_idx] for _ in range(len(item_list_idxs))]
+                item_col_value = [self.item_idx2id[item_idx] for item_idx in item_list_idxs]
+
+            df_dict["user_id"].extend(user_col_repeated)
+            df_dict["item_sequence"].extend(item_col_value)
 
             categories_list = []
             price_list = []
@@ -94,8 +102,8 @@ class AmazonDataset:
 
         data_df = pd.DataFrame.from_dict(df_dict)
 
-        data_df["user_id"] = "user_" + data_df["user_id"]
-        data_df["item_sequence"] = "item_" + data_df["item_sequence"]
+        # data_df["user_id"] = "user_" + data_df["user_id"]
+        # data_df["item_sequence"] = "item_" + data_df["item_sequence"]
 
         self.original_df = data_df
         self.train_df, self.val_df, self.test_df = self._split_data(data_df)
@@ -229,6 +237,9 @@ class AmazonDataset:
 
 
 if __name__ == "__main__":
+
+    ExperimentConfig.integer_ids = True
+
     ds = AmazonDataset(dataset_name="toys")
 
     ds_dict = ds.get_hf_datasets()
@@ -236,4 +247,3 @@ if __name__ == "__main__":
     train = ds_dict["train"]
     train.set_format("torch")
     train = train.map(ds.sample_train_sequence, keep_in_memory=True)
-    print("we")
