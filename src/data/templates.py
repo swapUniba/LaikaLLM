@@ -24,7 +24,6 @@ class PromptTarget:
         return string
 
 
-
 class Task(ABC):
     # keys are integers, values are PromptTarget objects
     templates_dict = {}

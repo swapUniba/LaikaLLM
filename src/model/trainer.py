@@ -5,6 +5,8 @@ from typing import Optional, Literal, Callable, Dict
 
 import datasets
 import numpy as np
+import pandas as pd
+import wandb
 from tqdm import tqdm
 
 from src import MODELS_DIR, ExperimentConfig
@@ -234,6 +236,22 @@ def trainer_main():
 
     train_task_list = [SequentialTask()]
 
+    # Log all templates used
+    dataframe_dict = {"task_type": [], "template_id": [], "input_prompt": [], "target_text": []}
+    for task in train_task_list:
+        for template_id in task.templates_dict:
+
+            input_prompt, target_text = task.templates_dict[template_id]
+
+            dataframe_dict["task_type"].append(repr(task))
+            dataframe_dict["template_id"].append(template_id)
+            dataframe_dict["input_prompt"].append(input_prompt)
+            dataframe_dict["target_text"].append(target_text)
+
+    dataframe = pd.DataFrame(dataframe_dict)
+
+    log_wandb({"task_templates": wandb.Table(dataframe)})
+
     rec_model = T5FineTuned.from_pretrained(
         checkpoint,
         training_tasks=train_task_list,
@@ -275,7 +293,6 @@ def trainer_main():
             "val/template_id": template_id,
             "val/loss": val_loss,
             f"val/{metric_name}": metric_val,
-            "val/template_prompt": str(SequentialTask.templates_dict[template_id])
         })
 
 
