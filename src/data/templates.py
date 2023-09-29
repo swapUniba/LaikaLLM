@@ -8,6 +8,16 @@ PromptTarget = namedtuple("PromptTarget", ["input_prompt", "target_text"])
 
 
 class Task(ABC):
+    # keys are integers, values are PromptTarget objects
+    templates = {}
+
+    def __init__(self, force_template_id: int = None):
+        if force_template_id is not None:
+            try:
+                self.templates = {force_template_id: self.templates[force_template_id]}
+            except KeyError:
+                raise KeyError(f"Prompt template id {force_template_id} not found! "
+                               f"Available prompt ids are {list(self.templates.keys())}") from None
 
     @abstractmethod
     def __call__(self, *args, **kwargs):
