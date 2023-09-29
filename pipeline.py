@@ -58,5 +58,5 @@ if __name__ == '__main__':
 
     seed_everything(ExperimentConfig.random_seed)
 
-    # with init_wandb(project="P5-Thesis", name=ExperimentConfig.exp_name, config=args):
-    #     trainer_main()
+    with init_wandb(project="P5-Thesis", name=ExperimentConfig.exp_name, config=args):
+        trainer_main()
