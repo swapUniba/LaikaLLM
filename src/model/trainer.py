@@ -112,7 +112,8 @@ class RecTrainer:
             train_loss /= total_n_batch
 
             log_wandb({
-                "train/loss": train_loss
+                "train/loss": train_loss,
+                "train/epoch": epoch + 1
             })
 
             pbar.close()
