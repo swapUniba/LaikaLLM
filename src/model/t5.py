@@ -1,11 +1,12 @@
+from __future__ import annotations
 import random
-from typing import List
+from typing import List, TypeVar
 
 import numpy as np
 import torch
 from torch import nn, Tensor
 from torch.nn.utils.rnn import pad_sequence
-from transformers import T5ForConditionalGeneration, T5Config, Adafactor, T5TokenizerFast
+from transformers import T5ForConditionalGeneration, Adafactor, T5TokenizerFast
 from sentence_transformers import SentenceTransformer
 from sentence_transformers import util
 
@@ -41,6 +42,7 @@ class T5FineTuned(T5ForConditionalGeneration):
         self.whole_word_embeddings = nn.Embedding(
             512, self.config.d_model,  # config.d_model is 768 for base
         ).to(device)
+        # self.relu = nn.LeakyReLU()
 
         self.post_init()
 
@@ -117,6 +119,7 @@ class T5FineTuned(T5ForConditionalGeneration):
     def _inject_personalization(self, token_inputs_embeds: Tensor, whole_word_ids: Tensor):
 
         whole_word_embeds = self.whole_word_embeddings(whole_word_ids)
+        # whole_word_embeds = self.relu(whole_word_embeds)
         assert whole_word_embeds.shape[-1] == token_inputs_embeds.shape[-1]
         inputs_embeds = token_inputs_embeds + whole_word_embeds
 
