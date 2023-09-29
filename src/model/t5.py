@@ -11,7 +11,9 @@ from sentence_transformers import util
 
 from src.data.templates import Task
 
-sim_model = SentenceTransformer('all-MiniLM-L6-v2', device="cuda:0")
+# sim_model = SentenceTransformer('all-MiniLM-L6-v2', device="cuda:0")
+
+T = TypeVar('T', bound='Module')
 
 
 class T5FineTuned(T5ForConditionalGeneration):
@@ -31,9 +33,9 @@ class T5FineTuned(T5ForConditionalGeneration):
         self.eval_task = eval_task
 
         self.all_unique_labels = all_unique_labels
-        self.encoded_all_labels = sim_model.encode(list(self.all_unique_labels),
-                                                   convert_to_tensor=True,
-                                                   show_progress_bar=True)
+        # self.encoded_all_labels = sim_model.encode(list(self.all_unique_labels),
+        #                                            convert_to_tensor=True,
+        #                                            show_progress_bar=True)
 
         # Set maximum 512 whole words in a source text
         self.whole_word_embeddings = nn.Embedding(
@@ -164,14 +166,15 @@ class T5FineTuned(T5ForConditionalGeneration):
         )
 
         generated_sents = self.tokenizer.batch_decode(beam_outputs, skip_special_tokens=True)
-        encoded_preds = sim_model.encode(generated_sents, show_progress_bar=False, convert_to_tensor=True)
+        # encoded_preds = sim_model.encode(generated_sents, show_progress_bar=False, convert_to_tensor=True)
 
-        sim = util.cos_sim(encoded_preds, self.encoded_all_labels).cpu()
-        mapped_predictions = self.all_unique_labels[sim.argmax(axis=1)]
+        # sim = util.cos_sim(encoded_preds, self.encoded_all_labels).cpu()
+        # mapped_predictions = self.all_unique_labels[sim.argmax(axis=1)]
 
         # mapped predictions is 1d. What we want is to have an array of shape (batch_size x num_return sequences)
-        mapped_predictions = mapped_predictions.reshape((len(target_text), num_return_sequences))
+        # mapped_predictions = mapped_predictions.reshape((len(target_text), num_return_sequences))
 
+        mapped_predictions = np.array(generated_sents).reshape((len(target_text), num_return_sequences))
         val_loss = output.loss
 
         return mapped_predictions, target_text, val_loss
