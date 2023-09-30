@@ -21,6 +21,7 @@ class ExperimentConfig:
     inject_personalization: Tuple[str] = ()
     train_batch_size: int = 4
     eval_batch_size: int = 2
+    add_prefix_item_users: bool = False
     device: str = "cuda:0"
     random_seed: int = 42
     log_wandb: bool = False

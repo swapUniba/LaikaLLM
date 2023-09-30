@@ -23,6 +23,8 @@ if __name__ == '__main__':
                         help='',)
     parser.add_argument('--eval_batch_size', type=int, default=2,
                         help='',)
+    parser.add_argument('--add_prefix_item_users', action=argparse.BooleanOptionalAction, default=False,
+                        help='',)
     parser.add_argument('--device', type=str, default="cuda:0",
                         help='',)
     parser.add_argument('--random_seed', type=int, default=42,

@@ -220,7 +220,7 @@ def trainer_main():
     checkpoint = ExperimentConfig.checkpoint
     random_seed = ExperimentConfig.random_seed
 
-    ds = AmazonDataset(dataset_name="toys")
+    ds = AmazonDataset(dataset_name="toys", add_prefix=ExperimentConfig.add_prefix_item_users)
 
     ds_dict = ds.get_hf_datasets()
     all_unique_labels = ds.all_items

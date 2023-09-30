@@ -24,8 +24,10 @@ def parse(path):
 
 class AmazonDataset:
 
-    def __init__(self, dataset_name: Literal['beauty', 'toys', 'sport']):
+    def __init__(self, dataset_name: Literal['beauty', 'toys', 'sport'],
+                 add_prefix: bool = True):
 
+        self.add_prefix = add_prefix
         self.dataset_name = dataset_name
 
         user_items, item_count = self._read_sequential()
@@ -102,8 +104,9 @@ class AmazonDataset:
 
         data_df = pd.DataFrame.from_dict(df_dict)
 
-        # data_df["user_id"] = "user_" + data_df["user_id"]
-        # data_df["item_sequence"] = "item_" + data_df["item_sequence"]
+        if self.add_prefix:
+            data_df["user_id"] = "user_" + data_df["user_id"]
+            data_df["item_sequence"] = "item_" + data_df["item_sequence"]
 
         self.original_df = data_df
         self.train_df, self.val_df, self.test_df = self._split_data(data_df)
