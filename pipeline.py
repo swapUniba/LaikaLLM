@@ -23,6 +23,8 @@ if __name__ == '__main__':
                         help='',)
     parser.add_argument('--eval_batch_size', type=int, default=2,
                         help='',)
+    parser.add_argument('--add_prefix_item_users', action=argparse.BooleanOptionalAction, default=False,
+                        help='',)
     parser.add_argument('--device', type=str, default="cuda:0",
                         help='',)
     parser.add_argument('--random_seed', type=int, default=42,
@@ -50,6 +52,9 @@ if __name__ == '__main__':
             raise ValueError('Cannot log run to wandb if environment variable "WANDB_ENTITY" is not present\n'
                              'Please set the environment variable and add the entity for wandb logs\n')
 
+    # translate args to dict
+    dict_args = vars(args)
+
     # for this to work, each pipeline parameter should exist
     # as attribute of ExperimentConfig class
     for arg, arg_value in vars(args).items():
@@ -58,5 +63,9 @@ if __name__ == '__main__':
 
     seed_everything(ExperimentConfig.random_seed)
 
-    with init_wandb(project="P5-Thesis", name=ExperimentConfig.exp_name, config=args):
+    # add env variables needed for reproducibility to args which will be logged to wandb
+    dict_args["PYTHONHASHSEED"] = os.environ["PYTHONHASHSEED"]
+    dict_args["CUBLAS_WORKSPACE_CONFIG"] = os.environ["CUBLAS_WORKSPACE_CONFIG"]
+
+    with init_wandb(project="P5-Thesis", name=ExperimentConfig.exp_name, config=dict_args):
         trainer_main()
