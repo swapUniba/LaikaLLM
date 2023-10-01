@@ -25,16 +25,52 @@ class PromptTarget:
 class Task(ABC):
     # keys are integers, values are PromptTarget objects
     templates_dict = {}
+    # name obj class mapping, used for when task must be initialized from strings
+    str_alias_obj = {}
 
-    def __init__(self, force_template_id: int = None):
-        if force_template_id is not None:
-            try:
-                self.templates_dict = {force_template_id: self.templates_dict[force_template_id]}
-            except KeyError:
-                raise KeyError(f"Prompt template id {force_template_id} not found! "
-                               f"Available prompt ids are {list(self.templates_dict.keys())}") from None
+    # automatically called on subclass definition, will populate the str_alias_obj dict
+    def __init_subclass__(cls, **kwargs):
+        cls.str_alias_obj[cls.__name__.lower()] = cls
 
-        self.all_templates = list(self.templates_dict.values())
+    @property
+    def all_templates(self):
+        return list(self.templates_dict.values())
+
+    def force_template(self, force_template_id: int):
+
+        # 'self.__class__' so that even if we call multiple times this method on an instantiated task,
+        # we always have a pointer to original class templates, otherwise they are deleted if we use simply 'self'
+        # instead of self.__class__
+
+        if force_template_id not in set(self.__class__.templates_dict.keys()):
+            raise KeyError(f"Prompt template id {force_template_id} not found! "
+                           f"Available prompt ids are {list(self.templates_dict.keys())}")
+
+        self.templates_dict = {force_template_id: self.__class__.templates_dict[force_template_id]}
+
+    # function decorator needed to declare mandatory arguments of each subclass __call__
+    @staticmethod
+    def validate_args(*mandatory_args: str):
+        def decorator(func):
+            def wrapper(self, **kwargs):
+                for mandatory_arg in mandatory_args:
+                    assert mandatory_arg in kwargs, f"{mandatory_arg} is needed for task {repr(self)}!"
+
+                return func(self, **kwargs)
+
+            return wrapper
+
+        return decorator
+
+    @classmethod
+    def from_string(cls, *task_str: str):
+
+        try:
+            instantiated_task = [cls.str_alias_obj[task]() for task in task_str]
+        except KeyError:
+            raise KeyError("One or more task string alias does not exist!") from None
+
+        return instantiated_task
 
     @abstractmethod
     def __call__(self, *args, **kwargs):
@@ -42,6 +78,9 @@ class Task(ABC):
 
     def __repr__(self):
         return self.__class__.__name__
+
+    def __str__(self):
+        return repr(self)
 
 
 class SequentialTask(Task):
@@ -85,7 +124,11 @@ class SequentialTask(Task):
         )
     }
 
-    def __call__(self, user_id: str, order_history: List[str], target_item_id: str):
+    @Task.validate_args("user_id", "input_item_seq", "target_item")
+    def __call__(self, **kwargs):
+        user_id = kwargs["user_id"]
+        order_history = kwargs["input_item_seq"]
+        target_item = kwargs["target_item"]
 
         # random.choice applied to dict with int key returns a value
         input_prompt, target = random.choice(self.all_templates)
@@ -95,6 +138,6 @@ class SequentialTask(Task):
         order_history_str = separator.join(order_history)
 
         input_text = input_prompt.format(user_id, order_history_str)
-        target_text = target.format(target_item_id)
+        target_text = target.format(target_item)
 
         return input_text, target_text
