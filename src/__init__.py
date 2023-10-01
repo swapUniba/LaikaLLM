@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Tuple
 
+from src.data.templates import Task
+
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_PATH = str(Path(os.path.join(THIS_DIR, "..")).resolve())
 
@@ -17,6 +19,7 @@ class ExperimentConfig:
     exp_name: str = None
     checkpoint: str = "google/flan-t5-small"
     n_epochs: int = 10
+    train_tasks: Tuple[str] = tuple(Task.str_alias_obj.keys())
     integer_ids: bool = False
     inject_personalization: Tuple[str] = ()
     train_batch_size: int = 4

@@ -2,6 +2,7 @@ import argparse
 import os
 
 from src import ExperimentConfig
+from src.data.templates import Task
 from src.model.trainer import trainer_main
 from src.utils import seed_everything, init_wandb
 
@@ -14,6 +15,9 @@ if __name__ == '__main__':
                         help='')
     parser.add_argument('--n_epochs', type=int, default=10,
                         help='')
+    parser.add_argument('--train_tasks', type=str.lower, nargs="+", default=tuple(Task.str_alias_obj.keys()),
+                        choices=list(Task.str_alias_obj.keys()),
+                        help='',)
     parser.add_argument('--integer_ids', action=argparse.BooleanOptionalAction, default=False,
                         help='')
     parser.add_argument('--inject_personalization', type=str, nargs="+", default=(),
@@ -36,6 +40,7 @@ if __name__ == '__main__':
 
     # nargs = "+" returns a list if set, we want a tuple instead in order to be type coherent
     args.inject_personalization = tuple(args.inject_personalization)
+    args.train_tasks = tuple(args.train_tasks)
 
     # set default exp name
     if args.exp_name is None:
