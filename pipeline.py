@@ -68,6 +68,10 @@ if __name__ == '__main__':
         assert hasattr(ExperimentConfig, arg), f"{arg} does not exist in ExperimentConfig class!"
         setattr(ExperimentConfig, arg, arg_value)
 
+    print("Experiment configuration:")
+    # Convert the class attributes of ExperimentConfig dataclass to a dictionary
+    print({field: getattr(ExperimentConfig, field) for field in ExperimentConfig.__annotations__})
+
     seed_everything(ExperimentConfig.random_seed)
 
     # log env variables needed for reproducibility to args which will be logged to wandb
