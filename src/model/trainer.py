@@ -10,10 +10,11 @@ import wandb
 from tqdm import tqdm
 
 from src import MODELS_DIR, ExperimentConfig
+from src.evaluate.evaluator import RecEvaluator
 from src.utils import log_wandb
 from src.data.amazon_dataset import AmazonDataset
-from src.data.templates import SequentialTask
-from src.evaluate.metrics import Metric, Accuracy, Hit
+from src.data.templates import Task
+from src.evaluate.metrics import Hit
 from src.model.t5 import T5FineTuned
 
 
@@ -48,6 +49,9 @@ class RecTrainer:
 
         self.output_name = output_name
         self.output_path = os.path.join(MODELS_DIR, output_name)
+
+        # evaluator for validating with validation set during training
+        self.rec_evaluator = RecEvaluator(self.rec_model, self.eval_batch_size)
 
     def train(self, train_dataset: datasets.Dataset, validation_dataset: datasets.Dataset = None):
 
@@ -121,14 +125,19 @@ class RecTrainer:
             pbar.close()
 
             if validation_dataset is not None:
-                val_result = self.validation(validation_dataset=validation_dataset)
+
+                validation_metric = Hit(k=10)
+
+                val_result = self.rec_evaluator.evaluate(validation_dataset,
+                                                         metric_list=[validation_metric],
+                                                         return_loss=True)
 
                 if self.monitor_strategy == "loss":
                     monitor_str = "Val loss"
                     monitor_val = val_result["loss"]
                     should_save = monitor_val < best_val_monitor_result  # we want loss to decrease
                 else:
-                    metric_obj, monitor_val = val_result["metric"]
+                    metric_obj, monitor_val = val_result[str(validation_metric)]
                     monitor_str = str(metric_obj)
                     should_save = monitor_val > best_val_monitor_result  # we want metric (acc/hit) to increase
 
@@ -152,64 +161,6 @@ class RecTrainer:
             "train/best_epoch": best_epoch
         })
 
-    def validation(self, validation_dataset: datasets.Dataset):
-
-        print("VALIDATION")
-        self.rec_model.eval()
-
-        preprocessed_val = validation_dataset.map(
-            self.rec_model.tokenize,
-            remove_columns=validation_dataset.column_names,
-            keep_in_memory=True,
-            desc="Tokenizing val set"
-        )
-        preprocessed_val.set_format("torch")
-
-        # ceil because we don't drop the last batch
-        total_n_batch = ceil(preprocessed_val.num_rows / self.eval_batch_size)
-
-        pbar_val = tqdm(preprocessed_val.iter(batch_size=self.eval_batch_size),
-                        total=total_n_batch)
-
-        metric: Metric = Hit(k=10)
-        val_loss = 0
-        total_preds = []
-        total_truths = []
-
-        # progress will go from 0 to 100. Init to -1 so at 0 we perform the first print
-        progress = -1
-        for i, batch in enumerate(pbar_val, start=1):
-
-            prepared_input = self.rec_model.prepare_input(batch)
-            predictions, truths, loss = self.rec_model.valid_step(prepared_input)
-
-            val_loss += loss.item()
-
-            total_preds.extend(predictions)
-            total_truths.extend(truths)
-
-            # we update the loss every 1% progress considering the total n° of batches
-            # tqdm update integer percentage (1%, 2%) when float percentage is over .5 threshold (1.501 -> 2%)
-            # so we print infos in the same way
-            if round(100 * (i / total_n_batch)) > progress:
-                preds_so_far = np.array(total_preds)
-                truths_so_far = np.array(total_truths)
-
-                result = metric(preds_so_far.squeeze(), truths_so_far)
-                pbar_val.set_description(f"Val Loss -> {(val_loss / i):.6f}, "
-                                         f"{metric} -> {result:.3f}")
-
-                progress += 1
-
-        pbar_val.close()
-
-        val_loss /= total_n_batch
-        val_metric = metric(np.array(total_preds).squeeze(), np.array(total_truths))
-
-        # val_loss is computed for the entire batch, not for each sample, that's why is safe
-        # to use pbar_val
-        return {"loss": val_loss, "metric": (metric, val_metric)}
-
 
 def trainer_main():
 
@@ -228,10 +179,12 @@ def trainer_main():
 
     train = ds_dict["train"]
     val = ds_dict["validation"]
+    test = ds_dict["test"]
 
     # REDUCE FOR TESTING
     # train = Dataset.from_dict(train[:5000])
     # val = Dataset.from_dict(val[:5000])
+    # test = Dataset.from_dict(test[:100])
 
     sampling_fn = ds.sample_train_sequence
 
@@ -245,7 +198,7 @@ def trainer_main():
 
             input_prompt, target_text = task.templates_dict[template_id]
 
-            dataframe_dict["task_type"].append(repr(task))
+            dataframe_dict["task_type"].append(str(task))
             dataframe_dict["template_id"].append(template_id)
             dataframe_dict["input_prompt"].append(input_prompt)
             dataframe_dict["target_text"].append(target_text)
@@ -261,11 +214,6 @@ def trainer_main():
         device=device
     )
 
-    # new_words = ['<']
-    #
-    # model_ntp.tokenizer.add_tokens(new_words)
-    # model_ntp.model.resize_token_embeddings(len(model_ntp.tokenizer))
-
     trainer = RecTrainer(
         rec_model=rec_model,
         n_epochs=n_epochs,
@@ -278,24 +226,24 @@ def trainer_main():
         output_name=ExperimentConfig.exp_name
     )
 
-    # validation only at last epoch
+    # no validation at the moment
     trainer.train(train)
 
-    for template_id in SequentialTask.templates_dict.keys():
+    evaluator = RecEvaluator(rec_model, eval_batch_size)
+    # eval
+    for task in train_task_list:
+        for template_id in task.templates_dict.keys():
 
-        print(f"Validating on {template_id}")
+            print(f"Evaluating on {template_id}")
+            task.force_template(template_id)
+            rec_model.set_eval_task(task)
 
-        rec_model.set_eval_task(SequentialTask(force_template_id=template_id))
-        res = trainer.validation(val)
+            res = evaluator.evaluate(test, metric_list=[Hit(k=10), Hit(k=5)])
 
-        val_loss = res["loss"]
-        metric_name, metric_val = res["metric"]
+            dict_to_log = {f"test/{task}/{metric_name}": metric_val for metric_name, metric_val in res.items()}
+            dict_to_log[f"test/{task}/template_id"] = template_id
 
-        log_wandb({
-            "val/template_id": template_id,
-            "val/loss": val_loss,
-            f"val/{metric_name}": metric_val,
-        })
+            log_wandb(dict_to_log)
 
 
 if __name__ == "__main__":
