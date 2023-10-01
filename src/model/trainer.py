@@ -219,6 +219,7 @@ def trainer_main():
     device = ExperimentConfig.device
     checkpoint = ExperimentConfig.checkpoint
     random_seed = ExperimentConfig.random_seed
+    train_tasks = ExperimentConfig.train_tasks
 
     ds = AmazonDataset(dataset_name="toys", add_prefix=ExperimentConfig.add_prefix_item_users)
 
@@ -234,7 +235,8 @@ def trainer_main():
 
     sampling_fn = ds.sample_train_sequence
 
-    train_task_list = [SequentialTask()]
+    # from strings to objects initialized
+    train_task_list = Task.from_string(*train_tasks)
 
     # Log all templates used
     dataframe_dict = {"task_type": [], "template_id": [], "input_prompt": [], "target_text": []}
