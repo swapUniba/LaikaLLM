@@ -7,6 +7,7 @@ scikit-learn
 wandb
 pandas
 sentencepiece==0.1.99
+requests
 numpy~=1.24.3
 tqdm==4.65.0
 packaging==23.1
