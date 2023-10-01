@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 import random
 
+from requests.structures import CaseInsensitiveDict
+
 
 class PromptTarget:
 
@@ -26,11 +28,11 @@ class Task(ABC):
     # keys are integers, values are PromptTarget objects
     templates_dict = {}
     # name obj class mapping, used for when task must be initialized from strings
-    str_alias_obj = {}
+    str_alias_obj: dict = CaseInsensitiveDict()
 
     # automatically called on subclass definition, will populate the str_alias_obj dict
     def __init_subclass__(cls, **kwargs):
-        cls.str_alias_obj[cls.__name__.lower()] = cls
+        cls.str_alias_obj[cls.__name__] = cls
 
     @property
     def all_templates(self):
@@ -66,6 +68,8 @@ class Task(ABC):
     def from_string(cls, *task_str: str):
 
         try:
+            # remember, we are searching a case-insensitive dict, so we don't care about
+            # lowering all keys
             instantiated_task = [cls.str_alias_obj[task]() for task in task_str]
         except KeyError:
             raise KeyError("One or more task string alias does not exist!") from None

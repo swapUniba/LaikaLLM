@@ -15,7 +15,7 @@ if __name__ == '__main__':
                         help='')
     parser.add_argument('--n_epochs', type=int, default=10,
                         help='')
-    parser.add_argument('--train_tasks', type=str.lower, nargs="+", default=tuple(Task.str_alias_obj.keys()),
+    parser.add_argument('--train_tasks', type=str, nargs="+", default=tuple(Task.str_alias_obj.keys()),
                         choices=list(Task.str_alias_obj.keys()),
                         help='',)
     parser.add_argument('--integer_ids', action=argparse.BooleanOptionalAction, default=False,
