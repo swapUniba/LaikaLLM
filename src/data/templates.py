@@ -141,3 +141,80 @@ class SequentialTask(Task):
         target_text = target.format(target_item)
 
         return input_text, target_text
+
+
+class SequentialSideInfoTask(Task):
+    templates_dict = {
+        0: PromptTarget(
+            input_prompt="sequential_rec_side_info for {}:\n\n"
+                         "Predict for the user the next element of the following sequence ->\n"
+                         "{}\n"
+                         "The category of each element of the sequence is ->\n"
+                         "{}",
+            target_text="{}"
+        ),
+        1: PromptTarget(
+            input_prompt="sequential_rec_side_info for {}:\n\n"
+                         "Predict the next element which the user will buy given the following order history ->\n"
+                         "{}\n"
+                         "Each item bought belongs to these categories (in order) ->\n"
+                         "{}",
+            target_text="{}"
+        ),
+        2: PromptTarget(
+            input_prompt="sequential_rec_side_info for {}:\n\n"
+                         "What is the element that should be recommended to the user knowing that it has bought ->\n"
+                         "{}\n"
+                         "Categories of the items are ->\n"
+                         "{}",
+            target_text="{}"
+        ),
+        3: PromptTarget(
+            input_prompt="sequential_rec_side_info for {}:\n\n"
+                         "Recommend to the user an item from the catalog given its order history ->"
+                         "{}"
+                         "Each item of the order history belongs to the following categories (in order) -> \n"
+                         "{}",
+            target_text="{}"
+        ),
+        4: PromptTarget(
+            input_prompt="sequential_rec_side_info for {}:\n\n"
+                         "This is the order history of the user ->\n"
+                         "{}\n"
+                         "These are the categories of each item ->\n"
+                         "{}"
+                         "Please recommend the next element that the user will buy",
+            target_text="{}"
+        ),
+        5: PromptTarget(
+            input_prompt="sequential_rec_side_info for {}:\n\n"
+                         "Please predict what item is best to recommend to the user given its order history ->\n"
+                         "{}"
+                         "Categories of each item ->\n"
+                         "{}",
+            target_text="{}"
+        )
+    }
+
+    @Task.validate_args("user_id", "input_item_seq", "input_categories_seq", "target_item")
+    def __call__(self, **kwargs):
+        user_id = kwargs["user_id"]
+        order_history = kwargs["input_item_seq"]
+        input_categories_seq = kwargs["input_categories_seq"]
+        target_item = kwargs["target_item"]
+
+        # using all categories is maybe too much, let's use only one category for each item in the seq
+        reduced_categories = [random.choice(categories) for categories in input_categories_seq]
+
+        # random.choice applied to dict with int key returns a value
+        input_prompt, target = random.choice(self.all_templates)
+
+        # random select of string separator for titles sequence and the prompt to use
+        separator = " , " if random.getrandbits(1) else " ; "
+        order_history_str = separator.join(order_history)
+        input_categories_str = separator.join(reduced_categories)
+
+        input_text = input_prompt.format(user_id, input_categories_str, order_history_str)
+        target_text = target.format(target_item)
+
+        return input_text, target_text
