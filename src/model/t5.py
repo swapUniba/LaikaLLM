@@ -79,7 +79,7 @@ class T5FineTuned(T5ForConditionalGeneration):
         whole_word_ids = np.array(encoded_sequence.encodings[0].word_ids)
         special_token_mask = np.array(encoded_sequence.encodings[0].special_tokens_mask).astype(bool)
 
-        # we set -1 to all special tokens (None is set by default)
+        # we set -1 to all special tokens (to substitute None, which is the value set by default)
         whole_word_ids[~special_token_mask] += 1
         whole_word_ids[special_token_mask] = self.tokenizer.pad_token_id
 
