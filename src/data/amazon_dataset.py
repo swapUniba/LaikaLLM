@@ -227,7 +227,7 @@ class AmazonDataset:
 
         train_hf_ds = Dataset.from_pandas(self.train_df, split=datasets.Split.TRAIN, preserve_index=False)
         val_hf_ds = Dataset.from_pandas(self.val_df, split=datasets.Split.VALIDATION, preserve_index=False)
-        test_hf_ds = Dataset.from_pandas(self.test_df, split=datasets.Split.VALIDATION, preserve_index=False)
+        test_hf_ds = Dataset.from_pandas(self.test_df, split=datasets.Split.TEST, preserve_index=False)
 
         # we create a dataset dict containing each split
         dataset_dict = {
