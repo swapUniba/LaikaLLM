@@ -1,5 +1,6 @@
 import os
 import time
+from collections import defaultdict
 from math import ceil
 from typing import Optional, Literal, Callable, Dict
 
@@ -229,21 +230,34 @@ def trainer_main():
     # no validation at the moment
     trainer.train(train)
 
-    evaluator = RecEvaluator(rec_model, eval_batch_size)
     # eval
+    evaluator = RecEvaluator(rec_model, eval_batch_size)
+    metric_list = [Hit(k=10), Hit(k=5)]
+    cumulative_results = defaultdict(list)
     for task in train_task_list:
         for template_id in task.templates_dict.keys():
 
-            print(f"Evaluating on {template_id}")
+            print(f"Evaluating on {task}/{template_id}")
             task.force_template(template_id)
             rec_model.set_eval_task(task)
 
-            res = evaluator.evaluate(test, metric_list=[Hit(k=10), Hit(k=5)])
+            res = evaluator.evaluate(test, metric_list=metric_list)
 
-            dict_to_log = {f"test/{task}/{metric_name}": metric_val for metric_name, metric_val in res.items()}
-            dict_to_log[f"test/{task}/template_id"] = template_id
+            dict_to_log = {f"test/{task}/template_id": template_id}
+            for metric_name, metric_val in res.items():
+                dict_to_log[f"test/{task}/{metric_name}"] = metric_val
+                cumulative_results[str(metric_name)].append(metric_val)
 
             log_wandb(dict_to_log)
+
+        average_results = {metric: np.mean(cumulative_metric_result).item()
+                           for metric, cumulative_metric_result in cumulative_results.items()}
+
+        log_wandb({f"test/{task}/avg_results/{metric}": avg_metric_result
+                   for metric, avg_metric_result in average_results.items()})
+
+        print(f"Average result for task {task}:")
+        print(average_results)
 
 
 if __name__ == "__main__":
