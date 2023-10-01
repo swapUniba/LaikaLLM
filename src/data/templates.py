@@ -1,7 +1,5 @@
 from abc import ABC, abstractmethod
 import random
-from collections import namedtuple
-from typing import List, NamedTuple
 
 
 class PromptTarget:
