@@ -1,6 +1,8 @@
 import argparse
 import os
 
+from pygit2 import Repository
+
 from src import ExperimentConfig
 from src.data.templates import Task
 from src.model.trainer import trainer_main
@@ -68,9 +70,13 @@ if __name__ == '__main__':
 
     seed_everything(ExperimentConfig.random_seed)
 
-    # add env variables needed for reproducibility to args which will be logged to wandb
+    # log env variables needed for reproducibility to args which will be logged to wandb
     dict_args["PYTHONHASHSEED"] = os.environ["PYTHONHASHSEED"]
     dict_args["CUBLAS_WORKSPACE_CONFIG"] = os.environ["CUBLAS_WORKSPACE_CONFIG"]
+
+    # log also the current active branch in which experiment is being performed
+
+    dict_args["git_branch"] = Repository('.').head.shorthand  # 'master'
 
     with init_wandb(project="P5-Thesis", name=ExperimentConfig.exp_name, config=dict_args):
         trainer_main()
