@@ -66,13 +66,12 @@ class T5FineTuned(T5ForConditionalGeneration):
 
     def tokenize(self, sample):
 
-        user_id = sample["user_id"]
-        item_sequence = sample["input_item_seq"]
-        target_item = sample["target_item"]
-
         task = random.choice(self.training_tasks) if self.training else self.eval_task
 
-        input_text, target_text = task(user_id, item_sequence, target_item)
+        # give all info that we have about the sample to the task randomly sampled to generate
+        # input prompt and target text. Each task may have mandatory arguments, if they are missing
+        # an assertion error will be raised
+        input_text, target_text = task(**sample)
 
         encoded_sequence = self.tokenizer(text=input_text, text_target=target_text, truncation=True)
 
@@ -85,7 +84,7 @@ class T5FineTuned(T5ForConditionalGeneration):
         whole_word_ids[special_token_mask] = self.tokenizer.pad_token_id
 
         encoded_sequence["whole_word_ids"] = whole_word_ids.tolist()
-        encoded_sequence["target_item"] = target_item
+        encoded_sequence["target_item"] = sample["target_item"]
 
         return encoded_sequence
 
