@@ -50,7 +50,7 @@ class SequentialTask(Task):
     templates_dict = {
         0: PromptTarget(
             input_prompt="sequential_rec for {}:\n\n"
-                         "Predict the next element of the following sequence ->\n"
+                         "Predict for the user the next element of the following sequence ->\n"
                          "{}",
             target_text="{}"
         ),
@@ -81,7 +81,7 @@ class SequentialTask(Task):
         ),
         5: PromptTarget(
             input_prompt="sequential_rec for {}:\n\n"
-                         "Please predict what item is best to recommend given its order history ->\n"
+                         "Please predict what item is best to recommend to the user given its order history ->\n"
                          "{}",
             target_text="{}"
         )
