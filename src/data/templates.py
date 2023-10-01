@@ -218,7 +218,7 @@ class SequentialSideInfoTask(Task):
         order_history_str = separator.join(order_history)
         input_categories_str = separator.join(reduced_categories)
 
-        input_text = input_prompt.format(user_id, input_categories_str, order_history_str)
+        input_text = input_prompt.format(user_id, order_history_str, input_categories_str)
         target_text = target.format(target_item)
 
         return input_text, target_text
