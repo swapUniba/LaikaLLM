@@ -90,39 +90,39 @@ class Task(ABC):
 class SequentialTask(Task):
     templates_dict = {
         0: PromptTarget(
-            input_prompt="sequential_rec for {}:\n\n"
-                         "Predict for the user the next element of the following sequence ->\n"
+            input_prompt="sequential_rec for {}: \n\n"
+                         "Predict for the user the next element of the following sequence -> \n"
                          "{}",
             target_text="{}"
         ),
         1: PromptTarget(
-            input_prompt="sequential_rec for {}:\n\n"
-                         "Predict the next element which the user will buy given the following order history ->\n"
+            input_prompt="sequential_rec for {}: \n\n"
+                         "Predict the next element which the user will buy given the following order history -> \n"
                          "{}",
             target_text="{}"
         ),
         2: PromptTarget(
-            input_prompt="sequential_rec for {}:\n\n"
-                         "What is the element that should be recommended to the user knowing that it has bought ->\n"
+            input_prompt="sequential_rec for {}: \n\n"
+                         "What is the element that should be recommended to the user knowing that it has bought -> \n"
                          "{}",
             target_text="{}"
         ),
         3: PromptTarget(
-            input_prompt="sequential_rec for {}:\n\n"
-                         "Recommend to the user an item from the catalog given its order history ->"
+            input_prompt="sequential_rec for {}: \n\n"
+                         "Recommend to the user an item from the catalog given its order history -> \n"
                          "{}",
             target_text="{}"
         ),
         4: PromptTarget(
-            input_prompt="sequential_rec for {}:\n\n"
-                         "This is the order history of the user ->\n"
-                         "{}\n\n"
+            input_prompt="sequential_rec for {}: \n\n"
+                         "This is the order history of the user -> \n"
+                         "{} \n"
                          "Recommend the next element that the user will buy",
             target_text="{}"
         ),
         5: PromptTarget(
-            input_prompt="sequential_rec for {}:\n\n"
-                         "Please predict what item is best to recommend to the user given its order history ->\n"
+            input_prompt="sequential_rec for {}: \n\n"
+                         "Please predict what item is best to recommend to the user given its order history -> \n"
                          "{}",
             target_text="{}"
         )
