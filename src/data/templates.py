@@ -184,7 +184,7 @@ class SequentialSideInfoTask(Task):
         4: PromptTarget(
             input_prompt="sequential_rec_side_info for {}: \n\n"
                          "This is the order history of the user -> \n"
-                         "{ }\n"
+                         "{} \n"
                          "These are the categories of each item -> \n"
                          "{} \n"
                          "Please recommend the next element that the user will buy",
