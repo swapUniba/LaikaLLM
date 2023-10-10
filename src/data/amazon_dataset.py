@@ -45,7 +45,7 @@ class AmazonDataset:
         ])
 
         # read mapping between user string id (ABXMSBDSI) and user int idxs (331)
-        with open(os.path.join(DATA_DIR, dataset_name, 'datamaps.json'), "r") as f:
+        with open(os.path.join(RAW_DATA_DIR, dataset_name, 'datamaps.json'), "r") as f:
             datamaps = json.load(f)
 
         self.user_id2idx = {str(key): str(val) for key, val in datamaps['user2id'].items()}
@@ -58,7 +58,7 @@ class AmazonDataset:
         relevant_items_id = set(self.item_id2idx.keys())
         meta_dict = {}
         print("Extracting meta info...")
-        for meta_content in parse(os.path.join(DATA_DIR, dataset_name, 'meta.json.gz')):
+        for meta_content in parse(os.path.join(RAW_DATA_DIR, dataset_name, 'meta.json.gz')):
             item_id = meta_content.pop("asin")
             if item_id in relevant_items_id:
                 item_idx = self.item_id2idx[item_id]
