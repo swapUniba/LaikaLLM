@@ -9,6 +9,8 @@ THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_PATH = str(Path(os.path.join(THIS_DIR, "..")).resolve())
 
 DATA_DIR = os.path.join(ROOT_PATH, "data")
+RAW_DATA_DIR = os.path.join(DATA_DIR, "raw")
+PROCESSED_DATA_DIR = os.path.join(DATA_DIR, "processed")
 SNAP_DIR = os.path.join(ROOT_PATH, "snap")
 MODELS_DIR = os.path.join(ROOT_PATH, "models")
 

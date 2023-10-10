@@ -173,7 +173,7 @@ def trainer_main():
     random_seed = ExperimentConfig.random_seed
     train_tasks = ExperimentConfig.train_tasks
 
-    ds = AmazonDataset(dataset_name="toys", add_prefix=ExperimentConfig.add_prefix_item_users)
+    ds = AmazonDataset.load()
 
     ds_dict = ds.get_hf_datasets()
     all_unique_labels = ds.all_items

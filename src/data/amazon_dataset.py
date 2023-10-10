@@ -2,6 +2,7 @@ import gzip
 import itertools
 import json
 import os
+import pickle
 import random
 from collections import Counter
 from functools import cached_property
@@ -13,7 +14,7 @@ import pandas as pd
 from datasets import Dataset
 from tqdm import tqdm
 
-from src import DATA_DIR, ExperimentConfig
+from src import DATA_DIR, ExperimentConfig, PROCESSED_DATA_DIR
 
 
 def parse(path):
@@ -241,15 +242,31 @@ class AmazonDataset:
 
         return dataset_dict
 
+    def save(self, output_path: str = os.path.join(PROCESSED_DATA_DIR, "amzn_dat.pkl")):
+
+        with open(output_path, "wb") as f:
+            pickle.dump(self, f)
+
+    @classmethod
+    def load(cls, path: str = os.path.join(PROCESSED_DATA_DIR, "amzn_dat.pkl")):
+
+        with open(path, "rb") as f:
+            obj = pickle.load(f)
+
+        return obj
+
+
+def data_main():
+
+    add_prefix = ExperimentConfig.add_prefix_item_users
+    integer_ids = ExperimentConfig.integer_ids
+
+    ds = AmazonDataset(dataset_name="toys",
+                       add_prefix=add_prefix,
+                       integer_ids=integer_ids)
+
+    ds.save()
+
 
 if __name__ == "__main__":
-
-    ExperimentConfig.integer_ids = True
-
-    ds = AmazonDataset(dataset_name="toys")
-
-    ds_dict = ds.get_hf_datasets()
-
-    train = ds_dict["train"]
-    train.set_format("torch")
-    train = train.map(ds.sample_train_sequence, keep_in_memory=True)
+    data_main()
