@@ -14,7 +14,7 @@ import pandas as pd
 from datasets import Dataset
 from tqdm import tqdm
 
-from src import DATA_DIR, ExperimentConfig, PROCESSED_DATA_DIR
+from src import DATA_DIR, ExperimentConfig, PROCESSED_DATA_DIR, RAW_DATA_DIR
 
 
 def parse(path):
@@ -205,7 +205,7 @@ class AmazonDataset:
 
         user_items = dict()
 
-        with open(os.path.join(DATA_DIR, self.dataset_name, "sequential_data.txt")) as f:
+        with open(os.path.join(RAW_DATA_DIR, self.dataset_name, "sequential_data.txt")) as f:
             for user_item_sequence in f:
                 # user_item sequence is in the form {user_id}, {item_id}, {item_id}, ... {item_id}
                 item_sequence = [str(item_idx) for item_idx in user_item_sequence.split()]
