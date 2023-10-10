@@ -23,6 +23,7 @@ def seed_everything(seed: int):
     # seed everything
     np.random.seed(seed)
     random.seed(seed)
+    torch.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
     torch.use_deterministic_algorithms(True)
