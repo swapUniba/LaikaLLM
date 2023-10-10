@@ -24,11 +24,14 @@ def parse(path):
 
 class AmazonDataset:
 
-    def __init__(self, dataset_name: Literal['beauty', 'toys', 'sport'],
-                 add_prefix: bool = True):
+    def __init__(self,
+                 dataset_name: Literal['beauty', 'toys', 'sport'],
+                 add_prefix: bool = False,
+                 integer_ids: bool = False):
 
-        self.add_prefix = add_prefix
         self.dataset_name = dataset_name
+        self.add_prefix = add_prefix
+        self.integer_ids = integer_ids
 
         user_items, item_count = self._read_sequential()
 
@@ -72,7 +75,7 @@ class AmazonDataset:
 
         for user_idx, item_list_idxs in tqdm(user_items.items(), desc="Creating tabular data..."):
 
-            if ExperimentConfig.integer_ids is True:
+            if self.integer_ids is True:
                 user_col_repeated = [user_idx for _ in range(len(item_list_idxs))]
                 item_col_value = item_list_idxs
             else:
