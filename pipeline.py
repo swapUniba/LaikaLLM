@@ -4,6 +4,7 @@ import os
 from pygit2 import Repository
 
 from src import ExperimentConfig
+from src.data.amazon_dataset import data_main
 from src.data.templates import Task
 from src.model.trainer import trainer_main
 from src.utils import seed_everything, init_wandb
@@ -83,4 +84,5 @@ if __name__ == '__main__':
     dict_args["git_branch"] = Repository('.').head.shorthand  # 'master'
 
     with init_wandb(project="P5-Thesis", name=ExperimentConfig.exp_name, config=dict_args):
+        data_main()
         trainer_main()
