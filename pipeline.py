@@ -70,7 +70,7 @@ if __name__ == '__main__':
 
     print("Experiment configuration:")
     # Convert the class attributes of ExperimentConfig dataclass to a dictionary
-    print({field: getattr(ExperimentConfig, field) for field in ExperimentConfig.__annotations__})
+    print(ExperimentConfig.to_dict())
 
     seed_everything(ExperimentConfig.random_seed)
 

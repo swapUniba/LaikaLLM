@@ -30,3 +30,7 @@ class ExperimentConfig:
     device: str = "cuda:0"
     random_seed: int = 42
     log_wandb: bool = False
+
+    @classmethod
+    def to_dict(cls):
+        return {field: getattr(cls, field) for field in cls.__annotations__}
