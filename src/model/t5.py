@@ -76,7 +76,7 @@ class T5FineTuned(T5ForConditionalGeneration):
         # an assertion error will be raised
         input_text, target_text = task(**sample)
 
-        user_representation_encoding = self.tokenizer("\n".join(sample["input_title_seq"]),
+        user_representation_encoding = self.tokenizer("\n".join([cats[-1] for cats in sample["input_categories_seq"]]),
                                                       truncation=True)
 
         encoded_sequence = self.tokenizer(text=input_text, text_target=target_text, truncation=True)
