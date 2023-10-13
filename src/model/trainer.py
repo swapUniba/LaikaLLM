@@ -177,6 +177,7 @@ def trainer_main():
 
     ds_dict = ds.get_hf_datasets()
     all_unique_labels = ds.all_items
+    all_unique_users = ds.all_users
 
     train = ds_dict["train"]
     val = ds_dict["validation"]
@@ -210,6 +211,7 @@ def trainer_main():
 
     rec_model = T5FineTuned.from_pretrained(
         checkpoint,
+        n_users=len(all_unique_users),
         training_tasks=train_task_list,
         all_unique_labels=all_unique_labels,
         device=device
