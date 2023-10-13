@@ -68,6 +68,7 @@ class AmazonDataset:
         df_dict = {
             "user_id": [],
             "item_sequence": [],
+            "title_sequence": [],
             "categories_sequence": [],
             "price_sequence": [],
             "imurl_sequence": [],
@@ -87,21 +88,25 @@ class AmazonDataset:
             df_dict["item_sequence"].extend(item_col_value)
 
             categories_list = []
+            title_list = []
             price_list = []
             imurl_list = []
             brand_list = []
             for item_idx in item_list_idxs:
                 item_categories = meta_dict[item_idx].get("categories", "!No category!")[0]
+                title = meta_dict[item_idx].get("title", "!No title!")
                 price = meta_dict[item_idx].get("price", "!No price!")
                 imurl = meta_dict[item_idx].get("imUrl", "!No imurl!")
                 brand = meta_dict[item_idx].get("brand", "!No brand!")
 
                 categories_list.append(item_categories)
+                title_list.append(title)
                 price_list.append(str(price))
                 imurl_list.append(str(imurl))
                 brand_list.append(str(brand))
 
             df_dict["categories_sequence"].extend(categories_list)
+            df_dict["title_sequence"].extend(title_list)
             df_dict["price_sequence"].extend(price_list)
             df_dict["imurl_sequence"].extend(imurl_list)
             df_dict["brand_sequence"].extend(brand_list)
@@ -143,12 +148,14 @@ class AmazonDataset:
         # target_item: 7
         input_val_set = groupby_obj.nth[:-2].rename(columns={"item_sequence": "input_item_seq",
                                                              "categories_sequence": "input_categories_seq",
+                                                             "title_sequence": "input_title_seq",
                                                              "price_sequence": "input_price_seq",
                                                              "imurl_sequence": "input_imurl_seq",
                                                              "brand_sequence": "input_brand_seq"})
         input_val_set = input_val_set.groupby(by=["user_id"]).agg(list).reset_index()
         target_val_set = groupby_obj.nth[-2].rename(columns={"item_sequence": "target_item",
                                                              "categories_sequence": "target_categories",
+                                                             "title_sequence": "target_title",
                                                              "price_sequence": "target_price",
                                                              "imurl_sequence": "target_imurl",
                                                              "brand_sequence": "target_brand"})
@@ -160,12 +167,14 @@ class AmazonDataset:
         # target_item: 8
         input_test_set = groupby_obj.nth[:-1].rename(columns={"item_sequence": "input_item_seq",
                                                               "categories_sequence": "input_categories_seq",
+                                                              "title_sequence": "input_title_seq",
                                                               "price_sequence": "input_price_seq",
                                                               "imurl_sequence": "input_imurl_seq",
                                                               "brand_sequence": "input_brand_seq"})
         input_test_set = input_test_set.groupby(by=["user_id"]).agg(list).reset_index()
         target_test_set = groupby_obj.nth[-1].rename(columns={"item_sequence": "target_item",
                                                               "categories_sequence": "target_categories",
+                                                              "title_sequence": "target_title",
                                                               "price_sequence": "target_price",
                                                               "imurl_sequence": "target_imurl",
                                                               "brand_sequence": "target_brand"})
@@ -190,11 +199,13 @@ class AmazonDataset:
         out_dict["user_id"] = sample["user_id"]
         out_dict["input_item_seq"] = sample["item_sequence"][start_index:end_index]
         out_dict["input_categories_seq"] = sample["categories_sequence"][start_index:end_index]
+        out_dict["input_title_seq"] = sample["title_sequence"][start_index:end_index]
         out_dict["input_price_seq"] = sample["price_sequence"][start_index:end_index]
         out_dict["input_imurl_seq"] = sample["imurl_sequence"][start_index:end_index]
         out_dict["input_brand_seq"] = sample["brand_sequence"][start_index:end_index]
         out_dict["target_item"] = sample["item_sequence"][end_index]
         out_dict["target_categories"] = sample["categories_sequence"][end_index]
+        out_dict["target_title"] = sample["title_sequence"][end_index]
         out_dict["target_price"] = sample["price_sequence"][end_index]
         out_dict["target_imurl"] = sample["imurl_sequence"][end_index]
         out_dict["target_brand"] = sample["brand_sequence"][end_index]
@@ -269,4 +280,8 @@ def data_main():
 
 
 if __name__ == "__main__":
+
+    ExperimentConfig.add_prefix_item_users = True
+    ExperimentConfig.integer_ids = True
+
     data_main()
