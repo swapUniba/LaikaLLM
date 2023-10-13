@@ -1,5 +1,6 @@
 from __future__ import annotations
 import random
+import re
 from typing import List
 
 import numpy as np
@@ -20,6 +21,7 @@ class T5FineTuned(T5ForConditionalGeneration):
 
     def __init__(self,
                  config,
+                 n_users: int,
                  training_tasks: List[Task],
                  all_unique_labels: np.ndarray[str],
                  eval_task: Task = None,
@@ -32,14 +34,15 @@ class T5FineTuned(T5ForConditionalGeneration):
         self.training_tasks = training_tasks
         self.eval_task = eval_task
 
+        self.n_users = n_users
         self.all_unique_labels = all_unique_labels
         # self.encoded_all_labels = sim_model.encode(list(self.all_unique_labels),
         #                                            convert_to_tensor=True,
         #                                            show_progress_bar=True)
 
         # Set maximum 512 whole words in a source text
-        self.whole_word_embeddings = nn.Embedding(
-            512, self.config.d_model,  # config.d_model is 768 for base
+        self.user_embeddings = nn.Embedding(
+            self.n_users, self.config.d_model,  # config.d_model is 768 for base
         ).to(device)
         # self.relu = nn.LeakyReLU()
 
@@ -83,6 +86,7 @@ class T5FineTuned(T5ForConditionalGeneration):
         whole_word_ids[~special_token_mask] += 1
         whole_word_ids[special_token_mask] = self.tokenizer.pad_token_id
 
+        encoded_sequence["user_idx"] = int(re.search(r"\d+", sample["user_id"]).group())
         encoded_sequence["whole_word_ids"] = whole_word_ids.tolist()
         encoded_sequence["target_item"] = sample["target_item"]
 
@@ -99,6 +103,7 @@ class T5FineTuned(T5ForConditionalGeneration):
                                       batch_first=True,
                                       padding_value=self.tokenizer.pad_token_id)
 
+        input_dict["user_idx"] = batch["user_idx"]
         input_dict["input_ids"] = input_ids.to(self.device)
         input_dict["attention_mask"] = attention_mask.to(self.device)
         input_dict["whole_word_ids"] = whole_word_ids.to(self.device)
@@ -114,12 +119,17 @@ class T5FineTuned(T5ForConditionalGeneration):
 
         return input_dict
 
-    def _inject_personalization(self, token_inputs_embeds: Tensor, whole_word_ids: Tensor):
+    def _inject_personalization(self, token_inputs_embeds: Tensor, user_idxs: Tensor):
 
-        whole_word_embeds = self.whole_word_embeddings(whole_word_ids)
+        # whole_word_embeds = self.whole_word_embeddings(whole_word_ids)
+        # # whole_word_embeds = self.relu(whole_word_embeds)
+        # assert whole_word_embeds.shape[-1] == token_inputs_embeds.shape[-1]
+        # inputs_embeds = token_inputs_embeds + whole_word_embeds
+
+        # user idxs start from 1, TO IMPROVE!
+        user_embeds = self.user_embeddings(user_idxs - 1).unsqueeze(axis=1)
         # whole_word_embeds = self.relu(whole_word_embeds)
-        assert whole_word_embeds.shape[-1] == token_inputs_embeds.shape[-1]
-        inputs_embeds = token_inputs_embeds + whole_word_embeds
+        inputs_embeds = token_inputs_embeds + user_embeds
 
         return inputs_embeds
 
@@ -127,8 +137,8 @@ class T5FineTuned(T5ForConditionalGeneration):
 
         inputs_embeds = self.shared(batch["input_ids"])  # embedding step - add HERE
 
-        if "whole_word_ids" in batch and "train" in ExperimentConfig.inject_personalization:
-            inputs_embeds = self._inject_personalization(inputs_embeds, batch["whole_word_ids"])
+        if "train" in ExperimentConfig.inject_personalization:
+            inputs_embeds = self._inject_personalization(inputs_embeds, batch["user_idx"])
 
         output = self(inputs_embeds=inputs_embeds,
                       attention_mask=batch["attention_mask"],
@@ -152,9 +162,8 @@ class T5FineTuned(T5ForConditionalGeneration):
         target_text = batch.pop("target_item")
 
         inputs_embeds = self.shared(batch["input_ids"])
-        if "whole_word_ids" in batch and "eval" in ExperimentConfig.inject_personalization:
-            whole_word_ids = batch.pop("whole_word_ids")
-            inputs_embeds = self._inject_personalization(inputs_embeds, whole_word_ids)
+        if "eval" in ExperimentConfig.inject_personalization:
+            inputs_embeds = self._inject_personalization(inputs_embeds, batch["user_idx"])
 
         output = self(inputs_embeds=inputs_embeds,
                       attention_mask=batch["attention_mask"],
