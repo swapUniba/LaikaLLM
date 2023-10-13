@@ -103,7 +103,7 @@ class T5FineTuned(T5ForConditionalGeneration):
                                       batch_first=True,
                                       padding_value=self.tokenizer.pad_token_id)
 
-        input_dict["user_idx"] = batch["user_idx"]
+        input_dict["user_idx"] = batch["user_idx"].to(self.device)
         input_dict["input_ids"] = input_ids.to(self.device)
         input_dict["attention_mask"] = attention_mask.to(self.device)
         input_dict["whole_word_ids"] = whole_word_ids.to(self.device)
