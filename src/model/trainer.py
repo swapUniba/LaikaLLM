@@ -8,6 +8,7 @@ import datasets
 import numpy as np
 import pandas as pd
 import wandb
+from datasets import Dataset
 from tqdm import tqdm
 
 from src import MODELS_DIR, ExperimentConfig
@@ -184,9 +185,9 @@ def trainer_main():
     test = ds_dict["test"]
 
     # REDUCE FOR TESTING
-    # train = Dataset.from_dict(train[:5000])
+    train = Dataset.from_dict(train[:2000])
     # val = Dataset.from_dict(val[:5000])
-    # test = Dataset.from_dict(test[:100])
+    test = Dataset.from_dict(test[:2000])
 
     sampling_fn = ds.sample_train_sequence
 
@@ -263,4 +264,11 @@ def trainer_main():
 
 
 if __name__ == "__main__":
+    ExperimentConfig.n_epochs = 1
+    ExperimentConfig.add_prefix_item_users = True
+    ExperimentConfig.integer_ids = True
+    ExperimentConfig.inject_personalization = ("train", "eval")
+
+    ExperimentConfig.checkpoint = "t5-small"
+
     trainer_main()

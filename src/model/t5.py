@@ -45,7 +45,7 @@ class T5FineTuned(T5ForConditionalGeneration):
             nn.Embedding(n_users, self.config.d_model * 3),
             nn.Linear(self.config.d_model * 3, self.config.d_model * 2),
             nn.LeakyReLU(),
-            nn.Dropout(),
+            nn.Dropout(p=0.8),
             nn.Linear(self.config.d_model * 2, self.config.d_model)
         )
         # self.relu = nn.LeakyReLU()
@@ -133,7 +133,8 @@ class T5FineTuned(T5ForConditionalGeneration):
         # user idxs start from 1, TO IMPROVE!
         user_embeds = self.user_embeddings(user_idxs - 1).unsqueeze(axis=1)
         # whole_word_embeds = self.relu(whole_word_embeds)
-        inputs_embeds = token_inputs_embeds + user_embeds
+        inputs_embeds = torch.cat((user_embeds, token_inputs_embeds), dim=1)
+        inputs_embeds = inputs_embeds[:, :self.config.n_positions, :]
 
         return inputs_embeds
 
@@ -141,11 +142,15 @@ class T5FineTuned(T5ForConditionalGeneration):
 
         inputs_embeds = self.shared(batch["input_ids"])  # embedding step - add HERE
 
+        attn_mask = batch["attention_mask"]
         if "train" in ExperimentConfig.inject_personalization:
             inputs_embeds = self._inject_personalization(inputs_embeds, batch["user_idx"])
+            attn_mask_user_emb = torch.full((attn_mask.shape[0], 1), fill_value=1).to(self.device)
+            attn_mask = torch.cat((attn_mask_user_emb, attn_mask), dim=1)
+            attn_mask = attn_mask[:, :self.config.n_positions]
 
         output = self(inputs_embeds=inputs_embeds,
-                      attention_mask=batch["attention_mask"],
+                      attention_mask=attn_mask,
                       labels=batch["labels"])
 
         return output.loss
@@ -166,16 +171,20 @@ class T5FineTuned(T5ForConditionalGeneration):
         target_text = batch.pop("target_item")
 
         inputs_embeds = self.shared(batch["input_ids"])
+        attn_mask = batch["attention_mask"]
         if "eval" in ExperimentConfig.inject_personalization:
             inputs_embeds = self._inject_personalization(inputs_embeds, batch["user_idx"])
+            attn_mask_user_emb = torch.full((attn_mask.shape[0], 1), fill_value=1).to(self.device)
+            attn_mask = torch.cat((attn_mask_user_emb, attn_mask), dim=1)
+            attn_mask = attn_mask[:, :self.config.n_positions]
 
         output = self(inputs_embeds=inputs_embeds,
-                      attention_mask=batch["attention_mask"],
+                      attention_mask=attn_mask,
                       labels=batch["labels"])
 
         beam_outputs = self.generate(
             inputs_embeds=inputs_embeds,
-            attention_mask=batch["attention_mask"],
+            attention_mask=attn_mask,
             num_return_sequences=num_return_sequences,
             max_new_tokens=max_new_tokens,
             num_beams=num_beams,
