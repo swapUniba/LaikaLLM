@@ -142,9 +142,11 @@ class T5FineTuned(T5ForConditionalGeneration):
 
         inputs_embeds = self.shared(batch["input_ids"])  # embedding step - add HERE
 
-        attn_mask = batch["attention_mask"]
+        attn_mask = batch["attention_mask"].float()
         if "train" in ExperimentConfig.inject_personalization:
             inputs_embeds = self._inject_personalization(inputs_embeds, batch["user_idx"])
+
+            attn_mask[attn_mask == 1] = .5
             attn_mask_user_emb = torch.full((attn_mask.shape[0], 1), fill_value=1).to(self.device)
             attn_mask = torch.cat((attn_mask_user_emb, attn_mask), dim=1)
             attn_mask = attn_mask[:, :self.config.n_positions]
@@ -171,9 +173,11 @@ class T5FineTuned(T5ForConditionalGeneration):
         target_text = batch.pop("target_item")
 
         inputs_embeds = self.shared(batch["input_ids"])
-        attn_mask = batch["attention_mask"]
+        attn_mask = batch["attention_mask"].float()
         if "eval" in ExperimentConfig.inject_personalization:
             inputs_embeds = self._inject_personalization(inputs_embeds, batch["user_idx"])
+
+            attn_mask[attn_mask == 1] = .5
             attn_mask_user_emb = torch.full((attn_mask.shape[0], 1), fill_value=1).to(self.device)
             attn_mask = torch.cat((attn_mask_user_emb, attn_mask), dim=1)
             attn_mask = attn_mask[:, :self.config.n_positions]
