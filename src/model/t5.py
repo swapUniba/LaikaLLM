@@ -45,7 +45,7 @@ class T5FineTuned(T5ForConditionalGeneration):
             nn.Embedding(n_users, self.config.d_model * 3),
             nn.Linear(self.config.d_model * 3, self.config.d_model * 2),
             nn.LeakyReLU(),
-            nn.Dropout(),
+            nn.Dropout(p=0.8),
             nn.Linear(self.config.d_model * 2, self.config.d_model)
         )
         # self.relu = nn.LeakyReLU()
