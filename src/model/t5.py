@@ -42,11 +42,10 @@ class T5FineTuned(T5ForConditionalGeneration):
 
         # Set maximum 512 whole words in a source text
         self.user_embeddings = nn.Sequential(
-            nn.Embedding(n_users, self.config.d_model * 3),
-            nn.Linear(self.config.d_model * 3, self.config.d_model * 2),
-            nn.LeakyReLU(),
-            nn.Dropout(p=0.8),
-            nn.Linear(self.config.d_model * 2, self.config.d_model)
+            nn.Embedding(n_users, self.config.d_model * 2),
+            nn.Linear(self.config.d_model * 2, self.config.d_model),
+            nn.Dropout(p=0.6),
+            nn.LeakyReLU()
         )
         # self.relu = nn.LeakyReLU()
 
