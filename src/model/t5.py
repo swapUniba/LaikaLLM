@@ -135,9 +135,11 @@ class T5FineTuned(T5ForConditionalGeneration):
         # inputs_embeds = token_inputs_embeds + whole_word_embeds
 
         # user idxs start from 1, TO IMPROVE!
-        user_embeds = self.encoder(**user_encoding, output_hidden_states=True).last_hidden_state
+        user_embeds = self.encoder(**user_encoding, output_hidden_states=True)
+        user_embeds = self.decoder(encoder_hidden_states=user_embeds.last_hidden_state,
+                                   input_ids=torch.zeros((token_inputs_embeds.shape[0], 1)).long().cuda()).last_hidden_state
         # whole_word_embeds = self.relu(whole_word_embeds)
-        inputs_embeds = token_inputs_embeds + user_embeds.mean(axis=1, keepdim=True)
+        inputs_embeds = token_inputs_embeds + user_embeds
 
         return inputs_embeds
 
