@@ -14,8 +14,6 @@ from sentence_transformers import util
 from src import ExperimentConfig
 from src.data.templates import Task
 
-# sim_model = SentenceTransformer('all-MiniLM-L6-v2', device="cuda:0")
-
 
 class T5FineTuned(T5ForConditionalGeneration):
 
@@ -40,12 +38,16 @@ class T5FineTuned(T5ForConditionalGeneration):
         #                                            convert_to_tensor=True,
         #                                            show_progress_bar=True)
 
-        # Set maximum 512 whole words in a source text
         self.user_embeddings = nn.Sequential(
             nn.Embedding(n_users, self.config.d_model),
+            nn.LeakyReLU(),
+        )
+
+        # Set maximum 512 whole words in a source text
+        self.word_embeddings = nn.Sequential(
+            nn.Linear(self.config.n_positions, self.config.d_model),
             nn.LeakyReLU()
         )
-        # self.relu = nn.LeakyReLU()
 
         self.post_init()
 
@@ -87,6 +89,9 @@ class T5FineTuned(T5ForConditionalGeneration):
         whole_word_ids[~special_token_mask] += 1
         whole_word_ids[special_token_mask] = self.tokenizer.pad_token_id
 
+        pad_dim = self.config.n_positions - whole_word_ids.shape[0]
+        whole_word_ids = np.pad(whole_word_ids, pad_width=(0, pad_dim), constant_values=self.tokenizer.pad_token_id)
+
         encoded_sequence["user_idx"] = int(re.search(r"\d+", sample["user_id"]).group())
         encoded_sequence["whole_word_ids"] = whole_word_ids.tolist()
         encoded_sequence["target_item"] = sample["target_item"]
@@ -120,17 +125,15 @@ class T5FineTuned(T5ForConditionalGeneration):
 
         return input_dict
 
-    def _inject_personalization(self, token_inputs_embeds: Tensor, user_idxs: Tensor):
+    def _inject_personalization(self, token_inputs_embeds: Tensor, whole_word_ids: Tensor, user_idxs: Tensor):
 
-        # whole_word_embeds = self.whole_word_embeddings(whole_word_ids)
-        # # whole_word_embeds = self.relu(whole_word_embeds)
-        # assert whole_word_embeds.shape[-1] == token_inputs_embeds.shape[-1]
-        # inputs_embeds = token_inputs_embeds + whole_word_embeds
+        # word embeds
+        whole_word_embeds = self.word_embeddings(whole_word_ids.float()).unsqueeze(axis=1)
 
-        # user idxs start from 1, TO IMPROVE!
+        # user embeds - user idxs start from 1, TO IMPROVE!
         user_embeds = self.user_embeddings(user_idxs - 1).unsqueeze(axis=1)
-        # whole_word_embeds = self.relu(whole_word_embeds)
-        inputs_embeds = token_inputs_embeds + user_embeds
+
+        inputs_embeds = token_inputs_embeds + whole_word_embeds + user_embeds
 
         return inputs_embeds
 
@@ -139,7 +142,7 @@ class T5FineTuned(T5ForConditionalGeneration):
         inputs_embeds = self.shared(batch["input_ids"])  # embedding step - add HERE
 
         if "train" in ExperimentConfig.inject_personalization:
-            inputs_embeds = self._inject_personalization(inputs_embeds, batch["user_idx"])
+            inputs_embeds = self._inject_personalization(inputs_embeds, batch["whole_word_ids"], batch["user_idx"])
 
         output = self(inputs_embeds=inputs_embeds,
                       attention_mask=batch["attention_mask"],
@@ -164,7 +167,7 @@ class T5FineTuned(T5ForConditionalGeneration):
 
         inputs_embeds = self.shared(batch["input_ids"])
         if "eval" in ExperimentConfig.inject_personalization:
-            inputs_embeds = self._inject_personalization(inputs_embeds, batch["user_idx"])
+            inputs_embeds = self._inject_personalization(inputs_embeds, batch["whole_word_ids"], batch["user_idx"])
 
         output = self(inputs_embeds=inputs_embeds,
                       attention_mask=batch["attention_mask"],
