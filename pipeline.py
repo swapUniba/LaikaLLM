@@ -26,7 +26,7 @@ if __name__ == '__main__':
     parser.add_argument('--inject_personalization', type=str, nargs="+", default=(),
                         choices=["train", "eval"],
                         help='',)
-    parser.add_argument('--monitor_metric', type=str, default="loss",
+    parser.add_argument('--monitor_strategy', type=str, default="loss",
                         choices=["loss", "hit@10"],
                         help='',)
     parser.add_argument('--train_batch_size', type=int, default=4,

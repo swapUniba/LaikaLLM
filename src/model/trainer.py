@@ -191,7 +191,7 @@ def trainer_main():
     checkpoint = ExperimentConfig.checkpoint
     random_seed = ExperimentConfig.random_seed
     train_tasks = ExperimentConfig.train_tasks
-    monitor_metric = ExperimentConfig.monitor_metric
+    monitor_metric = ExperimentConfig.monitor_strategy
 
     ds = AmazonDataset.load()
 
