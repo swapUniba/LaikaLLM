@@ -50,6 +50,8 @@ class Task(ABC):
 
         self.templates_dict = {force_template_id: self.__class__.templates_dict[force_template_id]}
 
+        return self
+
     # function decorator needed to declare mandatory arguments of each subclass __call__
     @staticmethod
     def validate_args(*mandatory_args: str):
