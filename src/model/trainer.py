@@ -146,7 +146,7 @@ class RecTrainer:
                 if should_save:
                     best_epoch = epoch + 1  # we start from 0
                     best_val_monitor_result = monitor_val
-                    self.rec_model.save(self.output_path)
+                    self.rec_model.save_pretrained(self.output_path)
 
                     print(f"{monitor_str} improved, model saved into {self.output_path}!")
             else:
