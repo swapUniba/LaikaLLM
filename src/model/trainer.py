@@ -120,12 +120,12 @@ class RecTrainer:
 
             train_loss /= total_n_batch
 
-            log_wandb({
+            pbar.close()
+
+            dict_to_log = {
                 "train/loss": train_loss,
                 "train/epoch": epoch + 1
-            })
-
-            pbar.close()
+            }
 
             if validation_dataset is not None:
 
@@ -144,7 +144,7 @@ class RecTrainer:
                 else:
                     monitor_str = str(validation_metric)
                     monitor_val = val_result[monitor_str]
-                    should_save = monitor_val > best_val_monitor_result  # we want metric (acc/hit) to increase
+                    should_save = monitor_val > best_val_monitor_result  # we want metric (hit) to increase
 
                 # we save the best model based on the reference metric result
                 if should_save:
@@ -153,8 +153,18 @@ class RecTrainer:
                     self.rec_model.save_pretrained(self.output_path)
 
                     print(f"{monitor_str} improved, model saved into {self.output_path}!")
+
+                # prefix "val" for val result dict
+                val_to_log = {f"val/{metric_name}": metric_val for metric_name, metric_val in val_result.items()}
+                val_to_log["val/epoch"] = epoch + 1
+
+                dict_to_log.update(val_to_log)
+
             else:
                 self.rec_model.save_pretrained(self.output_path)
+
+            # log to wandb
+            log_wandb(dict_to_log)
 
         elapsed_time = (time.time() - start) / 60
         print(" Train completed! Check models saved into 'models' dir ".center(100, "*"))
