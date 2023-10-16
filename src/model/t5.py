@@ -59,7 +59,7 @@ class T5FineTuned(T5ForConditionalGeneration):
             clip_threshold=1.0,
             decay_rate=-0.8,
             beta1=None,
-            weight_decay=0.0,
+            weight_decay=0.01,
             relative_step=False,
             scale_parameter=False,
             warmup_init=False
