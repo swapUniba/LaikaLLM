@@ -178,7 +178,7 @@ class RecTrainer:
 
         # load best model if validation was set, otherwise this loads the model
         # of the last epoch
-        return self.rec_model.__class__.load_pretrained(self.output_path)
+        return self.rec_model.__class__.from_pretrained(self.output_path)
 
 
 def trainer_main():
