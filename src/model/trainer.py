@@ -142,8 +142,8 @@ class RecTrainer:
                     monitor_val = val_result["loss"]
                     should_save = monitor_val < best_val_monitor_result  # we want loss to decrease
                 else:
-                    metric_obj, monitor_val = val_result[str(validation_metric)]
-                    monitor_str = str(metric_obj)
+                    monitor_str = str(validation_metric)
+                    monitor_val = val_result[monitor_str]
                     should_save = monitor_val > best_val_monitor_result  # we want metric (acc/hit) to increase
 
                 # we save the best model based on the reference metric result
@@ -268,4 +268,7 @@ def trainer_main():
 
 
 if __name__ == "__main__":
+
+    ExperimentConfig.inject_personalization = ("train", "eval")
+
     trainer_main()
