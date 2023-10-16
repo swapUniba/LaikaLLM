@@ -1,7 +1,7 @@
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, Literal
 
 from src.data.templates import Task
 
@@ -24,6 +24,7 @@ class ExperimentConfig:
     train_tasks: Tuple[str] = tuple(Task.str_alias_obj.keys())
     integer_ids: bool = False
     inject_personalization: Tuple[str] = ()
+    monitor_metric: Literal['loss', 'hit@10'] = "loss"
     train_batch_size: int = 4
     eval_batch_size: int = 2
     add_prefix_item_users: bool = False

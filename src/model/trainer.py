@@ -28,7 +28,7 @@ class RecTrainer:
                  all_labels: np.ndarray,
                  train_sampling_fn: Callable[[Dict], Dict],
                  device: str = 'cuda:0',
-                 monitor_strategy: Literal['loss', 'metric'] = 'metric',
+                 monitor_strategy: Literal['loss', 'hit@10'] = 'loss',
                  eval_batch_size: Optional[int] = None,
                  output_name: Optional[str] = None,
                  random_seed: Optional[int] = None):
@@ -169,6 +169,7 @@ class RecTrainer:
 
 def trainer_main():
 
+    exp_name = ExperimentConfig.exp_name
     n_epochs = ExperimentConfig.n_epochs
     batch_size = ExperimentConfig.train_batch_size
     eval_batch_size = ExperimentConfig.eval_batch_size
@@ -176,6 +177,7 @@ def trainer_main():
     checkpoint = ExperimentConfig.checkpoint
     random_seed = ExperimentConfig.random_seed
     train_tasks = ExperimentConfig.train_tasks
+    monitor_metric = ExperimentConfig.monitor_metric
 
     ds = AmazonDataset.load()
 
@@ -230,8 +232,8 @@ def trainer_main():
         eval_batch_size=eval_batch_size,
         random_seed=random_seed,
         train_sampling_fn=sampling_fn,
-        monitor_strategy="metric",
-        output_name=ExperimentConfig.exp_name
+        monitor_strategy=monitor_metric,
+        output_name=exp_name
     )
 
     # no validation at the moment
