@@ -14,7 +14,7 @@ from src import MODELS_DIR, ExperimentConfig
 from src.evaluate.evaluator import RecEvaluator
 from src.utils import log_wandb
 from src.data.amazon_dataset import AmazonDataset
-from src.data.templates import Task
+from src.data.templates import Task, SequentialTask
 from src.evaluate.metrics import Hit
 from src.model.t5 import T5FineTuned
 
@@ -214,7 +214,8 @@ def trainer_main():
         n_users=len(all_unique_users),
         training_tasks=train_task_list,
         all_unique_labels=all_unique_labels,
-        device=device
+        device=device,
+        eval_task=SequentialTask().force_template(0)  # validation task
     )
 
     trainer = RecTrainer(
@@ -230,7 +231,7 @@ def trainer_main():
     )
 
     # no validation at the moment
-    trainer.train(train)
+    trainer.train(train, validation_dataset=val)
 
     # eval
     evaluator = RecEvaluator(rec_model, eval_batch_size)
