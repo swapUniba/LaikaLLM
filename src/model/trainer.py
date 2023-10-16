@@ -176,6 +176,10 @@ class RecTrainer:
             "train/best_epoch": best_epoch
         })
 
+        # load best model if validation was set, otherwise this loads the model
+        # of the last epoch
+        return self.rec_model.__class__.load_pretrained(self.output_path)
+
 
 def trainer_main():
 
@@ -247,7 +251,7 @@ def trainer_main():
     )
 
     # no validation at the moment
-    trainer.train(train, validation_dataset=val)
+    rec_model = trainer.train(train, validation_dataset=val)
 
     # eval
     evaluator = RecEvaluator(rec_model, eval_batch_size)
