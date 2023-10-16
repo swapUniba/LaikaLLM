@@ -176,9 +176,9 @@ class RecTrainer:
             "train/best_epoch": best_epoch
         })
 
-        # load best model if validation was set, otherwise this loads the model
-        # of the last epoch
-        return self.rec_model.__class__.from_pretrained(self.output_path)
+        # return best model path if validation was set, otherwise this return the path of the model
+        # saved at the last epoch
+        return self.output_path
 
 
 def trainer_main():
@@ -250,7 +250,15 @@ def trainer_main():
         output_name=exp_name
     )
 
-    rec_model = trainer.train(train, validation_dataset=val)
+    best_rec_model_path = trainer.train(train, validation_dataset=val)
+
+    rec_model = T5FineTuned.from_pretrained(
+        best_rec_model_path,
+        n_users=len(all_unique_users),
+        training_tasks=train_task_list,
+        all_unique_labels=all_unique_labels,
+        device=device
+    )
 
     # eval
     evaluator = RecEvaluator(rec_model, eval_batch_size)
