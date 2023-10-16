@@ -1,7 +1,9 @@
 from __future__ import annotations
+
+import os
 import random
 import re
-from typing import List
+from typing import List, Union, Optional, Callable
 
 import numpy as np
 import torch
@@ -209,3 +211,32 @@ class T5FineTuned(T5ForConditionalGeneration):
         val_loss = output.loss
 
         return mapped_predictions, target_text, val_loss
+
+    def save_pretrained(
+        self,
+        save_directory: Union[str, os.PathLike],
+        is_main_process: bool = True,
+        state_dict: Optional[dict] = None,
+        save_function: Callable = torch.save,
+        push_to_hub: bool = False,
+        max_shard_size: Union[int, str] = "10GB",
+        safe_serialization: bool = False,
+        variant: Optional[str] = None,
+        token: Optional[Union[str, bool]] = None,
+        save_peft_format: bool = True,
+        **kwargs,
+    ):
+
+        super().save_pretrained(save_directory=save_directory,
+                                is_main_process=is_main_process,
+                                state_dict=state_dict,
+                                save_function=save_function,
+                                push_to_hub=push_to_hub,
+                                max_shard_size=max_shard_size,
+                                safe_serialization=safe_serialization,
+                                variant=variant,
+                                token=token,
+                                save_peft_format=save_peft_format,
+                                **kwargs)
+
+        self.tokenizer.save_pretrained(save_directory=save_directory)
