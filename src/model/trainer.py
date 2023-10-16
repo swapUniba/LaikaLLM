@@ -200,7 +200,7 @@ def trainer_main():
     all_unique_users = ds.all_users
 
     train = ds_dict["train"]
-    val = ds_dict["validation"]
+    val = ds_dict["validation"] if monitor_metric != "no" else None
     test = ds_dict["test"]
 
     # REDUCE FOR TESTING
@@ -250,7 +250,6 @@ def trainer_main():
         output_name=exp_name
     )
 
-    # no validation at the moment
     rec_model = trainer.train(train, validation_dataset=val)
 
     # eval
