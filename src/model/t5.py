@@ -17,6 +17,26 @@ from src.data.templates import Task
 # sim_model = SentenceTransformer('all-MiniLM-L6-v2', device="cuda:0")
 
 
+class UserEmbeds(nn.Module):
+
+    def __init__(self, n_users, dim_model):
+        super().__init__()
+
+        self.emb_layer = nn.Embedding(n_users, dim_model)
+
+    def __call__(self, user_idx):
+
+        x = self.emb_layer(user_idx)
+        x = nn.functional.leaky_relu(x)
+
+        # we dropout an entire column (neuron)
+        x = x.permute(1, 0)
+        x = nn.functional.dropout1d(x, p=0.6, training=self.training)
+        x = x.permute(1, 0)
+
+        return x
+
+
 class T5FineTuned(T5ForConditionalGeneration):
 
     def __init__(self,
@@ -41,16 +61,7 @@ class T5FineTuned(T5ForConditionalGeneration):
         #                                            show_progress_bar=True)
 
         # Set maximum 512 whole words in a source text
-        self.user_embeddings = nn.Sequential(
-            nn.Embedding(n_users, self.config.d_model * 2),
-            nn.Dropout(),
-            nn.LeakyReLU(),
-
-            nn.Linear(self.config.d_model * 2, self.config.d_model),
-            nn.Dropout(),
-            nn.LeakyReLU()
-        )
-        # self.relu = nn.LeakyReLU()
+        self.user_embeddings = UserEmbeds(n_users, self.config.d_model)
 
         self.post_init()
 
@@ -64,7 +75,7 @@ class T5FineTuned(T5ForConditionalGeneration):
             clip_threshold=1.0,
             decay_rate=-0.8,
             beta1=None,
-            weight_decay=0.01,
+            weight_decay=0.1,
             relative_step=False,
             scale_parameter=False,
             warmup_init=False
