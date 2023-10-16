@@ -68,6 +68,8 @@ class RecTrainer:
         start = time.time()
         for epoch in range(0, self.n_epochs):
 
+            self.rec_model.train()
+
             # at the start of each iteration, we randomly sample the train sequence and tokenize it
             shuffled_train = train_dataset.shuffle(seed=self.random_seed)
             sampled_train = shuffled_train.map(self.train_sampling_fn,
@@ -126,6 +128,8 @@ class RecTrainer:
             pbar.close()
 
             if validation_dataset is not None:
+
+                self.rec_model.eval()
 
                 validation_metric = Hit(k=10)
 
