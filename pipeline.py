@@ -4,6 +4,7 @@ import os
 from pygit2 import Repository
 
 from src import ExperimentConfig
+from src.data.amazon_dataset import data_main
 from src.data.templates import Task
 from src.model.trainer import trainer_main
 from src.utils import seed_everything, init_wandb
@@ -24,6 +25,9 @@ if __name__ == '__main__':
                         help='')
     parser.add_argument('--inject_personalization', type=str, nargs="+", default=(),
                         choices=["train", "eval"],
+                        help='',)
+    parser.add_argument('--monitor_strategy', type=str, default="no",
+                        choices=["no", "loss", "hit@10"],
                         help='',)
     parser.add_argument('--train_batch_size', type=int, default=4,
                         help='',)
@@ -70,7 +74,7 @@ if __name__ == '__main__':
 
     print("Experiment configuration:")
     # Convert the class attributes of ExperimentConfig dataclass to a dictionary
-    print({field: getattr(ExperimentConfig, field) for field in ExperimentConfig.__annotations__})
+    print(ExperimentConfig.to_dict())
 
     seed_everything(ExperimentConfig.random_seed)
 
@@ -83,4 +87,5 @@ if __name__ == '__main__':
     dict_args["git_branch"] = Repository('.').head.shorthand  # 'master'
 
     with init_wandb(project="P5-Thesis", name=ExperimentConfig.exp_name, config=dict_args):
+        data_main()
         trainer_main()

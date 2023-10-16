@@ -1,6 +1,9 @@
 from __future__ import annotations
+
+import os
 import random
-from typing import List
+import re
+from typing import List, Union, Optional, Callable
 
 import numpy as np
 import torch
@@ -16,10 +19,31 @@ from src.data.templates import Task
 # sim_model = SentenceTransformer('all-MiniLM-L6-v2', device="cuda:0")
 
 
+class UserEmbeds(nn.Module):
+
+    def __init__(self, n_users, dim_model):
+        super().__init__()
+
+        self.emb_layer = nn.Embedding(n_users, dim_model)
+
+    def __call__(self, user_idx):
+
+        x = self.emb_layer(user_idx)
+        x = nn.functional.leaky_relu(x)
+
+        # we dropout an entire column (neuron)
+        x = x.permute(1, 0)
+        x = nn.functional.dropout1d(x, p=0.6, training=self.training)
+        x = x.permute(1, 0)
+
+        return x
+
+
 class T5FineTuned(T5ForConditionalGeneration):
 
     def __init__(self,
                  config,
+                 n_users: int,
                  training_tasks: List[Task],
                  all_unique_labels: np.ndarray[str],
                  eval_task: Task = None,
@@ -32,16 +56,14 @@ class T5FineTuned(T5ForConditionalGeneration):
         self.training_tasks = training_tasks
         self.eval_task = eval_task
 
+        self.n_users = n_users
         self.all_unique_labels = all_unique_labels
         # self.encoded_all_labels = sim_model.encode(list(self.all_unique_labels),
         #                                            convert_to_tensor=True,
         #                                            show_progress_bar=True)
 
         # Set maximum 512 whole words in a source text
-        self.whole_word_embeddings = nn.Embedding(
-            512, self.config.d_model,  # config.d_model is 768 for base
-        ).to(device)
-        # self.relu = nn.LeakyReLU()
+        self.user_embeddings = UserEmbeds(n_users, self.config.d_model)
 
         self.post_init()
 
@@ -55,7 +77,7 @@ class T5FineTuned(T5ForConditionalGeneration):
             clip_threshold=1.0,
             decay_rate=-0.8,
             beta1=None,
-            weight_decay=0.0,
+            weight_decay=0.1,
             relative_step=False,
             scale_parameter=False,
             warmup_init=False
@@ -83,6 +105,7 @@ class T5FineTuned(T5ForConditionalGeneration):
         whole_word_ids[~special_token_mask] += 1
         whole_word_ids[special_token_mask] = self.tokenizer.pad_token_id
 
+        encoded_sequence["user_idx"] = int(re.search(r"\d+", sample["user_id"]).group())
         encoded_sequence["whole_word_ids"] = whole_word_ids.tolist()
         encoded_sequence["target_item"] = sample["target_item"]
 
@@ -99,6 +122,7 @@ class T5FineTuned(T5ForConditionalGeneration):
                                       batch_first=True,
                                       padding_value=self.tokenizer.pad_token_id)
 
+        input_dict["user_idx"] = batch["user_idx"].to(self.device)
         input_dict["input_ids"] = input_ids.to(self.device)
         input_dict["attention_mask"] = attention_mask.to(self.device)
         input_dict["whole_word_ids"] = whole_word_ids.to(self.device)
@@ -114,12 +138,17 @@ class T5FineTuned(T5ForConditionalGeneration):
 
         return input_dict
 
-    def _inject_personalization(self, token_inputs_embeds: Tensor, whole_word_ids: Tensor):
+    def _inject_personalization(self, token_inputs_embeds: Tensor, user_idxs: Tensor):
 
-        whole_word_embeds = self.whole_word_embeddings(whole_word_ids)
+        # whole_word_embeds = self.whole_word_embeddings(whole_word_ids)
+        # # whole_word_embeds = self.relu(whole_word_embeds)
+        # assert whole_word_embeds.shape[-1] == token_inputs_embeds.shape[-1]
+        # inputs_embeds = token_inputs_embeds + whole_word_embeds
+
+        # user idxs start from 1, TO IMPROVE!
+        user_embeds = self.user_embeddings(user_idxs - 1).unsqueeze(axis=1)
         # whole_word_embeds = self.relu(whole_word_embeds)
-        assert whole_word_embeds.shape[-1] == token_inputs_embeds.shape[-1]
-        inputs_embeds = token_inputs_embeds + whole_word_embeds
+        inputs_embeds = token_inputs_embeds + user_embeds
 
         return inputs_embeds
 
@@ -127,8 +156,8 @@ class T5FineTuned(T5ForConditionalGeneration):
 
         inputs_embeds = self.shared(batch["input_ids"])  # embedding step - add HERE
 
-        if "whole_word_ids" in batch and "train" in ExperimentConfig.inject_personalization:
-            inputs_embeds = self._inject_personalization(inputs_embeds, batch["whole_word_ids"])
+        if "train" in ExperimentConfig.inject_personalization:
+            inputs_embeds = self._inject_personalization(inputs_embeds, batch["user_idx"])
 
         output = self(inputs_embeds=inputs_embeds,
                       attention_mask=batch["attention_mask"],
@@ -152,9 +181,8 @@ class T5FineTuned(T5ForConditionalGeneration):
         target_text = batch.pop("target_item")
 
         inputs_embeds = self.shared(batch["input_ids"])
-        if "whole_word_ids" in batch and "eval" in ExperimentConfig.inject_personalization:
-            whole_word_ids = batch.pop("whole_word_ids")
-            inputs_embeds = self._inject_personalization(inputs_embeds, whole_word_ids)
+        if "eval" in ExperimentConfig.inject_personalization:
+            inputs_embeds = self._inject_personalization(inputs_embeds, batch["user_idx"])
 
         output = self(inputs_embeds=inputs_embeds,
                       attention_mask=batch["attention_mask"],
@@ -183,3 +211,32 @@ class T5FineTuned(T5ForConditionalGeneration):
         val_loss = output.loss
 
         return mapped_predictions, target_text, val_loss
+
+    def save_pretrained(
+        self,
+        save_directory: Union[str, os.PathLike],
+        is_main_process: bool = True,
+        state_dict: Optional[dict] = None,
+        save_function: Callable = torch.save,
+        push_to_hub: bool = False,
+        max_shard_size: Union[int, str] = "10GB",
+        safe_serialization: bool = False,
+        variant: Optional[str] = None,
+        token: Optional[Union[str, bool]] = None,
+        save_peft_format: bool = True,
+        **kwargs,
+    ):
+
+        super().save_pretrained(save_directory=save_directory,
+                                is_main_process=is_main_process,
+                                state_dict=state_dict,
+                                save_function=save_function,
+                                push_to_hub=push_to_hub,
+                                max_shard_size=max_shard_size,
+                                safe_serialization=safe_serialization,
+                                variant=variant,
+                                token=token,
+                                save_peft_format=save_peft_format,
+                                **kwargs)
+
+        self.tokenizer.save_pretrained(save_directory=save_directory)

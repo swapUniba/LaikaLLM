@@ -14,7 +14,7 @@ from src import MODELS_DIR, ExperimentConfig
 from src.evaluate.evaluator import RecEvaluator
 from src.utils import log_wandb
 from src.data.amazon_dataset import AmazonDataset
-from src.data.templates import Task
+from src.data.templates import Task, SequentialTask
 from src.evaluate.metrics import Hit
 from src.model.t5 import T5FineTuned
 
@@ -28,7 +28,7 @@ class RecTrainer:
                  all_labels: np.ndarray,
                  train_sampling_fn: Callable[[Dict], Dict],
                  device: str = 'cuda:0',
-                 monitor_strategy: Literal['loss', 'metric'] = 'metric',
+                 monitor_strategy: Literal['loss', 'hit@10'] = 'loss',
                  eval_batch_size: Optional[int] = None,
                  output_name: Optional[str] = None,
                  random_seed: Optional[int] = None):
@@ -67,6 +67,8 @@ class RecTrainer:
 
         start = time.time()
         for epoch in range(0, self.n_epochs):
+
+            self.rec_model.train()
 
             # at the start of each iteration, we randomly sample the train sequence and tokenize it
             shuffled_train = train_dataset.shuffle(seed=self.random_seed)
@@ -118,14 +120,16 @@ class RecTrainer:
 
             train_loss /= total_n_batch
 
-            log_wandb({
-                "train/loss": train_loss,
-                "train/epoch": epoch + 1
-            })
-
             pbar.close()
 
+            dict_to_log = {
+                "train/loss": train_loss,
+                "train/epoch": epoch + 1
+            }
+
             if validation_dataset is not None:
+
+                self.rec_model.eval()
 
                 validation_metric = Hit(k=10)
 
@@ -138,19 +142,29 @@ class RecTrainer:
                     monitor_val = val_result["loss"]
                     should_save = monitor_val < best_val_monitor_result  # we want loss to decrease
                 else:
-                    metric_obj, monitor_val = val_result[str(validation_metric)]
-                    monitor_str = str(metric_obj)
-                    should_save = monitor_val > best_val_monitor_result  # we want metric (acc/hit) to increase
+                    monitor_str = str(validation_metric)
+                    monitor_val = val_result[monitor_str]
+                    should_save = monitor_val > best_val_monitor_result  # we want metric (hit) to increase
 
                 # we save the best model based on the reference metric result
                 if should_save:
                     best_epoch = epoch + 1  # we start from 0
                     best_val_monitor_result = monitor_val
-                    self.rec_model.save(self.output_path)
+                    self.rec_model.save_pretrained(self.output_path)
 
                     print(f"{monitor_str} improved, model saved into {self.output_path}!")
+
+                # prefix "val" for val result dict
+                val_to_log = {f"val/{metric_name}": metric_val for metric_name, metric_val in val_result.items()}
+                val_to_log["val/epoch"] = epoch + 1
+
+                dict_to_log.update(val_to_log)
+
             else:
                 self.rec_model.save_pretrained(self.output_path)
+
+            # log to wandb
+            log_wandb(dict_to_log)
 
         elapsed_time = (time.time() - start) / 60
         print(" Train completed! Check models saved into 'models' dir ".center(100, "*"))
@@ -162,9 +176,14 @@ class RecTrainer:
             "train/best_epoch": best_epoch
         })
 
+        # return best model path if validation was set, otherwise this return the path of the model
+        # saved at the last epoch
+        return self.output_path
+
 
 def trainer_main():
 
+    exp_name = ExperimentConfig.exp_name
     n_epochs = ExperimentConfig.n_epochs
     batch_size = ExperimentConfig.train_batch_size
     eval_batch_size = ExperimentConfig.eval_batch_size
@@ -172,14 +191,16 @@ def trainer_main():
     checkpoint = ExperimentConfig.checkpoint
     random_seed = ExperimentConfig.random_seed
     train_tasks = ExperimentConfig.train_tasks
+    monitor_metric = ExperimentConfig.monitor_strategy
 
     ds = AmazonDataset.load()
 
     ds_dict = ds.get_hf_datasets()
     all_unique_labels = ds.all_items
+    all_unique_users = ds.all_users
 
     train = ds_dict["train"]
-    val = ds_dict["validation"]
+    val = ds_dict["validation"] if monitor_metric != "no" else None
     test = ds_dict["test"]
 
     # REDUCE FOR TESTING
@@ -210,9 +231,11 @@ def trainer_main():
 
     rec_model = T5FineTuned.from_pretrained(
         checkpoint,
+        n_users=len(all_unique_users),
         training_tasks=train_task_list,
         all_unique_labels=all_unique_labels,
-        device=device
+        device=device,
+        eval_task=SequentialTask().force_template(0)  # validation task
     )
 
     trainer = RecTrainer(
@@ -223,12 +246,19 @@ def trainer_main():
         eval_batch_size=eval_batch_size,
         random_seed=random_seed,
         train_sampling_fn=sampling_fn,
-        monitor_strategy="loss",
-        output_name=ExperimentConfig.exp_name
+        monitor_strategy=monitor_metric,
+        output_name=exp_name
     )
 
-    # no validation at the moment
-    trainer.train(train)
+    best_rec_model_path = trainer.train(train, validation_dataset=val)
+
+    rec_model = T5FineTuned.from_pretrained(
+        best_rec_model_path,
+        n_users=len(all_unique_users),
+        training_tasks=train_task_list,
+        all_unique_labels=all_unique_labels,
+        device=device
+    )
 
     # eval
     evaluator = RecEvaluator(rec_model, eval_batch_size)
@@ -261,4 +291,7 @@ def trainer_main():
 
 
 if __name__ == "__main__":
+
+    ExperimentConfig.inject_personalization = ("train", "eval")
+
     trainer_main()
