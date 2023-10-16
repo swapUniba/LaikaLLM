@@ -230,7 +230,7 @@ def trainer_main():
         eval_batch_size=eval_batch_size,
         random_seed=random_seed,
         train_sampling_fn=sampling_fn,
-        monitor_strategy="loss",
+        monitor_strategy="metric",
         output_name=ExperimentConfig.exp_name
     )
 
