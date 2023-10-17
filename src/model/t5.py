@@ -24,8 +24,7 @@ class UserEmbeds(nn.Module):
     def __init__(self, n_users, dim_model):
         super().__init__()
 
-        self.emb_layer = nn.Embedding(n_users, dim_model * 2)
-        self.linear_layer = nn.Linear(dim_model * 2, dim_model)
+        self.emb_layer = nn.Embedding(n_users, dim_model)
 
     def __call__(self, user_idx):
 
@@ -33,19 +32,10 @@ class UserEmbeds(nn.Module):
 
         # we dropout an entire column (neuron)
         x = x.permute(1, 0)
-        x = nn.functional.dropout1d(x, p=0.6, training=self.training)
+        x = nn.functional.dropout1d(x, p=0.2, training=self.training)
         x = x.permute(1, 0)
 
-        x = nn.functional.leaky_relu(x)
-
-        x = self.linear_layer(x)
-
-        # we dropout an entire column (neuron)
-        x = x.permute(1, 0)
-        x = nn.functional.dropout1d(x, p=0.6, training=self.training)
-        x = x.permute(1, 0)
-
-        x = nn.functional.leaky_relu(x)
+        x = nn.functional.relu(x)
 
         return x
 
