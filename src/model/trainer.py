@@ -1,6 +1,7 @@
 import os
 import time
 from collections import defaultdict
+from copy import deepcopy
 from math import ceil
 from typing import Optional, Literal, Callable, Dict
 
@@ -235,7 +236,7 @@ def trainer_main():
         training_tasks=train_task_list,
         all_unique_labels=all_unique_labels,
         device=device,
-        eval_task=train_task_list[0].force_template(0)  # validation task
+        eval_task=deepcopy(train_task_list[0]).force_template(0)  # validation task
     )
 
     trainer = RecTrainer(
