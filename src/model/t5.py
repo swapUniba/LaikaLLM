@@ -67,8 +67,6 @@ class T5FineTuned(T5ForConditionalGeneration):
         # Set maximum 512 whole words in a source text
         self.user_embeddings = UserEmbeds(n_users, self.config.d_model)
 
-        self.post_init()
-
         self.to(device)
 
     def get_suggested_optimizer(self):
@@ -148,7 +146,7 @@ class T5FineTuned(T5ForConditionalGeneration):
         # inputs_embeds = token_inputs_embeds + whole_word_embeds
 
         # user idxs start from 1, TO IMPROVE!
-        user_embeds = self.user_embeddings(user_idxs - 1).unsqueeze(axis=1)
+        user_embeds = self.user_embeddings(user_idxs - 1).unsqueeze(dim=1)
         # whole_word_embeds = self.relu(whole_word_embeds)
         inputs_embeds = token_inputs_embeds + user_embeds
 
