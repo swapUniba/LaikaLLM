@@ -99,6 +99,10 @@ class AmazonDataset:
                 imurl = meta_dict[item_idx].get("imUrl", "!No imurl!")
                 brand = meta_dict[item_idx].get("brand", "!No brand!")
 
+                # we avoid the "Toys & Games" category which is in common by all items
+                if len(item_categories) > 1:
+                    item_categories = item_categories[1:]
+
                 categories_list.append(item_categories)
                 title_list.append(title)
                 price_list.append(str(price))
