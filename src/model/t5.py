@@ -25,11 +25,6 @@ class UserEmbeds(nn.Module):
         super().__init__()
 
         self.emb_layer = nn.Embedding(n_users, dim_model)
-        torch.nn.init.xavier_uniform(self.emb_layer.weight)
-
-        self.layer_norm = nn.LayerNorm(dim_model)
-        nn.init.ones_(self.layer_norm.weight)  # Initialize gamma to 1
-        nn.init.zeros_(self.layer_norm.bias)  # Initialize beta to 0
 
     def __call__(self, user_idx):
 
@@ -37,12 +32,10 @@ class UserEmbeds(nn.Module):
 
         # we dropout an entire column (neuron)
         x = x.permute(1, 0)
-        x = nn.functional.dropout1d(x, p=0.5, training=self.training)
+        x = nn.functional.dropout1d(x, p=0.2, training=self.training)
         x = x.permute(1, 0)
 
-        x = nn.functional.leaky_relu(x)
-
-        x = self.layer_norm(x)
+        x = nn.functional.relu(x)
 
         return x
 
@@ -154,7 +147,7 @@ class T5FineTuned(T5ForConditionalGeneration):
         # inputs_embeds = token_inputs_embeds + whole_word_embeds
 
         # user idxs start from 1, TO IMPROVE!
-        user_embeds = self.user_embeddings(user_idxs - 1).unsqueeze(dim=1)
+        user_embeds = self.user_embeddings(user_idxs - 1).unsqueeze(axis=1)
         # whole_word_embeds = self.relu(whole_word_embeds)
         inputs_embeds = token_inputs_embeds + user_embeds
 
