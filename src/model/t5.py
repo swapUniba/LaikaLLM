@@ -25,6 +25,7 @@ class UserEmbeds(nn.Module):
         super().__init__()
 
         self.emb_layer = nn.Embedding(n_users, dim_model)
+        torch.nn.init.xavier_uniform_(self.emb_layer.weight)
 
     def __call__(self, user_idx):
 
