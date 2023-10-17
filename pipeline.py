@@ -76,8 +76,6 @@ if __name__ == '__main__':
     # Convert the class attributes of ExperimentConfig dataclass to a dictionary
     print(ExperimentConfig.to_dict())
 
-    seed_everything(ExperimentConfig.random_seed)
-
     # log env variables needed for reproducibility to args which will be logged to wandb
     dict_args["PYTHONHASHSEED"] = os.environ["PYTHONHASHSEED"]
     dict_args["CUBLAS_WORKSPACE_CONFIG"] = os.environ["CUBLAS_WORKSPACE_CONFIG"]
@@ -87,5 +85,11 @@ if __name__ == '__main__':
     dict_args["git_branch"] = Repository('.').head.shorthand  # 'master'
 
     with init_wandb(project="P5-Thesis", name=ExperimentConfig.exp_name, config=dict_args):
+
+        # at start of each main phase, we re-initialize the state
+        seed_everything(ExperimentConfig.random_seed)
         data_main()
+
+        # at start of each main phase, we re-initialize the state
+        seed_everything(ExperimentConfig.random_seed)
         trainer_main()
