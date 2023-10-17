@@ -72,7 +72,7 @@ class RecTrainer:
             self.rec_model.train()
 
             # at the start of each iteration, we randomly sample the train sequence and tokenize it
-            shuffled_train = train_dataset.shuffle(seed=self.random_seed)
+            shuffled_train = train_dataset.shuffle()
             sampled_train = shuffled_train.map(self.train_sampling_fn,
                                                remove_columns=train_dataset.column_names,
                                                keep_in_memory=True,
