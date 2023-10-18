@@ -152,7 +152,7 @@ class SequentialTask(Task):
 class SequentialSideInfoTask(Task):
     templates_dict = {
         0: PromptTarget(
-            input_prompt="sequential_rec_side_info for {}: \n\n"
+            input_prompt="srec - {}: \n\n"
                          "Predict for the user the next element of the following sequence -> \n"
                          "{} \n"
                          "The category of each element of the sequence is -> \n"
@@ -160,7 +160,7 @@ class SequentialSideInfoTask(Task):
             target_text="{}"
         ),
         1: PromptTarget(
-            input_prompt="sequential_rec_side_info for {}: \n\n"
+            input_prompt="srec - {}: \n\n"
                          "Predict the next element which the user will buy given the following order history -> \n"
                          "{} \n"
                          "Each item bought belongs to these categories (in order) -> \n"
@@ -168,7 +168,7 @@ class SequentialSideInfoTask(Task):
             target_text="{}"
         ),
         2: PromptTarget(
-            input_prompt="sequential_rec_side_info for {}: \n\n"
+            input_prompt="srec - {}: \n\n"
                          "What is the element that should be recommended to the user knowing that it has bought -> \n"
                          "{} \n"
                          "Categories of the items are -> \n"
@@ -176,7 +176,7 @@ class SequentialSideInfoTask(Task):
             target_text="{}"
         ),
         3: PromptTarget(
-            input_prompt="sequential_rec_side_info for {}: \n\n"
+            input_prompt="srec - {}: \n\n"
                          "Recommend to the user an item from the catalog given its order history -> \n"
                          "{} \n"
                          "Each item of the order history belongs to the following categories (in order) -> \n"
@@ -184,7 +184,7 @@ class SequentialSideInfoTask(Task):
             target_text="{}"
         ),
         4: PromptTarget(
-            input_prompt="sequential_rec_side_info for {}: \n\n"
+            input_prompt="srec - {}: \n\n"
                          "This is the order history of the user -> \n"
                          "{} \n"
                          "These are the categories of each item -> \n"
@@ -193,7 +193,7 @@ class SequentialSideInfoTask(Task):
             target_text="{}"
         ),
         5: PromptTarget(
-            input_prompt="sequential_rec_side_info for {}: \n\n"
+            input_prompt="srec - {}: \n\n"
                          "Please predict what item is best to recommend to the user given its order history -> \n"
                          "{} \n"
                          "Categories of each item -> \n"
