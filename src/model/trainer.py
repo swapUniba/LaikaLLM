@@ -239,6 +239,9 @@ def trainer_main():
         eval_task=deepcopy(train_task_list[0]).force_template(0)  # validation task
     )
 
+    rec_model.tokenizer.add_tokens(["item", "user"])
+    rec_model.resize_token_embeddings(len(rec_model.tokenizer))
+
     trainer = RecTrainer(
         rec_model=rec_model,
         n_epochs=n_epochs,
