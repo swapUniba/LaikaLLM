@@ -46,9 +46,16 @@ class Task(ABC):
     def eval(cls):
         Task.training = False
 
-    @property
-    def all_templates(self):
-        return list(self.templates_dict.values())
+    def all_templates(self, return_id: bool = False):
+        return list(self.templates_dict.keys()) if return_id else list(self.templates_dict.values())
+
+    @abstractmethod
+    def valid_templates(self, return_id: bool = False):
+        raise NotImplementedError
+
+    @abstractmethod
+    def support_templates(self, return_id: bool = False):
+        raise NotImplementedError
 
     def force_template(self, force_template_id: int):
 
@@ -142,6 +149,12 @@ class SequentialTask(Task):
         )
     }
 
+    def valid_templates(self, return_id: bool = True):
+        return self.all_templates(return_id)
+
+    def support_templates(self, return_id: bool = True):
+        return []
+
     @Task.validate_args("user_id", "input_item_seq", "target_item")
     def __call__(self, **kwargs):
         user_id = kwargs["user_id"]
@@ -149,7 +162,7 @@ class SequentialTask(Task):
         target_item = kwargs["target_item"]
 
         # random.choice applied to dict with int key returns a value
-        input_prompt, target = random.choice(self.all_templates)
+        input_prompt, target = random.choice(self.all_templates())
 
         # random select of string separator for titles sequence and the prompt to use
         separator = " , " if random.getrandbits(1) else " ; "
@@ -203,6 +216,12 @@ class SequentialSideInfoTask(Task):
         )
     }
 
+    def valid_templates(self, return_id: bool = True):
+        return self.all_templates(return_id)
+
+    def support_templates(self, return_id: bool = True):
+        return []
+
     @Task.validate_args("user_id", "input_item_seq", "input_categories_seq", "target_item")
     def __call__(self, **kwargs):
         user_id = kwargs["user_id"]
@@ -214,7 +233,7 @@ class SequentialSideInfoTask(Task):
         reduced_categories = [random.choice(categories) for categories in input_categories_seq]
 
         # random.choice applied to dict with int key returns a value
-        input_prompt, target = random.choice(self.all_templates)
+        input_prompt, target = random.choice(self.all_templates())
 
         # random select of string separator for titles sequence and the prompt to use
         separator = " , " if random.getrandbits(1) else " ; "
@@ -243,12 +262,12 @@ class DirectSideInfoTask(Task):
         2: PromptTarget(
             input_prompt="direct recommendation - {}: \n\n"
                          "What is the item that should be recommended to the user? It likes "
-                         "these categories -> {} \n",
+                         "these categories -> {}",
             target_text="{}"
         ),
         3: PromptTarget(
             input_prompt="direct recommendation - {}: \n\n"
-                         "Select an item to present to the user given the categories that it likes -> {} \n",
+                         "Select an item to present to the user given the categories that it likes -> {}",
             target_text="{}"
         ),
         4: PromptTarget(
@@ -260,22 +279,39 @@ class DirectSideInfoTask(Task):
         5: PromptTarget(
             input_prompt="direct recommendation - {}: \n\n"
                          "Please predict what item is best to recommend to the user. The categories that it likes "
-                         "are -> {} \n",
+                         "are -> {}",
             target_text="{}"
         )
     }
 
-    @Task.validate_args("user_id", "input_item_seq", "input_categories_seq", "target_item")
+    def valid_templates(self, return_id: bool = True):
+        return self.all_templates(return_id)[:5]
+
+    def support_templates(self, return_id: bool = True):
+        return []
+
+    @Task.validate_args("user_id", "input_item_seq", "input_categories_seq", "target_item", "target_categories")
     def __call__(self, **kwargs):
         user_id = kwargs["user_id"]
+        input_item_seq = kwargs["input_item_seq"]
         input_categories_seq = kwargs["input_categories_seq"]
+        target_categories = kwargs["target_categories"]
         target_item = kwargs["target_item"]
+
+        if self.training:
+            input_item_seq = input_item_seq + [target_item]
+            input_categories_seq = input_categories_seq + [target_categories]
+
+            target_idx = random.randint(0, len(input_item_seq))
+
+            target_item = input_item_seq.pop(target_idx)
+            target_categories = input_categories_seq.pop(target_idx)
 
         # we use only unique categories
         unique_categories = np.unique(list(itertools.chain.from_iterable(input_categories_seq)))
 
         # random.choice applied to dict with int key returns a value
-        input_prompt, target = random.choice(self.all_templates)
+        input_prompt, target = random.choice(self.all_templates())
 
         # random select of string separator for titles sequence and the prompt to use
         separator = " , " if random.getrandbits(1) else " ; "
