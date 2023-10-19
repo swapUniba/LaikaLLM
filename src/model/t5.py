@@ -240,3 +240,18 @@ class T5FineTuned(T5ForConditionalGeneration):
                                 **kwargs)
 
         self.tokenizer.save_pretrained(save_directory=save_directory)
+
+    def train(self, mode: bool = True):
+
+        if mode is True:
+            Task.train()
+        else:
+            Task.eval()
+
+        return super().train(mode)
+
+    def eval(self):
+
+        Task.eval()
+
+        return super().eval()

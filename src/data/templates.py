@@ -31,10 +31,20 @@ class Task(ABC):
     templates_dict = {}
     # name obj class mapping, used for when task must be initialized from strings
     str_alias_obj: dict = CaseInsensitiveDict()
+    # class attribute since if the model is in training mode, all tasks should be in training mode
+    training = False
 
     # automatically called on subclass definition, will populate the str_alias_obj dict
     def __init_subclass__(cls, **kwargs):
         cls.str_alias_obj[cls.__name__] = cls
+
+    @classmethod
+    def train(cls):
+        Task.training = True
+
+    @classmethod
+    def eval(cls):
+        Task.training = False
 
     @property
     def all_templates(self):
