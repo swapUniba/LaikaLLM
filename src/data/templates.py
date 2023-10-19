@@ -302,7 +302,7 @@ class DirectSideInfoTask(Task):
             input_item_seq = input_item_seq + [target_item]
             input_categories_seq = input_categories_seq + [target_categories]
 
-            target_idx = random.randint(0, len(input_item_seq))
+            target_idx = random.randint(0, len(input_item_seq) - 1)
 
             target_item = input_item_seq.pop(target_idx)
             target_categories = input_categories_seq.pop(target_idx)
