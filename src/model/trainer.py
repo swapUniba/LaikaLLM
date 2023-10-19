@@ -263,7 +263,7 @@ def trainer_main():
 
     # eval
     evaluator = RecEvaluator(rec_model, eval_batch_size)
-    metric_list = [Hit(k=10), Hit(k=5)]
+    metric_list = [Hit(k=10), Hit(k=5), Hit(k=1)]
     cumulative_results = defaultdict(list)
     for task in train_task_list:
         for template_id in task.templates_dict.keys():
