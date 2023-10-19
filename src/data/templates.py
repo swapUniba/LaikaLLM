@@ -246,6 +246,69 @@ class SequentialSideInfoTask(Task):
         return input_text, target_text
 
 
+class DirectTask(Task):
+    templates_dict = {
+        0: PromptTarget(
+            input_prompt="direct recommendation - {}: \n\n"
+                         "Pick an item from the catalog likely to be bought by the user",
+            target_text="{}"
+        ),
+        1: PromptTarget(
+            input_prompt="direct recommendation - {}: \n\n"
+                         "Recommend an item to the user",
+            target_text="{}"
+        ),
+        2: PromptTarget(
+            input_prompt="direct recommendation - {}: \n\n"
+                         "What is the item that should be recommended to the user?",
+            target_text="{}"
+        ),
+        3: PromptTarget(
+            input_prompt="direct recommendation - {}: \n\n"
+                         "Select an item to present to the user",
+            target_text="{}"
+        ),
+        4: PromptTarget(
+            input_prompt="direct recommendation - {}: \n\n"
+                         "Please recommend an item that the user will buy",
+            target_text="{}"
+        ),
+        5: PromptTarget(
+            input_prompt="direct recommendation - {}: \n\n"
+                         "Please predict what item is best to recommend to the user",
+            target_text="{}"
+        )
+    }
+
+    def valid_templates(self, return_id: bool = True):
+        return self.all_templates(return_id)[:5]
+
+    def support_templates(self, return_id: bool = True):
+        return []
+
+    @Task.validate_args("user_id", "input_item_seq", "target_item")
+    def __call__(self, **kwargs):
+        user_id = kwargs["user_id"]
+        input_item_seq = kwargs["input_item_seq"]
+        target_item = kwargs["target_item"]
+
+        if self.training:
+            input_item_seq = input_item_seq + [target_item]
+
+            target_idx = random.randint(0, len(input_item_seq) - 1)
+
+            target_item = input_item_seq.pop(target_idx)
+
+        # random.choice applied to dict with int key returns a value
+        input_prompt, target = random.choice(self.all_templates())
+
+        input_text = input_prompt.format(user_id)
+        target_text = target.format(target_item)
+
+        return input_text, target_text
+
+
+
 class DirectSideInfoTask(Task):
     templates_dict = {
         0: PromptTarget(
