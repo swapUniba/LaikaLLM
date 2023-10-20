@@ -212,7 +212,7 @@ def trainer_main():
     sampling_fn = ds.sample_train_sequence
 
     # from strings to objects initialized
-    train_task_list = Task.from_string(*train_tasks)
+    train_task_list = Task.from_string(*train_tasks, all_unique_items=all_unique_labels)
 
     # Log all templates used
     dataframe_dict = {"task_type": [], "template_id": [], "input_prompt": [], "target_text": []}

@@ -34,6 +34,9 @@ class Task(ABC):
     # class attribute since if the model is in training mode, all tasks should be in training mode
     training = False
 
+    def __init__(self, all_unique_items: np.ndarray[str]):
+        self.all_unique_items = all_unique_items
+
     # automatically called on subclass definition, will populate the str_alias_obj dict
     def __init_subclass__(cls, **kwargs):
         cls.str_alias_obj[cls.__name__] = cls
@@ -86,12 +89,12 @@ class Task(ABC):
         return decorator
 
     @classmethod
-    def from_string(cls, *task_str: str):
+    def from_string(cls, *task_str: str, all_unique_items: np.ndarray[str]):
 
         try:
             # remember, we are searching a case-insensitive dict, so we don't care about
             # lowering all keys
-            instantiated_task = [cls.str_alias_obj[task]() for task in task_str]
+            instantiated_task = [cls.str_alias_obj[task](all_unique_items) for task in task_str]
         except KeyError:
             raise KeyError("One or more task string alias does not exist!") from None
 
