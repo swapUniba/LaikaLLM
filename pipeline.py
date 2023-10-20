@@ -23,6 +23,8 @@ if __name__ == '__main__':
                         help='',)
     parser.add_argument('--integer_ids', action=argparse.BooleanOptionalAction, default=False,
                         help='')
+    parser.add_argument('--content_indexing', action=argparse.BooleanOptionalAction, default=False,
+                        help='')
     parser.add_argument('--inject_personalization', type=str, nargs="+", default=(),
                         choices=["train", "eval"],
                         help='',)

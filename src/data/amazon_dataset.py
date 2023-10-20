@@ -1,3 +1,4 @@
+from __future__ import annotations
 import gzip
 import itertools
 import json
@@ -15,6 +16,7 @@ from datasets import Dataset
 from tqdm import tqdm
 
 from src import DATA_DIR, ExperimentConfig, PROCESSED_DATA_DIR, RAW_DATA_DIR
+from src.data.indexing import main_new_indexing
 
 
 def parse(path):
@@ -28,11 +30,13 @@ class AmazonDataset:
     def __init__(self,
                  dataset_name: Literal['beauty', 'toys', 'sport'],
                  add_prefix: bool = False,
-                 integer_ids: bool = False):
+                 integer_ids: bool = False,
+                 content_indexing: bool = False):
 
         self.dataset_name = dataset_name
         self.add_prefix = add_prefix
         self.integer_ids = integer_ids
+        self.content_indexing = content_indexing
 
         user_items, item_count = self._read_sequential()
 
@@ -104,6 +108,9 @@ class AmazonDataset:
                 df_dict["brand_sequence"].append(str(brand))
 
         data_df = pd.DataFrame.from_dict(df_dict)
+
+        if self.content_indexing:
+            data_df = main_new_indexing(data_df)
 
         if self.add_prefix:
             data_df["user_id"] = "user_" + data_df["user_id"]
@@ -257,7 +264,7 @@ class AmazonDataset:
             pickle.dump(self, f)
 
     @classmethod
-    def load(cls, path: str = os.path.join(PROCESSED_DATA_DIR, "amzn_dat.pkl")):
+    def load(cls, path: str = os.path.join(PROCESSED_DATA_DIR, "amzn_dat.pkl")) -> AmazonDataset:
 
         with open(path, "rb") as f:
             obj = pickle.load(f)
@@ -269,10 +276,12 @@ def data_main():
 
     add_prefix = ExperimentConfig.add_prefix_item_users
     integer_ids = ExperimentConfig.integer_ids
+    content_indexing = ExperimentConfig.content_indexing
 
     ds = AmazonDataset(dataset_name="toys",
                        add_prefix=add_prefix,
-                       integer_ids=integer_ids)
+                       integer_ids=integer_ids,
+                       content_indexing=content_indexing)
 
     ds.save()
 
@@ -281,5 +290,6 @@ if __name__ == "__main__":
 
     ExperimentConfig.add_prefix_item_users = True
     ExperimentConfig.integer_ids = True
+    ExperimentConfig.content_indexing = True
 
     data_main()

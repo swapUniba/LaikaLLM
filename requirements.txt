@@ -8,6 +8,7 @@ wandb
 pandas
 requests
 numpy~=1.24.3
+numpy_indexed
 tqdm==4.65.0
 sentence_transformers
 datasets

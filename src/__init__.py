@@ -23,6 +23,7 @@ class ExperimentConfig:
     n_epochs: int = 10
     train_tasks: Tuple[str] = tuple(Task.str_alias_obj.keys())
     integer_ids: bool = False
+    content_indexing: bool = False
     inject_personalization: Tuple[str] = ()
     monitor_strategy: Literal['no', 'loss', 'hit@10'] = "no"
     train_batch_size: int = 4
