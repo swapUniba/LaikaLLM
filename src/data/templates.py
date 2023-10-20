@@ -218,21 +218,21 @@ class SequentialSideInfoTask(Task):
             target_text="{}"
         ),
 
-        # # boolean
-        # 6: PromptTarget(
-        #     input_prompt="srec - {}: \n\n"
-        #                  "The user has the following order history -> {} \n"
-        #                  "The categories of each item bought are -> {} \n"
-        #                  "Will the user buy {} next? (Answer with yes/no)",
-        #     target_text="{}"
-        # ),
-        #
-        # 7: PromptTarget(
-        #     input_prompt="srec - {}: \n\n"
-        #                  "The user has bought {}, and the categories of those items are {}. \n"
-        #                  "Answer with 'yes' if {} will be bought next, 'no' otherwise",
-        #     target_text="{}"
-        # )
+        # boolean
+        6: PromptTarget(
+            input_prompt="srec - {}: \n\n"
+                         "The user has the following order history -> {} \n"
+                         "The categories of each item bought are -> {} \n"
+                         "Will the user buy {} next? (Answer with yes/no)",
+            target_text="{}"
+        ),
+
+        7: PromptTarget(
+            input_prompt="srec - {}: \n\n"
+                         "The user has bought {}, and the categories of those items are {}. \n"
+                         "Answer with 'yes' if {} will be bought next, 'no' otherwise",
+            target_text="{}"
+        )
     }
 
     def valid_templates(self, return_id: bool = False):
