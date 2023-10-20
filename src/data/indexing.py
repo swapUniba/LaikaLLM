@@ -58,27 +58,33 @@ def main_new_indexing(original_data_df: pd.DataFrame):
     content_embs = encoder_model.encode(df_to_process["content"].tolist(), show_progress_bar=True)
 
     kmeans = KMeans(n_clusters=150, n_init="auto", random_state=seed)
-    res = kmeans.fit_predict(content_embs)
+    res = pd.Series(kmeans.fit_predict(content_embs), dtype=str)
 
-    re_ordered_clusters = find_closest_clusters(kmeans)
+    # re_ordered_clusters = find_closest_clusters(kmeans)
 
-    start_new_idx = 1
-    old_idxs = df_to_process["item"].values
-    new_idxs = np.full_like(old_idxs, fill_value=np.nan)
-    for cluster_idx in re_ordered_clusters:
-        mask_items = np.flatnonzero(res == cluster_idx)
-        idx_to_assign = start_new_idx + np.arange(len(mask_items))
-        new_idxs[mask_items] = idx_to_assign
+    old_idxs = df_to_process["item"]
+    new_idxs = res.str.cat(old_idxs, sep="-")
 
-        # + 1 so to avoid overlap between last item of a cluster and first item of the next cluster
-        start_new_idx = idx_to_assign[-1] + 1
+    # start_new_idx = 1
+    # old_idxs = df_to_process["item"].values
+    # new_idxs = np.full_like(old_idxs, fill_value=np.nan)
+    # for cluster_idx in re_ordered_clusters:
+    #     mask_items = np.flatnonzero(res == cluster_idx)
+    #     idx_to_assign = start_new_idx + np.arange(len(mask_items))
+    #
+    #     cat_cluster = np.char.add(np.array([f"{cluster_idx}/" for _ in range(len(idx_to_assign))]), idx_to_assign.astype(str))
+    #
+    #     new_idxs[mask_items] = cat_cluster
+    #
+    #     # + 1 so to avoid overlap between last item of a cluster and first item of the next cluster
+    #     start_new_idx = idx_to_assign[-1] + 1
 
-    old_idxs = old_idxs.astype(str)
-    new_idxs = new_idxs.astype(str)
+    # old_idxs = old_idxs.astype(str)
+    # new_idxs = new_idxs.astype(str)
 
     # original df replacement
     original_df_mask = npi.indices(old_idxs, original_data_df["item_sequence"].values)
-    new_column_original_df = pd.Series(new_idxs[original_df_mask])
+    new_column_original_df = new_idxs[original_df_mask].reset_index(drop=True)
 
     original_data_df["item_sequence"] = new_column_original_df
 
