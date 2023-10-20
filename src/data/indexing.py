@@ -60,10 +60,14 @@ def main_new_indexing(original_data_df: pd.DataFrame):
     kmeans = KMeans(n_clusters=150, n_init="auto", random_state=seed)
     res = pd.Series(kmeans.fit_predict(content_embs), dtype=str)
 
+    # wrap cluster id between <>
+    repl = lambda m: "<" + m.group(0) + ">"
+    res = res.str.replace(r"(\d+)", repl, regex=True)
+
     # re_ordered_clusters = find_closest_clusters(kmeans)
 
     old_idxs = df_to_process["item"]
-    new_idxs = res.str.cat(old_idxs, sep="-")
+    new_idxs = old_idxs.str.cat(res, sep="-")
 
     # start_new_idx = 1
     # old_idxs = df_to_process["item"].values
