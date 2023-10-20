@@ -109,6 +109,10 @@ class AmazonDataset:
 
         data_df = pd.DataFrame.from_dict(df_dict)
 
+        # start indexing from 1001 for better tokenization sentencepiece
+        data_df["item_sequence"] = data_df["item_sequence"].astype(int) + 1000
+        data_df["item_sequence"] = data_df["item_sequence"].astype(str)
+
         if self.content_indexing:
             data_df = main_new_indexing(data_df)
 
