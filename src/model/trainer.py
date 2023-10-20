@@ -275,7 +275,7 @@ def trainer_main():
     metric_list = [Hit(k=10), Hit(k=5), Hit(k=1)]
     cumulative_results = defaultdict(list)
     for task in train_task_list:
-        for template_id in task.templates_dict.keys():
+        for template_id in task.valid_templates(return_id=True):
 
             print(f"Evaluating on {task}/{template_id}")
             task.force_template(template_id)
