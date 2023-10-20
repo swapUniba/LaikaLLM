@@ -251,7 +251,10 @@ class SequentialSideInfoTask(Task):
         # using all categories is maybe too much, let's use only one category for each item in the seq
         reduced_categories = [random.choice(categories) for categories in input_categories_seq]
 
-        id_template = random.randint(0, len(self.templates_dict) - 1)
+        first_candidate_id = list(self.templates_dict.keys())[0]
+        last_candidate_id = list(self.templates_dict.keys())[-1]
+
+        id_template = random.randint(first_candidate_id, last_candidate_id)
         input_prompt, target = self.templates_dict[id_template]
 
         # random select of string separator for titles sequence and the prompt to use
