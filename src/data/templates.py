@@ -180,39 +180,39 @@ class SequentialTask(Task):
 class SequentialSideInfoTask(Task):
     templates_dict = {
         0: PromptTarget(
-            input_prompt="sequential recommendation - {}: \n\n"
+            input_prompt="srec - {}: \n\n"
                          "Predict for the user the next element of the following sequence -> {} \n"
                          "The category of each element of the sequence is -> {}",
             target_text="{}"
         ),
         1: PromptTarget(
-            input_prompt="sequential recommendation - {}: \n\n"
+            input_prompt="srec - {}: \n\n"
                          "Predict the next element which the user will buy given the following order history -> {} \n"
                          "Each item bought belongs to these categories (in order) -> {}",
             target_text="{}"
         ),
         2: PromptTarget(
-            input_prompt="sequential recommendation - {}: \n\n"
+            input_prompt="srec - {}: \n\n"
                          "What is the element that should be recommended to the user knowing that it has "
                          "bought -> {} \n"
                          "Categories of the items are -> {}",
             target_text="{}"
         ),
         3: PromptTarget(
-            input_prompt="sequential recommendation - {}: \n\n"
+            input_prompt="srec - {}: \n\n"
                          "Recommend to the user an item from the catalog given its order history -> {} \n"
                          "Each item of the order history belongs to the following categories (in order) -> {}",
             target_text="{}"
         ),
         4: PromptTarget(
-            input_prompt="sequential recommendation - {}: \n\n"
+            input_prompt="srec - {}: \n\n"
                          "This is the order history of the user -> {} \n"
                          "These are the categories of each item -> {} \n"
                          "Please recommend the next element that the user will buy",
             target_text="{}"
         ),
         5: PromptTarget(
-            input_prompt="sequential recommendation - {}: \n\n"
+            input_prompt="srec - {}: \n\n"
                          "Please predict what item is best to recommend to the user given its order history -> {} \n"
                          "Categories of each item -> {}",
             target_text="{}"
