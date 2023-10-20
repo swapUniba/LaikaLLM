@@ -216,6 +216,22 @@ class SequentialSideInfoTask(Task):
                          "Please predict what item is best to recommend to the user given its order history -> {} \n"
                          "Categories of each item -> {}",
             target_text="{}"
+        ),
+
+        # boolean
+        6: PromptTarget(
+            input_prompt="srec - {}: \n\n"
+                         "The user has the following order history -> {} \n"
+                         "The categories of each item bought are -> {} \n"
+                         "Will the user buy {} next? (Answer with yes/no)",
+            target_text="{}"
+        ),
+
+        7: PromptTarget(
+            input_prompt="srec - {}: \n\n"
+                         "The user has bought {}, and the categories of those items are {}. \n"
+                         "Answer with 'yes' if {} will be bought next, 'no' otherwise",
+            target_text="{}"
         )
     }
 
@@ -235,16 +251,28 @@ class SequentialSideInfoTask(Task):
         # using all categories is maybe too much, let's use only one category for each item in the seq
         reduced_categories = [random.choice(categories) for categories in input_categories_seq]
 
-        # random.choice applied to dict with int key returns a value
-        input_prompt, target = random.choice(self.all_templates())
+        id_template = random.randint(0, len(self.templates_dict) - 1)
+        input_prompt, target = self.templates_dict[id_template]
 
         # random select of string separator for titles sequence and the prompt to use
         separator = " , " if random.getrandbits(1) else " ; "
         order_history_str = separator.join(order_history)
         input_categories_str = separator.join(reduced_categories)
 
-        input_text = input_prompt.format(user_id, order_history_str, input_categories_str)
-        target_text = target.format(target_item)
+        if id_template < 6:
+
+            input_text = input_prompt.format(user_id, order_history_str, input_categories_str)
+            target_text = target.format(target_item)
+
+        else:
+            if random.getrandbits(1):
+                candidate_item = target_item
+                target_text = "yes"
+            else:
+                candidate_item = random.choice(self.all_unique_items[self.all_unique_items != target_item])
+                target_text = "no"
+
+            input_text = input_prompt.format(user_id, order_history_str, input_categories_str, candidate_item)
 
         return input_text, target_text
 
@@ -309,7 +337,6 @@ class DirectTask(Task):
         target_text = target.format(target_item)
 
         return input_text, target_text
-
 
 
 class DirectSideInfoTask(Task):
