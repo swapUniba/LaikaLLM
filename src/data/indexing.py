@@ -35,7 +35,7 @@ def main_new_indexing(original_data_df: pd.DataFrame):
 
     seed = ExperimentConfig.random_seed
 
-    unique_items_df = original_data_df.groupby(by="item_sequence").nth[0]
+    unique_items_df = original_data_df.groupby(by="item_sequence").nth[0].reset_index(drop=True)
 
     # we want to use description as content indicator
     content_items = unique_items_df["description_sequence"]
@@ -62,8 +62,8 @@ def main_new_indexing(original_data_df: pd.DataFrame):
 
     re_ordered_clusters = find_closest_clusters(kmeans)
 
-    start_new_idx = 1000
-    old_idxs = unique_items_df["item_sequence"].values
+    start_new_idx = 1
+    old_idxs = df_to_process["item"].values
     new_idxs = np.full_like(old_idxs, fill_value=np.nan)
     for cluster_idx in re_ordered_clusters:
         mask_items = np.flatnonzero(res == cluster_idx)
