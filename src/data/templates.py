@@ -152,10 +152,10 @@ class SequentialTask(Task):
         )
     }
 
-    def valid_templates(self, return_id: bool = True):
+    def valid_templates(self, return_id: bool = False):
         return self.all_templates(return_id)
 
-    def support_templates(self, return_id: bool = True):
+    def support_templates(self, return_id: bool = False):
         return []
 
     @Task.validate_args("user_id", "input_item_seq", "target_item")
@@ -219,11 +219,11 @@ class SequentialSideInfoTask(Task):
         )
     }
 
-    def valid_templates(self, return_id: bool = True):
-        return self.all_templates(return_id)
+    def valid_templates(self, return_id: bool = False):
+        return self.all_templates(return_id)[:6]
 
-    def support_templates(self, return_id: bool = True):
-        return []
+    def support_templates(self, return_id: bool = False):
+        return self.all_templates(return_id)[6:]
 
     @Task.validate_args("user_id", "input_item_seq", "input_categories_seq", "target_item")
     def __call__(self, **kwargs):
@@ -283,10 +283,10 @@ class DirectTask(Task):
         )
     }
 
-    def valid_templates(self, return_id: bool = True):
-        return self.all_templates(return_id)[:5]
+    def valid_templates(self, return_id: bool = False):
+        return self.all_templates(return_id)
 
-    def support_templates(self, return_id: bool = True):
+    def support_templates(self, return_id: bool = False):
         return []
 
     @Task.validate_args("user_id", "input_item_seq", "target_item")
@@ -350,10 +350,10 @@ class DirectSideInfoTask(Task):
         )
     }
 
-    def valid_templates(self, return_id: bool = True):
+    def valid_templates(self, return_id: bool = False):
         return self.all_templates(return_id)[:5]
 
-    def support_templates(self, return_id: bool = True):
+    def support_templates(self, return_id: bool = False):
         return []
 
     @Task.validate_args("user_id", "input_item_seq", "input_categories_seq", "target_item", "target_categories")
