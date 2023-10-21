@@ -56,10 +56,6 @@ class Task(ABC):
     def valid_templates(self, return_id: bool = False):
         raise NotImplementedError
 
-    @abstractmethod
-    def support_templates(self, return_id: bool = False):
-        raise NotImplementedError
-
     def force_template(self, force_template_id: int):
 
         # 'self.__class__' so that even if we call multiple times this method on an instantiated task,
@@ -234,14 +230,37 @@ class SequentialSideInfoTask(Task):
                          "Choose an item to recommend to the user selecting from: \n"
                          "{}",
             target_text="{}"
+        ),
+
+        # bool qa
+        8: PromptTarget(
+            input_prompt="sequential recommendation - {}: \n\n"
+                         "This is what the user has bought so far -> {} \n"
+                         "The categories of the items bought are -> {} \n"
+                         "Can you please tell me if {} is the next item which will be bought by the user? "
+                         "(answer with yes/no)",
+            target_text="{}"
+        ),
+
+        9: PromptTarget(
+            input_prompt="sequential recommendation - {}: \n\n"
+                         "Order history -> {} \n"
+                         "Categories -> {} \n"
+                         "Is {} a good item to recommend? (answer yes/no)",
+            target_text="{}"
         )
     }
 
     def valid_templates(self, return_id: bool = False):
         return self.all_templates(return_id)[:6]
 
-    def support_templates(self, return_id: bool = False):
-        return self.all_templates(return_id)[6:]
+    @property
+    def qa_templates(self):
+        return [self.templates_dict[6], self.templates_dict[7]]
+
+    @property
+    def bool_templates(self):
+        return [self.templates_dict[8], self.templates_dict[9]]
 
     @Task.validate_args("user_id", "input_item_seq", "input_categories_seq", "target_item")
     def __call__(self, **kwargs):
@@ -269,24 +288,56 @@ class SequentialSideInfoTask(Task):
         out_list.append((input_text_valid, target_text_valid))
 
         if self.training:
-            input_prompt_support, target_support = random.choice(self.support_templates())
-            # random choice of support template
-            bullet_list_wrong_size = 4
-            all_possible_candidates = self.all_unique_items[self.all_unique_items != target_item]
-            candidates = np.random.choice(all_possible_candidates, size=bullet_list_wrong_size, replace=False)
 
-            candidates = np.append(candidates, target_item)
-            np.random.shuffle(candidates)
+            input_text_qa, target_text_qa = self._create_input_target_qa(user_id,
+                                                                         order_history_str,
+                                                                         input_categories_str,
+                                                                         target_item)
 
-            bullet_notation = "* " if random.getrandbits(1) else "- "
-            bullet_list = (f"{bullet_notation} {{}}\n" * len(candidates)).format(*candidates)
+            input_text_bool, target_text_bool = self._create_input_target_bool(user_id,
+                                                                               order_history_str,
+                                                                               input_categories_str,
+                                                                               target_item)
 
-            input_text_support = input_prompt_support.format(user_id, order_history_str, input_categories_str, bullet_list)
-            target_text_support = target_support.format(target_item)
-
-            out_list.append((input_text_support,  target_text_support))
+            out_list.extend([(input_text_qa,  target_text_qa), (input_text_bool, target_text_bool)])
 
         return out_list
+
+    def _create_input_target_qa(self, user_id, order_history_str, input_categories_str, target_item):
+        # random choice of qa template
+        input_prompt_support, target_support = random.choice(self.qa_templates)
+
+        bullet_list_wrong_size = 4
+        all_possible_candidates = self.all_unique_items[self.all_unique_items != target_item]
+        candidates = np.random.choice(all_possible_candidates, size=bullet_list_wrong_size, replace=False)
+
+        candidates = np.append(candidates, target_item)
+        np.random.shuffle(candidates)
+
+        bullet_notation = "* " if random.getrandbits(1) else "- "
+        bullet_list = (f"{bullet_notation} {{}}\n" * len(candidates)).format(*candidates)
+
+        input_text_qa = input_prompt_support.format(user_id, order_history_str, input_categories_str, bullet_list)
+        target_text_qa = target_support.format(target_item)
+
+        return input_text_qa, target_text_qa
+
+    def _create_input_target_bool(self, user_id, order_history_str, input_categories_str, target_item):
+        # random choice of bool template
+        input_prompt_support, target_support = random.choice(self.bool_templates)
+
+        if random.getrandbits(1):
+            candidate_item = target_item
+            target_text = "yes"
+        else:
+            candidate_item = self.all_unique_items[self.all_unique_items != target_item]
+            target_text = "no"
+
+        input_text_bool = input_prompt_support.format(user_id, order_history_str, input_categories_str, candidate_item)
+        target_text_bool = target_text
+
+        return input_text_bool, target_text_bool
+
 
 
 class DirectTask(Task):
