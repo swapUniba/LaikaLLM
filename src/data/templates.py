@@ -218,19 +218,21 @@ class SequentialSideInfoTask(Task):
             target_text="{}"
         ),
 
-        # boolean
+        # extractive qa
         6: PromptTarget(
-            input_prompt="srec - {}: \n\n"
+            input_prompt="sequential recommendation - {}: \n\n"
                          "The user has the following order history -> {} \n"
                          "The categories of each item bought are -> {} \n"
-                         "Will the user buy {} next? (Answer with yes/no)",
+                         "Which item would the user but next? Select from the following: \n"
+                         "{}",
             target_text="{}"
         ),
 
         7: PromptTarget(
-            input_prompt="srec - {}: \n\n"
+            input_prompt="sequential recommendation - {}: \n\n"
                          "The user has bought {}, and the categories of those items are {}. \n"
-                         "Answer with 'yes' if {} will be bought next, 'no' otherwise",
+                         "Choose an item to recommend to the user selecting from: \n"
+                         "{}",
             target_text="{}"
         )
     }
@@ -268,14 +270,19 @@ class SequentialSideInfoTask(Task):
             target_text = target.format(target_item)
 
         else:
-            if random.getrandbits(1):
-                candidate_item = target_item
-                target_text = "yes"
-            else:
-                candidate_item = random.choice(self.all_unique_items[self.all_unique_items != target_item])
-                target_text = "no"
 
-            input_text = input_prompt.format(user_id, order_history_str, input_categories_str, candidate_item)
+            bullet_list_wrong_size = 4
+            all_possible_candidates = self.all_unique_items[self.all_unique_items != target_item]
+            candidates = np.random.choice(all_possible_candidates, size=bullet_list_wrong_size, replace=False)
+
+            candidates = np.append(candidates, target_item)
+            np.random.shuffle(candidates)
+
+            bullet_notation = "* " if random.getrandbits(1) else "- "
+            bullet_list = (f"{bullet_notation} {{}}\n" * len(candidates)).format(*candidates)
+
+            input_text = input_prompt.format(user_id, order_history_str, input_categories_str, bullet_list)
+            target_text = target_item
 
         return input_text, target_text
 
