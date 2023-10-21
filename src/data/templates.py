@@ -250,36 +250,43 @@ class SequentialSideInfoTask(Task):
         input_categories_seq = kwargs["input_categories_seq"]
         target_item = kwargs["target_item"]
 
+        out_list = []
+
         # using all categories is maybe too much, let's use only one category for each item in the seq
         reduced_categories = [random.choice(categories) for categories in input_categories_seq]
 
         input_prompt_valid, target_valid = random.choice(self.valid_templates())
-        input_prompt_support, target_support = random.choice(self.support_templates())
 
         # random select of string separator for titles sequence and the prompt to use
         separator = " , " if random.getrandbits(1) else " ; "
         order_history_str = separator.join(order_history)
         input_categories_str = separator.join(reduced_categories)
 
-        # random choice of valid support
+        # random choice of valid template
         input_text_valid = input_prompt_valid.format(user_id, order_history_str, input_categories_str)
         target_text_valid = target_valid.format(target_item)
 
-        # random choice of support template
-        bullet_list_wrong_size = 4
-        all_possible_candidates = self.all_unique_items[self.all_unique_items != target_item]
-        candidates = np.random.choice(all_possible_candidates, size=bullet_list_wrong_size, replace=False)
+        out_list.append((input_text_valid, target_text_valid))
 
-        candidates = np.append(candidates, target_item)
-        np.random.shuffle(candidates)
+        if self.training:
+            input_prompt_support, target_support = random.choice(self.support_templates())
+            # random choice of support template
+            bullet_list_wrong_size = 4
+            all_possible_candidates = self.all_unique_items[self.all_unique_items != target_item]
+            candidates = np.random.choice(all_possible_candidates, size=bullet_list_wrong_size, replace=False)
 
-        bullet_notation = "* " if random.getrandbits(1) else "- "
-        bullet_list = (f"{bullet_notation} {{}}\n" * len(candidates)).format(*candidates)
+            candidates = np.append(candidates, target_item)
+            np.random.shuffle(candidates)
 
-        input_text_support = input_prompt_support.format(user_id, order_history_str, input_categories_str, bullet_list)
-        target_text_support = target_support.format(target_item)
+            bullet_notation = "* " if random.getrandbits(1) else "- "
+            bullet_list = (f"{bullet_notation} {{}}\n" * len(candidates)).format(*candidates)
 
-        return [(input_text_valid, target_text_valid), (input_text_support, target_text_support)]
+            input_text_support = input_prompt_support.format(user_id, order_history_str, input_categories_str, bullet_list)
+            target_text_support = target_support.format(target_item)
+
+            out_list.append((input_text_support,  target_text_support))
+
+        return out_list
 
 
 class DirectTask(Task):
