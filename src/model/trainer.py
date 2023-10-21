@@ -72,17 +72,21 @@ class RecTrainer:
             self.rec_model.train()
 
             # at the start of each iteration, we randomly sample the train sequence and tokenize it
-            shuffled_train = train_dataset.shuffle()
-            sampled_train = shuffled_train.map(self.train_sampling_fn,
-                                               remove_columns=train_dataset.column_names,
-                                               keep_in_memory=True,
-                                               desc="Sampling train set")
+            sampled_train = train_dataset.map(self.train_sampling_fn,
+                                              remove_columns=train_dataset.column_names,
+                                              keep_in_memory=True,
+                                              desc="Sampling train set")
 
             preprocessed_train = sampled_train.map(self.rec_model.tokenize,
                                                    remove_columns=sampled_train.column_names,
                                                    load_from_cache_file=False,
                                                    keep_in_memory=True,
+                                                   batched=True,
+                                                   batch_size=1,
                                                    desc="Tokenizing train set")
+
+            # shuffle here so that if we augment data (2 row for a single user) it is shuffled
+            preprocessed_train = preprocessed_train.shuffle()
             preprocessed_train.set_format("torch")
 
             # ceil because we don't drop the last batch. It's here since if we are in
@@ -112,7 +116,6 @@ class RecTrainer:
                 # tqdm update integer percentage (1%, 2%) when float percentage is over .5 threshold (1.501 -> 2%)
                 # so we print infos in the same way
                 if round(100 * (i / total_n_batch)) > progress:
-
                     pbar.set_description(f"Epoch {epoch + 1}, Loss -> {(train_loss / i):.6f}")
                     progress += 1
                     log_wandb({
@@ -183,7 +186,6 @@ class RecTrainer:
 
 
 def trainer_main():
-
     exp_name = ExperimentConfig.exp_name
     n_epochs = ExperimentConfig.n_epochs
     batch_size = ExperimentConfig.train_batch_size
@@ -218,7 +220,6 @@ def trainer_main():
     dataframe_dict = {"task_type": [], "template_id": [], "input_prompt": [], "target_text": []}
     for task in train_task_list:
         for template_id in task.templates_dict:
-
             input_prompt, target_text = task.templates_dict[template_id]
 
             dataframe_dict["task_type"].append(str(task))
@@ -240,7 +241,6 @@ def trainer_main():
     )
 
     if ExperimentConfig.content_indexing is True:
-
         # add cluster token as independent tokens
         cluster_tok_to_add = ds.original_df["item_sequence"].str.extract(r"(?P<cluster_idx><\d+>)")
         cluster_tok_to_add = cluster_tok_to_add["cluster_idx"].unique().tolist()
@@ -301,8 +301,8 @@ def trainer_main():
 
 
 if __name__ == "__main__":
-
     ExperimentConfig.content_indexing = True
     ExperimentConfig.inject_personalization = ("train", "eval")
+    ExperimentConfig.train_tasks = ("SequentialSideInfoTask",)
 
     trainer_main()

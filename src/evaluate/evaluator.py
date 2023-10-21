@@ -31,6 +31,8 @@ class RecEvaluator:
             self.rec_model.tokenize,
             remove_columns=eval_dataset.column_names,
             keep_in_memory=True,
+            batched=True,
+            batch_size=1,
             desc=f"Tokenizing {split_name} set"
         )
         preprocessed_eval.set_format("torch")

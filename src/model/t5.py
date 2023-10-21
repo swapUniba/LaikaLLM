@@ -7,6 +7,7 @@ from typing import List, Union, Optional, Callable
 
 import numpy as np
 import torch
+from cytoolz import merge_with
 from torch import nn, Tensor
 from torch.nn.utils.rnn import pad_sequence
 from transformers import T5ForConditionalGeneration, Adafactor, T5TokenizerFast
@@ -88,28 +89,37 @@ class T5FineTuned(T5ForConditionalGeneration):
 
     def tokenize(self, sample):
 
+        assert len(sample["user_id"]) == 1, "set batch_size to map fn to 1"
+
+        sample = {k: v[0] for k, v in sample.items()}
+
         task = random.choice(self.training_tasks) if self.training else self.eval_task
 
         # give all info that we have about the sample to the task randomly sampled to generate
         # input prompt and target text. Each task may have mandatory arguments, if they are missing
         # an assertion error will be raised
-        input_text, target_text = task(**sample)
+        templates_list = task(**sample)
 
-        encoded_sequence = self.tokenizer(text=input_text, text_target=target_text, truncation=True)
+        encoded_sequence_list = []
+        for input_text, target_text in templates_list:
 
-        # get word ids from t5 tokenizer fast
-        whole_word_ids = np.array(encoded_sequence.encodings[0].word_ids)
-        special_token_mask = np.array(encoded_sequence.encodings[0].special_tokens_mask).astype(bool)
+            encoded_sequence = self.tokenizer(text=input_text, text_target=target_text, truncation=True)
 
-        # we set -1 to all special tokens (to substitute None, which is the value set by default)
-        whole_word_ids[~special_token_mask] += 1
-        whole_word_ids[special_token_mask] = self.tokenizer.pad_token_id
+            # get word ids from t5 tokenizer fast
+            whole_word_ids = np.array(encoded_sequence.encodings[0].word_ids)
+            special_token_mask = np.array(encoded_sequence.encodings[0].special_tokens_mask).astype(bool)
 
-        encoded_sequence["user_idx"] = int(re.search(r"\d+", sample["user_id"]).group())
-        encoded_sequence["whole_word_ids"] = whole_word_ids.tolist()
-        encoded_sequence["target_item"] = sample["target_item"]
+            # we set -1 to all special tokens (to substitute None, which is the value set by default)
+            whole_word_ids[~special_token_mask] += 1
+            whole_word_ids[special_token_mask] = self.tokenizer.pad_token_id
 
-        return encoded_sequence
+            encoded_sequence["user_idx"] = int(re.search(r"\d+", sample["user_id"]).group())
+            encoded_sequence["whole_word_ids"] = whole_word_ids.tolist()
+            encoded_sequence["target_item"] = sample["target_item"]
+
+            encoded_sequence_list.append(encoded_sequence)
+
+        return merge_with(list, *encoded_sequence_list)
 
     def prepare_input(self, batch):
         input_dict = {}
