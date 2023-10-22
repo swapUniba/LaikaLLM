@@ -28,7 +28,7 @@ class ExperimentConfig:
     monitor_strategy: Literal['no', 'loss', 'hit@10'] = "no"
     train_batch_size: int = 4
     eval_batch_size: int = 2
-    add_prefix_item_users: bool = False
+    add_prefix_items_users: bool = False
     device: str = "cuda:0"
     random_seed: int = 42
     log_wandb: bool = False

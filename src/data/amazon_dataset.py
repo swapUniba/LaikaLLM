@@ -278,7 +278,7 @@ class AmazonDataset:
 
 def data_main():
 
-    add_prefix = ExperimentConfig.add_prefix_item_users
+    add_prefix = ExperimentConfig.add_prefix_items_users
     integer_ids = ExperimentConfig.integer_ids
     content_indexing = ExperimentConfig.content_indexing
 
@@ -292,7 +292,7 @@ def data_main():
 
 if __name__ == "__main__":
 
-    ExperimentConfig.add_prefix_item_users = True
+    ExperimentConfig.add_prefix_items_users = True
     ExperimentConfig.integer_ids = True
     ExperimentConfig.content_indexing = True
 

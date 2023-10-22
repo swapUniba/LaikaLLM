@@ -35,7 +35,7 @@ if __name__ == '__main__':
                         help='',)
     parser.add_argument('--eval_batch_size', type=int, default=2,
                         help='',)
-    parser.add_argument('--add_prefix_item_users', action=argparse.BooleanOptionalAction, default=False,
+    parser.add_argument('--add_prefix_items_users', action="store_true",
                         help='',)
     parser.add_argument('--device', type=str, default="cuda:0",
                         help='',)
