@@ -7,11 +7,13 @@ from src import ExperimentConfig
 from src.data.amazon_dataset import data_main
 from src.data.templates import Task
 from src.model.trainer import trainer_main
-from src.utils import seed_everything, init_wandb
+from src.utils import seed_everything, init_wandb, LoadFromYaml
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Main script to reproduce perform the experiments')
+    parser.add_argument('-c', '--config', action=LoadFromYaml, const="params.yml", default=None,
+                        help='')
     parser.add_argument('--exp_name', type=str, default=None,
                         help='')
     parser.add_argument('--checkpoint', type=str, default="google/flan-t5-small",
@@ -44,6 +46,8 @@ if __name__ == '__main__':
     parser.add_argument('--log_wandb', action="store_true",
                         help='',)
 
+    # will first parse args from yml file, and if same are passed via cmd,
+    # those passed via cmd will prevail
     args = parser.parse_args()
 
     # nargs = "+" returns a list if set, we want a tuple instead in order to be type coherent

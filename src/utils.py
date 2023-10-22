@@ -1,3 +1,4 @@
+import argparse
 import os
 import random
 from contextlib import contextmanager
@@ -6,6 +7,7 @@ import numpy as np
 import torch
 import torch.backends.cudnn
 import wandb
+import yaml
 
 from src import ExperimentConfig
 
@@ -50,3 +52,40 @@ def init_wandb(**kwargs):
             yield
     else:
         yield
+
+
+class LoadFromYaml(argparse.Action):
+
+    def __init__(self, nargs='?', **kw):
+        super().__init__(nargs=nargs, **kw)
+
+    def _update_namespace(self, namespace, param_section_dict: dict):
+        for param_name, param_val in param_section_dict.items():
+            # set arguments in the target namespace if they exist, otherwise raise error
+            if hasattr(namespace, param_name) is True:
+                setattr(namespace, param_name, param_val)
+            else:
+                raise argparse.ArgumentError(self, f"Unrecognized argument read from yaml config -> {param_name}")
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        with open(values, "r") as f:
+            yaml_args = yaml.safe_load(f)
+
+        data_section = yaml_args.pop("data", None)
+        model_section = yaml_args.pop("model", None)
+        eval_section = yaml_args.pop("eval", None)
+
+        # after popping every section, only general params remain
+        general_section = yaml_args
+
+        if general_section is not None:
+            self._update_namespace(namespace, general_section)
+
+        if data_section is not None:
+            self._update_namespace(namespace, data_section)
+
+        if model_section is not None:
+            self._update_namespace(namespace, model_section)
+
+        if eval_section is not None:
+            self._update_namespace(namespace, eval_section)

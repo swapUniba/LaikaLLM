@@ -13,3 +13,4 @@ tqdm==4.65.0
 sentence_transformers
 datasets
 pygit2
+pyyaml
