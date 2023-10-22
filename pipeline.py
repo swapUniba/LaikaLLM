@@ -21,9 +21,9 @@ if __name__ == '__main__':
     parser.add_argument('--train_tasks', type=str, nargs="+", default=tuple(Task.str_alias_obj.keys()),
                         choices=list(Task.str_alias_obj.keys()),
                         help='',)
-    parser.add_argument('--integer_ids', action=argparse.BooleanOptionalAction, default=False,
+    parser.add_argument('--integer_ids', action="store_true",
                         help='')
-    parser.add_argument('--content_indexing', action=argparse.BooleanOptionalAction, default=False,
+    parser.add_argument('--content_indexing', action="store_true",
                         help='')
     parser.add_argument('--inject_personalization', type=str, nargs="+", default=(),
                         choices=["train", "eval"],
@@ -41,7 +41,7 @@ if __name__ == '__main__':
                         help='',)
     parser.add_argument('--random_seed', type=int, default=42,
                         help='',)
-    parser.add_argument('--log_wandb', action=argparse.BooleanOptionalAction, default=False,
+    parser.add_argument('--log_wandb', action="store_true",
                         help='',)
 
     args = parser.parse_args()
