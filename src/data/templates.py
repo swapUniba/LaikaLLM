@@ -232,21 +232,18 @@ class SequentialSideInfoTask(Task):
             target_text="{}"
         ),
 
-        # bool qa
+        # pair seq
         8: PromptTarget(
             input_prompt="sequential recommendation - {}: \n\n"
-                         "This is what the user has bought so far -> {} \n"
-                         "The categories of the items bought are -> {} \n"
-                         "Can you please tell me if {} is the next item which will be bought by the user? "
-                         "(answer with yes/no)",
+                         "The user has recently bought {} which has the following categories: {} \n"
+                         "What is the next item to recommend?",
             target_text="{}"
         ),
 
         9: PromptTarget(
             input_prompt="sequential recommendation - {}: \n\n"
-                         "Order history -> {} \n"
-                         "Categories -> {} \n"
-                         "Is {} a good item to recommend? (answer yes/no)",
+                         "The latest item bought by the user is {}. The categories of that item are {}. "
+                         "Predict which item the user will buy next",
             target_text="{}"
         )
     }
@@ -259,7 +256,7 @@ class SequentialSideInfoTask(Task):
         return [self.templates_dict[6], self.templates_dict[7]]
 
     @property
-    def bool_templates(self):
+    def pair_templates(self):
         return [self.templates_dict[8], self.templates_dict[9]]
 
     @Task.validate_args("user_id", "input_item_seq", "input_categories_seq", "target_item")
@@ -294,12 +291,12 @@ class SequentialSideInfoTask(Task):
                                                                          input_categories_str,
                                                                          target_item)
 
-            input_text_bool, target_text_bool = self._create_input_target_bool(user_id,
-                                                                               order_history_str,
-                                                                               input_categories_str,
+            input_text_pair, target_text_pair = self._create_input_target_pair(user_id,
+                                                                               order_history,
+                                                                               input_categories_seq,
                                                                                target_item)
 
-            out_list.extend([(input_text_qa,  target_text_qa), (input_text_bool, target_text_bool)])
+            out_list.extend([(input_text_qa,  target_text_qa), (input_text_pair, target_text_pair)])
 
         return out_list
 
@@ -322,22 +319,25 @@ class SequentialSideInfoTask(Task):
 
         return input_text_qa, target_text_qa
 
-    def _create_input_target_bool(self, user_id, order_history_str, input_categories_str, target_item):
-        # random choice of bool template
-        input_prompt_support, target_support = random.choice(self.bool_templates)
+    def _create_input_target_pair(self, user_id, order_history, input_categories, target_item):
+        # random choice of pair template
+        input_prompt_support, target_support = random.choice(self.pair_templates)
 
-        if random.getrandbits(1):
-            candidate_item = target_item
-            target_text = "yes"
+        first_of_pair_idx = random.randint(0, len(order_history) - 1)
+        first_of_pair = order_history[first_of_pair_idx]
+
+        separator = " , " if random.getrandbits(1) else " ; "
+        first_of_pair_cat = separator.join(input_categories[first_of_pair_idx])
+
+        if first_of_pair_idx == (len(order_history) - 1):
+            second_of_pair = target_item
         else:
-            candidate_item = self.all_unique_items[self.all_unique_items != target_item]
-            target_text = "no"
+            second_of_pair = order_history[first_of_pair_idx + 1]
 
-        input_text_bool = input_prompt_support.format(user_id, order_history_str, input_categories_str, candidate_item)
-        target_text_bool = target_text
+        input_text_pair = input_prompt_support.format(user_id, first_of_pair, first_of_pair_cat)
+        target_text_pair = second_of_pair
 
-        return input_text_bool, target_text_bool
-
+        return input_text_pair, target_text_pair
 
 
 class DirectTask(Task):
