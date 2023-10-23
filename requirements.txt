@@ -14,3 +14,4 @@ sentence_transformers
 datasets
 pygit2
 pyyaml
+cytoolz
