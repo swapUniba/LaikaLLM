@@ -15,8 +15,7 @@ import pandas as pd
 from datasets import Dataset
 from tqdm import tqdm
 
-from src import DATA_DIR, ExperimentConfig, PROCESSED_DATA_DIR, RAW_DATA_DIR
-from src.data.indexing import main_new_indexing
+from src import ExperimentConfig, PROCESSED_DATA_DIR, RAW_DATA_DIR
 
 
 def parse(path):
@@ -31,12 +30,12 @@ class AmazonDataset:
                  dataset_name: Literal['beauty', 'toys', 'sport'],
                  add_prefix: bool = False,
                  integer_ids: bool = False,
-                 content_indexing: bool = False):
+                 items_start_from_1001: bool = False):
 
         self.dataset_name = dataset_name
         self.add_prefix = add_prefix
         self.integer_ids = integer_ids
-        self.content_indexing = content_indexing
+        self.items_start_from_1001 = items_start_from_1001
 
         user_items, item_count = self._read_sequential()
 
@@ -110,11 +109,9 @@ class AmazonDataset:
         data_df = pd.DataFrame.from_dict(df_dict)
 
         # start indexing from 1001 for better tokenization sentencepiece
-        data_df["item_sequence"] = data_df["item_sequence"].astype(int) + 1000
-        data_df["item_sequence"] = data_df["item_sequence"].astype(str)
-
-        if self.content_indexing:
-            data_df = main_new_indexing(data_df)
+        if self.items_start_from_1001:
+            data_df["item_sequence"] = data_df["item_sequence"].astype(int) + 1000
+            data_df["item_sequence"] = data_df["item_sequence"].astype(str)
 
         if self.add_prefix:
             data_df["user_id"] = "user_" + data_df["user_id"]
@@ -277,23 +274,21 @@ class AmazonDataset:
 
 
 def data_main():
-
     add_prefix = ExperimentConfig.add_prefix_items_users
     integer_ids = ExperimentConfig.integer_ids
-    content_indexing = ExperimentConfig.content_indexing
+    items_start_from_1001 = ExperimentConfig.items_start_from_1001
 
     ds = AmazonDataset(dataset_name="toys",
                        add_prefix=add_prefix,
                        integer_ids=integer_ids,
-                       content_indexing=content_indexing)
+                       items_start_from_1001=items_start_from_1001)
 
     ds.save()
 
 
 if __name__ == "__main__":
-
     ExperimentConfig.add_prefix_items_users = True
     ExperimentConfig.integer_ids = True
-    ExperimentConfig.content_indexing = True
+    ExperimentConfig.items_start_from_1001 = True
 
     data_main()

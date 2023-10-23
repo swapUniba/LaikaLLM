@@ -25,7 +25,7 @@ if __name__ == '__main__':
                         help='',)
     parser.add_argument('--integer_ids', action="store_true",
                         help='')
-    parser.add_argument('--content_indexing', action="store_true",
+    parser.add_argument('--items_start_from_1001', action="store_true",
                         help='')
     parser.add_argument('--inject_personalization', type=str, nargs="+", default=(),
                         choices=["train", "eval"],
