@@ -240,14 +240,6 @@ def trainer_main():
         eval_task=deepcopy(train_task_list[0]).force_template(0)  # validation task
     )
 
-    if ExperimentConfig.content_indexing is True:
-        # add cluster token as independent tokens
-        cluster_tok_to_add = ds.original_df["item_sequence"].str.extract(r"(?P<cluster_idx><\d+>)")
-        cluster_tok_to_add = cluster_tok_to_add["cluster_idx"].unique().tolist()
-
-        rec_model.tokenizer.add_tokens(cluster_tok_to_add)
-        rec_model.resize_token_embeddings(len(rec_model.tokenizer))
-
     trainer = RecTrainer(
         rec_model=rec_model,
         n_epochs=n_epochs,
