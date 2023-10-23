@@ -167,3 +167,86 @@ class MRR(RankingMetric):
 
         mrrs = np.mean(rrs).item()
         return mrrs
+
+
+class NDCG:
+    def __init__(self,
+                 k: int = None,
+                 gains: Literal['exponential', 'linear'] = "linear",
+                 discount_log: Callable = np.log2):
+
+        if gains not in {"linear", "exponential"}:
+            raise ValueError("Invalid gains option!")
+
+        self.k = k
+        self.gains = gains
+        self.discount_log = discount_log
+
+        if self.gains == "exponential":
+            self.gains_fn = lambda r: 2 ** r - 1
+        else:
+            self.gains_fn = lambda r: r
+
+    def _dcg_score(self, r: np.ndarray):
+        """Discounted cumulative gain (DCG)
+        Parameters
+        ----------
+        r: Relevance scores (list or numpy) in rank order
+            (first element is the first item)
+        Returns
+        -------
+        DCG : float
+        """
+        dcg = np.nan
+        if len(r) != 0:
+
+            gains = self.gains_fn(r)
+            discounts = self.discount_log(np.arange(2, len(r) + 2))
+
+            dcg = np.sum(gains / discounts)
+
+        return dcg
+
+    def _calc_ndcg(self, r: np.ndarray):
+        """Normalized discounted cumulative gain (NDCG)
+        Parameters
+        ----------
+        r: Relevance scores (list or numpy) in rank order
+            (first element is the first item)
+        Returns
+        -------
+        NDCG : float
+        """
+        actual = self._dcg_score(r)
+        ideal = self._dcg_score(np.sort(r)[::-1])
+        return actual / ideal
+
+    def __call__(self, predictions: np.ndarray[np.ndarray[str]], truths: np.ndarray[str]):
+
+        predictions = predictions[:, :self.k] if self.k is not None else predictions
+
+        ndcgs = []
+        for pred, truth in zip(predictions, truths):
+
+            pred: np.ndarray
+            truth: str
+
+            rel_rank_mask = (pred == truth).astype(int)
+
+            # scores is decreasing, since items in first positions
+            # should have higher score. Relevance score starts from 1 rather than 0
+            # e.g.
+            # rel_rank_mask = [0, 1, 0, 1, 0]
+            # scores = [5, 4, 3, 2, 1]
+            scores = np.arange(start=len(rel_rank_mask), stop=0, step=-1)
+
+            # rel_rank_mask is binary, so this will yield a value only for relevant positions
+            # e.g.
+            # rel_rank_mask = [0, 1, 0, 1, 0]
+            # scores = [5, 4, 3, 2, 1]
+            # rel_scores = [0, 4, 0, 2, 0]
+            rel_scores = rel_rank_mask * scores
+
+            ndcgs.append(self._calc_ndcg(rel_scores))
+
+        return np.mean(ndcgs).item()
