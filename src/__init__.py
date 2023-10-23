@@ -1,6 +1,7 @@
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from pprint import pprint
 from typing import Tuple, Literal
 
 from src.data.templates import Task
@@ -36,3 +37,7 @@ class ExperimentConfig:
     @classmethod
     def to_dict(cls):
         return {field: getattr(cls, field) for field in cls.__annotations__}
+
+    @classmethod
+    def to_string(cls):
+        return pprint(cls.to_dict())

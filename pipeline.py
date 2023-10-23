@@ -79,8 +79,7 @@ if __name__ == '__main__':
         setattr(ExperimentConfig, arg, arg_value)
 
     print("Experiment configuration:")
-    # Convert the class attributes of ExperimentConfig dataclass to a dictionary
-    print(ExperimentConfig.to_dict())
+    print(ExperimentConfig.to_string())
 
     # log env variables needed for reproducibility to args which will be logged to wandb
     dict_args["PYTHONHASHSEED"] = os.environ["PYTHONHASHSEED"]
