@@ -70,6 +70,9 @@ if __name__ == '__main__':
                              'Please set the environment variable and add the entity for wandb logs\n')
 
     # translate args to dict
+    # delete config yaml file since if it is used, we don't need it anymore since all params
+    # are already been loaded up to this point
+    del args.config
     dict_args = vars(args)
 
     # for this to work, each pipeline parameter should exist
