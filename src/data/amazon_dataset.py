@@ -136,7 +136,7 @@ class AmazonDataset:
         # train set will be divided into input and target at each epoch: we will sample
         # each time a different input sequence and target item for each user so to reduce chances of
         # overfitting and performing a sort of augmentation in real time
-        train_set = groupby_obj.nth[:-3].groupby(by=["user_id"]).agg(list).reset_index()
+        train_set = groupby_obj.nth[:-2].groupby(by=["user_id"]).agg(list).reset_index()
 
         # since validation set and test set do not need sampling (they must remain constant in order to validate
         # and evaluate the model fairly across epochs), we split directly here data in input and target.
