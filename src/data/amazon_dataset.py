@@ -250,26 +250,28 @@ class AmazonDataset:
 
     def get_hf_datasets(self, merge_train_val: bool = False) -> Dict[str, datasets.Dataset]:
 
-        val_hf_dataset = None
-        # if merge_train_val is True:
-        #     cleaned_dataset: pd.DataFrame = pd.read_pickle(self.cleaned_dataset_path)
-        #     cleaned_grouped = self._group_dataset(cleaned_dataset)
-        #
-        #     rows_to_add_train = cleaned_grouped[cleaned_grouped["case_id"].isin(self.val_df["case_id"])]
-        #     self.train_df = pd.concat([self.train_df, rows_to_add_train])
-        # else:
-        #     val_hf_dataset = Dataset.from_pandas(self.val_df, split=datasets.Split.VALIDATION, preserve_index=False)
-
-        train_hf_ds = Dataset.from_pandas(self.train_df, split=datasets.Split.TRAIN, preserve_index=False)
-        val_hf_ds = Dataset.from_pandas(self.val_df, split=datasets.Split.VALIDATION, preserve_index=False)
-        test_hf_ds = Dataset.from_pandas(self.test_df, split=datasets.Split.TEST, preserve_index=False)
+        train_df = self.train_df
+        val_df = self.val_df
+        test_df = self.test_df
 
         # we create a dataset dict containing each split
-        dataset_dict = {
-            "train": train_hf_ds,
-            "validation": val_hf_ds,
-            "test": test_hf_ds
-        }
+        dataset_dict = {}
+
+        if merge_train_val is True:
+            groupby_obj = self.original_df.groupby(by=["user_id"])
+
+            # if we don't use val, and we must merge, basically only the last item of each sequence should be unknown
+            train_df = groupby_obj.nth[:-1].groupby(by=["user_id"]).agg(list).reset_index()
+            train_hf_ds = Dataset.from_pandas(train_df, split=datasets.Split.TRAIN, preserve_index=False)
+            dataset_dict["train"] = train_hf_ds
+        else:
+            train_hf_ds = Dataset.from_pandas(train_df, split=datasets.Split.TRAIN, preserve_index=False)
+            val_hf_ds = Dataset.from_pandas(val_df, split=datasets.Split.VALIDATION, preserve_index=False)
+            dataset_dict["train"] = train_hf_ds
+            dataset_dict["validation"] = val_hf_ds
+
+        test_hf_ds = Dataset.from_pandas(test_df, split=datasets.Split.TEST, preserve_index=False)
+        dataset_dict["test"] = test_hf_ds
 
         return dataset_dict
 
