@@ -1,88 +1,101 @@
 from __future__ import annotations
+
+import itertools
+import math
+import operator
+import random
+import time
 from abc import ABC, abstractmethod
+from collections.abc import Collection
+from typing import Callable
 
-import torch
-import torchmetrics.functional as torchmetrics_fn
 import numpy as np
-from sklearn.preprocessing import LabelEncoder
+from requests.structures import CaseInsensitiveDict
 
 
-class Metric(ABC):
+class PaddedArr(np.ndarray):
+    def __new__(cls, iterable: Collection[Collection[str]], *args, **kwargs):
+        # Find the maximum length of the sublists
+        max_len = max(len(sublist) for sublist in iterable)
 
-    @abstractmethod
-    def __call__(self, predictions: np.ndarray[np.ndarray[str] | str], truths: np.ndarray[str]) -> float:
-        raise NotImplementedError
+        # Create a new NumPy array filled with <PAD> token
+        padded_array = np.full((len(iterable), max_len), fill_value="<PAD>")
 
-    @abstractmethod
-    def __str__(self):
-        raise NotImplementedError
+        # Copy the data from the original list into the new array
+        for i, sublist in enumerate(iterable):
+            padded_array[i, :len(sublist)] = sublist
 
-
-class ClassificationMetric(Metric):
-
-    @abstractmethod
-    def compute_metric(self, predictions: torch.IntTensor, truths: torch.IntTensor, n_labels: int):
-        raise NotImplementedError
-
-    def __call__(self, predictions: np.ndarray[str], truths: np.ndarray[str]) -> float:
-        total = np.hstack((predictions, truths))
-
-        le = LabelEncoder().fit(total)
-        predictions = torch.from_numpy(le.transform(predictions)).int()
-        truths = torch.from_numpy(le.transform(truths)).int()
-
-        num_classes = len(np.unique(total))
-
-        res = self.compute_metric(predictions, truths, num_classes)
-
-        # k is not used, there's no list to cut
-        return res.item()
-
-    def __str__(self):
-
-        return f"{self.__class__.__name__} (weighted)"
+        return padded_array.astype(str)
 
 
-class Accuracy(ClassificationMetric):
+class RankingMetric(ABC):
 
-    def compute_metric(self, predictions: torch.IntTensor, truths: torch.IntTensor, n_labels: int):
-        return torchmetrics_fn.classification.multiclass_accuracy(predictions,
-                                                                  truths,
-                                                                  num_classes=n_labels,
-                                                                  average="weighted")
+    # name - class mapping, used for when metrics should be initialized from strings
+    str_alias_cls: dict = CaseInsensitiveDict()
 
-
-class Precision(ClassificationMetric):
-
-    def compute_metric(self, predictions: torch.IntTensor, truths: torch.IntTensor, n_labels: int):
-        return torchmetrics_fn.classification.multiclass_precision(predictions,
-                                                                   truths,
-                                                                   num_classes=n_labels,
-                                                                   average="weighted")
-
-
-class Recall(ClassificationMetric):
-
-    def compute_metric(self, predictions: torch.IntTensor, truths: torch.IntTensor, n_labels: int):
-        return torchmetrics_fn.classification.multiclass_recall(predictions,
-                                                                truths,
-                                                                num_classes=n_labels,
-                                                                average="weighted")
-
-
-class F1(ClassificationMetric):
-
-    def compute_metric(self, predictions: torch.IntTensor, truths: torch.IntTensor, n_labels: int):
-        return torchmetrics_fn.classification.multiclass_f1_score(predictions,
-                                                                  truths,
-                                                                  num_classes=n_labels,
-                                                                  average="weighted")
-
-
-class RankingMetric(Metric):
+    # automatically called on subclass definition, will populate the str_alias_obj dict
+    def __init_subclass__(cls, **kwargs):
+        cls.str_alias_cls[cls.__name__] = cls
 
     def __init__(self, k: int = None):
         self.k = k
+
+    @property
+    def operator_comparison(self):
+
+        # What is the operator to use if we want to obtain the best result the metric?
+        # e.g. loss is "<", hit is ">", mse is "<", etc.
+        # By default is ">"
+        return operator.gt
+
+    @staticmethod
+    def rel_binary_matrix(predictions: np.ndarray[np.ndarray[str]], truths: np.ndarray[np.ndarray[str]], k: int = None):
+
+        predictions = predictions[:, k]
+
+        result = (predictions[:, np.newaxis, :] == truths[:, :, np.newaxis]) & \
+                 (predictions[:, np.newaxis, :] != "<PAD>")
+
+        rel_matrix = result.any(axis=1)
+
+        return rel_matrix
+
+    @staticmethod
+    def safe_div(num: np.ndarray, den: np.ndarray):
+
+        # divide only if denominator is different from 0, otherwise 0
+        return np.divide(num, den, out=np.zeros_like(num, dtype=float), where=den != 0)
+
+    @classmethod
+    def from_string(cls, *metric_str: str):
+
+        instantiated_metrics = []
+        for metric in metric_str:
+
+            try:
+                metric_info = metric.split("@")
+
+                if len(metric_info) == 1:
+
+                    [metric_name] = metric_info
+
+                    instantiated_metrics.append(cls.str_alias_cls[metric_name]())
+                elif len(metric_info) == 2:
+                    [metric_name, k] = metric_info
+
+                    if not k.isdigit():
+                        raise KeyError
+
+                    instantiated_metrics.append(cls.str_alias_cls[metric_name](k=int(k)))
+
+            except KeyError:
+                raise KeyError(f"{metric} metric does not exist!") from None
+
+        return instantiated_metrics
+
+    @abstractmethod
+    def __call__(self, rel_binary_matrix: np.ndarray[np.ndarray[bool]]) -> float:
+        raise NotImplementedError
 
     def __str__(self):
         string = self.__class__.__name__
@@ -94,46 +107,29 @@ class RankingMetric(Metric):
 
 class Hit(RankingMetric):
 
-    def __call__(self, predictions: np.ndarray[np.ndarray[str]], truths: np.ndarray[str]) -> float:
-        predictions = predictions[:, :self.k] if self.k is not None else predictions
+    def __call__(self, rel_binary_matrix: np.ndarray[np.ndarray[bool]]) -> float:
 
-        return np.mean(np.any(truths[:, np.newaxis] == predictions, axis=1)).item()
+        # intuitively, we want to """remove""" the dimension of items (axis=1) and maintain
+        # the user dimension (axis=0). This variable will contain a bool value for each user: if at least one prediction
+        # is relevant (appears in the user ground truth) for the user, the bool value is True
+        per_user_hit = np.any(rel_binary_matrix, axis=1)
+
+        return np.mean(per_user_hit).item()
 
 
 class MAP(RankingMetric):
 
-    def __call__(self, predictions: np.ndarray[np.ndarray[str]], truths: np.ndarray[str]) -> float:
+    def __call__(self, rel_binary_matrix: np.ndarray[np.ndarray[bool]]) -> float:
 
-        predictions = predictions[:, :self.k] if self.k is not None else predictions
+        cumulative_tp_matrix = np.cumsum(rel_binary_matrix, axis=1)
 
-        aps = []
+        pos_arr = np.arange(1, rel_binary_matrix.shape[1] + 1)
+        position_rel_preds = pos_arr * rel_binary_matrix  # it works thanks to numpy broadcasting
 
-        for pred, truth in zip(predictions, truths):
+        cumulative_precision = self.safe_div(cumulative_tp_matrix, position_rel_preds)
+        rel_count_per_user = np.count_nonzero(rel_binary_matrix, axis=1)
 
-            pred: np.ndarray
-            truth: np.ndarray
-
-            # all items both in prediction and relevant truth are retrieved, if an item only appears in prediction it is
-            # marked with a -1, we then retrieve only the indexes of items that appear in both
-            hits: np.ndarray = (pred == truth).nonzero()[0]
-
-            if len(hits) == 0:
-                aps.append(0)
-                continue
-
-            # we initialize an array for true positives. True positive is incremented by 1 each time a relevant item
-            # is found, therefore this array will be as long as the array containing the indices of items both in
-            # prediction and relevant truth (and values will be as such [1, 2, 3, ...])
-            tp_array = np.arange(start=1, stop=len(hits) + 1)
-
-            # finally, precision is computed by dividing each true positive value to each corresponding position
-            precision_array = tp_array / (hits + 1)
-            cumulative_precision = np.sum(precision_array)
-
-            # in this case we only have one item in truth
-            truth_ap = (1 / len(hits)) * cumulative_precision
-
-            aps.append(truth_ap)
+        aps = self.safe_div(cumulative_precision.sum(axis=1), rel_count_per_user)
 
         map = np.mean(aps).item()
 
@@ -142,52 +138,34 @@ class MAP(RankingMetric):
 
 class MRR(RankingMetric):
 
-    def __call__(self, predictions: np.ndarray[np.ndarray[str]], truths: np.ndarray[str]) -> float:
+    def __call__(self, rel_binary_matrix: np.ndarray[np.ndarray[bool]]) -> float:
 
-        predictions = predictions[:, :self.k] if self.k is not None else predictions
+        # valid_preds are those predictions for which at least one relevant item has been recommended
+        valid_preds = rel_binary_matrix.any(axis=1)
 
-        rrs = []
+        # take from valid preds the first occurrence of a relevant item (+1 since arrays start from 0)
+        first_occ_rel_pred = rel_binary_matrix[valid_preds].argmax(axis=1) + 1
 
-        for pred, truth in zip(predictions, truths):
+        # compute rr for all users that have at least one rel item in their rec list
+        valid_rrs = 1 / first_occ_rel_pred
 
-            pred: np.ndarray
-            truth: np.ndarray
+        # predictions.shape[0] so that we take into account also users for which
+        # no rel item has been recommended, effectively considering their rr == 0
+        mrr = valid_rrs.sum() / rel_binary_matrix.shape[0]
 
-            rel_rank: np.ndarray = pred == truth
-            non_zero_rel_rank = np.argwhere(rel_rank).flatten()
-
-            if len(non_zero_rel_rank) > 0:
-                # + 1 because the array starts from 0
-                first_rel_rank = non_zero_rel_rank[0] + 1
-                rr = 1 / first_rel_rank
-                rrs.append(rr)
-            else:
-                rr = 0
-                rrs.append(rr)
-
-        mrrs = np.mean(rrs).item()
-        return mrrs
+        return mrr
 
 
-class NDCG:
+class NDCG(RankingMetric):
     def __init__(self,
                  k: int = None,
-                 gains: Literal['exponential', 'linear'] = "linear",
                  discount_log: Callable = np.log2):
 
-        if gains not in {"linear", "exponential"}:
-            raise ValueError("Invalid gains option!")
+        super().__init__(k)
 
-        self.k = k
-        self.gains = gains
         self.discount_log = discount_log
 
-        if self.gains == "exponential":
-            self.gains_fn = lambda r: 2 ** r - 1
-        else:
-            self.gains_fn = lambda r: r
-
-    def _dcg_score(self, r: np.ndarray):
+    def _dcg_score(self, r: np.ndarray[np.ndarray]) -> np.ndarray[float]:
         """Discounted cumulative gain (DCG)
         Parameters
         ----------
@@ -197,17 +175,16 @@ class NDCG:
         -------
         DCG : float
         """
-        dcg = np.nan
-        if len(r) != 0:
 
-            gains = self.gains_fn(r)
-            discounts = self.discount_log(np.arange(2, len(r) + 2))
+        discounts = self.discount_log(np.arange(2, r.shape[1] + 2))
 
-            dcg = np.sum(gains / discounts)
+        # division possible thanks to numpy broadcasting
+        # safe division not necessary, arange starts from 2 and can't be 0
+        dcg = np.sum(r / discounts, axis=1)
 
         return dcg
 
-    def _calc_ndcg(self, r: np.ndarray):
+    def _calc_ndcg(self, r: np.ndarray[np.ndarray]) -> np.ndarray[float]:
         """Normalized discounted cumulative gain (NDCG)
         Parameters
         ----------
@@ -217,36 +194,25 @@ class NDCG:
         -------
         NDCG : float
         """
-        actual = self._dcg_score(r)
-        ideal = self._dcg_score(np.sort(r)[::-1])
-        return actual / ideal
+        actual_ndcgs = self._dcg_score(r)
 
-    def __call__(self, predictions: np.ndarray[np.ndarray[str]], truths: np.ndarray[str]):
+        # Get the indices that would sort each row in descending order
+        sorted_indices = np.argsort(-r, axis=1)
 
-        predictions = predictions[:, :self.k] if self.k is not None else predictions
+        # Use the sorted_indices to sort the matrix row-wise in descending order
+        ideal_predictions = r[np.arange(r.shape[0])[:, np.newaxis], sorted_indices]
 
-        ndcgs = []
-        for pred, truth in zip(predictions, truths):
+        ideal_ndcgs = self._dcg_score(ideal_predictions)
 
-            pred: np.ndarray
-            truth: str
+        return self.safe_div(actual_ndcgs, ideal_ndcgs)
 
-            rel_rank_mask = (pred == truth).astype(int)
+    def __call__(self, rel_binary_matrix: np.ndarray[np.ndarray[bool]]):
 
-            # scores is decreasing, since items in first positions
-            # should have higher score. Relevance score starts from 1 rather than 0
-            # e.g.
-            # rel_rank_mask = [0, 1, 0, 1, 0]
-            # scores = [5, 4, 3, 2, 1]
-            scores = np.arange(start=len(rel_rank_mask), stop=0, step=-1)
+        rel_binary_matrix = rel_binary_matrix.astype(int)
 
-            # rel_rank_mask is binary, so this will yield a value only for relevant positions
-            # e.g.
-            # rel_rank_mask = [0, 1, 0, 1, 0]
-            # scores = [5, 4, 3, 2, 1]
-            # rel_scores = [0, 4, 0, 2, 0]
-            rel_scores = rel_rank_mask * scores
+        ndcgs = self._calc_ndcg(rel_binary_matrix)
 
-            ndcgs.append(self._calc_ndcg(rel_scores))
+        return ndcgs.mean().item()
+
 
         return np.mean(ndcgs).item()

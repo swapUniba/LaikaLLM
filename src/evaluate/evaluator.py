@@ -1,11 +1,11 @@
 from math import ceil
-from typing import List
+from typing import List, Optional
 
 import datasets
 import numpy as np
 from tqdm import tqdm
 
-from src.evaluate.metrics import Metric
+from src.evaluate.metrics import RankingMetric, PaddedArr
 from src.model.t5 import T5FineTuned
 
 
@@ -15,10 +15,17 @@ class RecEvaluator:
         self.rec_model = rec_model
         self.eval_batch_size = eval_batch_size
 
-    def evaluate(self, eval_dataset: datasets.Dataset, metric_list: List[Metric],
-                 return_loss: bool = False):
+    def evaluate(self, eval_dataset: datasets.Dataset, metric_list: List[RankingMetric], return_loss: bool = False):
 
         self.rec_model.eval()
+
+        # used to save some computational resources, we will compute binary relevance binary for
+        # predictions cut to max_k (i.e. predictions[:, :max_k]). If there is at least one None,
+        # sadly it means that we can't save any resource
+        max_k = None
+        all_ks = [metric.k for metric in metric_list]
+        if None not in all_ks:
+            max_k = max(all_ks)
 
         split_name = eval_dataset.split
         if split_name is None:
@@ -32,7 +39,6 @@ class RecEvaluator:
             remove_columns=eval_dataset.column_names,
             keep_in_memory=True,
             batched=True,
-            batch_size=1,
             desc=f"Tokenizing {split_name} set"
         )
         preprocessed_eval.set_format("torch")
@@ -63,18 +69,14 @@ class RecEvaluator:
             # tqdm update integer percentage (1%, 2%) when float percentage is over .5 threshold (1.501 -> 2%)
             # so we print infos in the same way
             if round(100 * (i / total_n_batch)) > progress:
-                preds_so_far = np.array(total_preds)
-                truths_so_far = np.array(total_truths)
-
-                result = {str(metric): metric(preds_so_far.squeeze(), truths_so_far)
-                          for metric in metric_list}
+                result_so_far = self._compute_metrics(total_preds, total_truths, metric_list, max_k)
 
                 pbar_desc = []
 
                 if return_loss:
                     pbar_desc.append(f"{split_name} Loss -> {(eval_loss / i):.6f}")
 
-                for metric_name, metric_val in result.items():
+                for metric_name, metric_val in result_so_far.items():
                     pbar_desc.append(f"{metric_name} -> {metric_val:.6f}")
 
                 pbar_eval.set_description(", ".join(pbar_desc))
@@ -85,13 +87,29 @@ class RecEvaluator:
 
         eval_loss /= total_n_batch
 
-        total_preds = np.array(total_preds).squeeze()
-        total_truths = np.array(total_truths)
-
-        res_eval_dict = {str(metric): metric(total_preds, total_truths)
-                         for metric in metric_list}
+        res_eval_dict = self._compute_metrics(total_preds, total_truths, metric_list, max_k)
 
         if return_loss is True:
             res_eval_dict["loss"] = eval_loss
 
         return res_eval_dict
+
+    @staticmethod
+    def _compute_metrics(preds: List[np.ndarray], truths: List[np.ndarray], metric_list: List[RankingMetric],
+                         max_k: Optional[int]):
+
+        # Pad array if necessary
+        preds_so_far = PaddedArr(preds)
+        truths_so_far = PaddedArr(truths)
+
+        # Build rel binary matrix by cutting predictions to the max k desired
+        # Save resources by not computing relevance for predictions outside the k range,
+        # which are not used by any metric passed in input
+        rel_binary_matrix = RankingMetric.rel_binary_matrix(preds_so_far, truths_so_far, k=max_k)
+
+        # when computing the specific metric result, we consider its k value which wil surely be <= max_k
+        # (again, saving resources)
+        result = {str(metric): metric(rel_binary_matrix[:, metric.k])
+                  for metric in metric_list}
+
+        return result
