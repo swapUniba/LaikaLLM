@@ -2,12 +2,14 @@ import argparse
 import os
 import random
 from contextlib import contextmanager
+from typing import List, Dict
 
 import numpy as np
 import torch
 import torch.backends.cudnn
 import wandb
 import yaml
+from cytoolz import merge_with
 
 from src import ExperimentConfig
 
@@ -52,6 +54,14 @@ def init_wandb(**kwargs):
             yield
     else:
         yield
+
+
+def list_dict2dict_list(list_of_dicts: List[dict]) -> Dict[str, list]:
+    return merge_with(list, *list_of_dicts)
+
+
+def dict_list2list_dict(dict_of_lists: Dict[str, list]) -> List[dict]:
+    return [dict(zip(dict_of_lists, vals)) for vals in zip(*dict_of_lists.values())]
 
 
 class LoadFromYaml(argparse.Action):
