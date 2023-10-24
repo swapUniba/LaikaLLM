@@ -198,49 +198,57 @@ class AmazonDataset:
         return train_set, val_set, test_set
 
     @staticmethod
-    def sample_train_sequence(sample):
+    def sample_train_sequence(batch: Dict[str, list]) -> Dict[str, list]:
+        
+        batch = dict_list2list_dict(batch)
 
-        out_dict = {}
+        out_dict_list = []
+        for sample in batch:
 
-        if len(sample["item_sequence"]) < 2:
-            raise ValueError(f"{sample['user_id']} has less than 2 items in its order history, can't divide "
-                             "in input and target!")
+            single_out_dict = {}
+            
+            if len(sample["item_sequence"]) < 2:
+                raise ValueError(f"{sample['user_id']} has less than 2 items in its order history, can't divide "
+                                 "in input and ground truth!")
+    
+            elif len(sample["item_sequence"]) == 2:
+                # if we have only two data points, then we have no choice and consider only a sequence of
+                # one data point as input
+                minimum_sliding_size = 1
+            else:
+                # if the sequence 3 or more data points, then we prefer to have input sequences of
+                # at least 2 data points
+                minimum_sliding_size = 2
+    
+            # a training sequence has at least 1 data point (2 if the sequence has at least 3 data points),
+            # but it can have more depending on the length of the sequence
+            # We must ensure that at least an element can be used as ground truth (that's why -1).
+            # In the "sliding_size" is included the ground truth item
+            sliding_size = random.randint(minimum_sliding_size, len(sample["item_sequence"]) - 1)
+    
+            start_index = random.randint(0, len(sample["item_sequence"]) - sliding_size - 1)  # -1 since we start from 0
+            end_index = start_index + sliding_size
 
-        elif len(sample["item_sequence"]) == 2:
-            # if we have only two data points, then we have no choice and consider only a sequence of
-            # one data point as input
-            minimum_sliding_size = 1
-        else:
-            # if the sequence 3 or more data points, then we prefer to have input sequences of
-            # at least 2 data points
-            minimum_sliding_size = 2
+            single_out_dict["user_id"] = sample["user_id"]
+            single_out_dict["input_item_seq"] = sample["item_sequence"][start_index:end_index]
+            single_out_dict["input_description_seq"] = sample["description_sequence"][start_index:end_index]
+            single_out_dict["input_categories_seq"] = sample["categories_sequence"][start_index:end_index]
+            single_out_dict["input_title_seq"] = sample["title_sequence"][start_index:end_index]
+            single_out_dict["input_price_seq"] = sample["price_sequence"][start_index:end_index]
+            single_out_dict["input_imurl_seq"] = sample["imurl_sequence"][start_index:end_index]
+            single_out_dict["input_brand_seq"] = sample["brand_sequence"][start_index:end_index]
+    
+            single_out_dict["gt_item"] = [sample["item_sequence"][end_index]]
+            single_out_dict["gt_description"] = [sample["description_sequence"][end_index]]
+            single_out_dict["gt_categories"] = [sample["categories_sequence"][end_index]]
+            single_out_dict["gt_title"] = [sample["title_sequence"][end_index]]
+            single_out_dict["gt_price"] = [sample["price_sequence"][end_index]]
+            single_out_dict["gt_imurl"] = [sample["imurl_sequence"][end_index]]
+            single_out_dict["gt_brand"] = [sample["brand_sequence"][end_index]]
 
-        # a training sequence has at least 1 data point (2 if the sequence has at least 3 data points),
-        # but it can have more depending on the length of the sequence
-        # We must ensure that at least an element can be used as test set (that's why -1)
-        # in the "sliding_size" is included the target item
-        sliding_size = random.randint(minimum_sliding_size, len(sample["item_sequence"]) - 1)
+            out_dict_list.append(single_out_dict)
 
-        start_index = random.randint(0, len(sample["item_sequence"]) - sliding_size - 1)  # -1 since we start from 0
-        end_index = start_index + sliding_size
-
-        out_dict["user_id"] = sample["user_id"]
-        out_dict["input_item_seq"] = sample["item_sequence"][start_index:end_index]
-        out_dict["input_description_seq"] = sample["description_sequence"][start_index:end_index]
-        out_dict["input_categories_seq"] = sample["categories_sequence"][start_index:end_index]
-        out_dict["input_title_seq"] = sample["title_sequence"][start_index:end_index]
-        out_dict["input_price_seq"] = sample["price_sequence"][start_index:end_index]
-        out_dict["input_imurl_seq"] = sample["imurl_sequence"][start_index:end_index]
-        out_dict["input_brand_seq"] = sample["brand_sequence"][start_index:end_index]
-        out_dict["target_item"] = sample["item_sequence"][end_index]
-        out_dict["target_description"] = sample["description_sequence"][end_index]
-        out_dict["target_categories"] = sample["categories_sequence"][end_index]
-        out_dict["target_title"] = sample["title_sequence"][end_index]
-        out_dict["target_price"] = sample["price_sequence"][end_index]
-        out_dict["target_imurl"] = sample["imurl_sequence"][end_index]
-        out_dict["target_brand"] = sample["brand_sequence"][end_index]
-
-        return out_dict
+        return list_dict2dict_list(out_dict_list)
 
     def _read_sequential(self):
 

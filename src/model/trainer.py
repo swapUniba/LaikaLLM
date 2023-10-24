@@ -72,25 +72,26 @@ class RecTrainer:
             self.rec_model.train()
 
             # at the start of each iteration, we randomly sample the train sequence and tokenize it
+            # batched set to True because data can be augmented, either when sampling or when
+            # tokenizing (e.g. a task as multiple support templates)
+
             sampled_train = train_dataset.map(self.train_sampling_fn,
                                               remove_columns=train_dataset.column_names,
                                               keep_in_memory=True,
+                                              batched=True,
                                               desc="Sampling train set")
 
             preprocessed_train = sampled_train.map(self.rec_model.tokenize,
                                                    remove_columns=sampled_train.column_names,
-                                                   load_from_cache_file=False,
                                                    keep_in_memory=True,
                                                    batched=True,
-                                                   batch_size=1,
                                                    desc="Tokenizing train set")
 
-            # shuffle here so that if we augment data (2 row for a single user) it is shuffled
+            # shuffle here so that if we augment data (2 or more row for a single user) it is shuffled
             preprocessed_train = preprocessed_train.shuffle()
             preprocessed_train.set_format("torch")
 
-            # ceil because we don't drop the last batch. It's here since if we are in
-            # augment strategy, row number increases after preprocessing
+            # ceil because we don't drop the last batch
             total_n_batch = ceil(preprocessed_train.num_rows / self.batch_size)
 
             pbar = tqdm(preprocessed_train.iter(batch_size=self.batch_size),
