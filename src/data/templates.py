@@ -250,13 +250,11 @@ class SequentialSideInfoTask(Task):
     def valid_templates(self, return_id: bool = False):
         return self.all_templates(return_id)[:6]
 
-    @property
-    def qa_templates(self):
-        return [self.templates_dict[6], self.templates_dict[7]]
+    def qa_templates(self, return_id: bool = False):
+        return [self.templates_dict[6], self.templates_dict[7]] if not return_id else [6, 7]
 
-    @property
-    def pair_templates(self):
-        return [self.templates_dict[8], self.templates_dict[9]]
+    def pair_templates(self, return_id: bool = False):
+        return [self.templates_dict[8], self.templates_dict[9]] if not return_id else [8, 9]
 
     @Task.validate_args("user_id", "input_item_seq", "input_categories_seq", "target_item")
     def __call__(self, **kwargs):
@@ -301,7 +299,7 @@ class SequentialSideInfoTask(Task):
 
     def _create_input_target_qa(self, user_id, order_history_str, input_categories_str, target_item):
         # random choice of qa template
-        input_prompt_support, target_support = random.choice(self.qa_templates)
+        input_prompt_support, target_support = random.choice(self.qa_templates())
 
         bullet_list_wrong_size = 4
         all_possible_candidates = self.all_unique_items[self.all_unique_items != target_item]
@@ -320,7 +318,7 @@ class SequentialSideInfoTask(Task):
 
     def _create_input_target_pair(self, user_id, order_history, input_categories, target_item):
         # random choice of pair template
-        input_prompt_support, target_support = random.choice(self.pair_templates)
+        input_prompt_support, target_support = random.choice(self.pair_templates())
 
         first_of_pair_idx = random.randint(0, len(order_history) - 1)
         first_of_pair = order_history[first_of_pair_idx]
