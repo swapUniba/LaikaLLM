@@ -87,14 +87,16 @@ class Task(ABC):
     @classmethod
     def from_string(cls, *task_str: str, all_unique_items: np.ndarray[str]):
 
-        try:
-            # remember, we are searching a case-insensitive dict, so we don't care about
-            # lowering all keys
-            instantiated_task = [cls.str_alias_obj[task](all_unique_items) for task in task_str]
-        except KeyError:
-            raise KeyError("One or more task string alias does not exist!") from None
+        instantiated_tasks = []
+        for task in task_str:
+            try:
+                # remember, we are searching a case-insensitive dict, so we don't care about
+                # lowering all keys
+                instantiated_tasks.append(cls.str_alias_obj[task](all_unique_items))
+            except KeyError:
+                raise KeyError(f"{task} task does not exist!") from None
 
-        return instantiated_task
+        return instantiated_tasks
 
     @abstractmethod
     def __call__(self, *args, **kwargs):
