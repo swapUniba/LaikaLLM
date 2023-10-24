@@ -153,9 +153,6 @@ class SequentialTask(Task):
     def valid_templates(self, return_id: bool = False):
         return self.all_templates(return_id)
 
-    def support_templates(self, return_id: bool = False):
-        return []
-
     @Task.validate_args("user_id", "input_item_seq", "target_item")
     def __call__(self, **kwargs):
         user_id = kwargs["user_id"]
@@ -379,9 +376,6 @@ class DirectTask(Task):
     def valid_templates(self, return_id: bool = False):
         return self.all_templates(return_id)
 
-    def support_templates(self, return_id: bool = False):
-        return []
-
     @Task.validate_args("user_id", "input_item_seq", "target_item")
     def __call__(self, **kwargs):
         user_id = kwargs["user_id"]
@@ -444,9 +438,6 @@ class DirectSideInfoTask(Task):
 
     def valid_templates(self, return_id: bool = False):
         return self.all_templates(return_id)[:5]
-
-    def support_templates(self, return_id: bool = False):
-        return []
 
     @Task.validate_args("user_id", "input_item_seq", "input_categories_seq", "target_item", "target_categories")
     def __call__(self, **kwargs):
