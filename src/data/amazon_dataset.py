@@ -131,6 +131,8 @@ class AmazonDataset:
     @staticmethod
     def _split_data(exploded_data_df: pd.DataFrame):
 
+        # For Amazon Dataset, Leave One Out is performed following P5 paper
+
         groupby_obj = exploded_data_df.groupby(by=["user_id"])
 
         # train set will be divided into input and target at each epoch: we will sample
@@ -143,9 +145,9 @@ class AmazonDataset:
         # It would be better to validate and test using entirely unknown users, but
         # in this phase we adhere to evaluation protocol of authors
 
-        # if sequence is -> 1 2 3 4 5 6 7 8, VAL SET will have
-        # input_sequence: 1 2 3 4 5 6
-        # target_item: 7
+        # if sequence is -> [1 2 3 4 5 6 7 8], VAL SET will have
+        # input_sequence: [1 2 3 4 5 6]
+        # gt_item: [7]
         input_val_set = groupby_obj.nth[:-2].rename(columns={"item_sequence": "input_item_seq",
                                                              "description_sequence": "input_desc_seq",
                                                              "categories_sequence": "input_categories_seq",
@@ -154,19 +156,23 @@ class AmazonDataset:
                                                              "imurl_sequence": "input_imurl_seq",
                                                              "brand_sequence": "input_brand_seq"})
         input_val_set = input_val_set.groupby(by=["user_id"]).agg(list).reset_index()
-        target_val_set = groupby_obj.nth[-2].rename(columns={"item_sequence": "target_item",
-                                                             "description_sequence": "input_desc_seq",
-                                                             "categories_sequence": "target_categories",
-                                                             "title_sequence": "target_title",
-                                                             "price_sequence": "target_price",
-                                                             "imurl_sequence": "target_imurl",
-                                                             "brand_sequence": "target_brand"})
 
-        val_set = input_val_set.merge(target_val_set, on="user_id")
+        gt_val_set = groupby_obj.nth[-2].rename(columns={"item_sequence": "gt_item",
+                                                         "description_sequence": "input_desc_seq",
+                                                         "categories_sequence": "gt_categories",
+                                                         "title_sequence": "gt_title",
+                                                         "price_sequence": "gt_price",
+                                                         "imurl_sequence": "gt_imurl",
+                                                         "brand_sequence": "gt_brand"})
+        # this is done only for generality purpose, in order to have a list wrapping all target item
+        # features. We are performing Leave One Out, so we are sure there is only one item
+        gt_val_set = gt_val_set.groupby(by=["user_id"]).agg(list).reset_index()
 
-        # if sequence is -> 1 2 3 4 5 6 7 8, TEST SET will have
-        # input_sequence: 1 2 3 4 5 6 7
-        # target_item: 8
+        val_set = input_val_set.merge(gt_val_set, on="user_id")
+
+        # if sequence is -> [1 2 3 4 5 6 7 8], TEST SET will have
+        # input_sequence: [1 2 3 4 5 6 7]
+        # gt_item: [8]
         input_test_set = groupby_obj.nth[:-1].rename(columns={"item_sequence": "input_item_seq",
                                                               "description_sequence": "input_desc_seq",
                                                               "categories_sequence": "input_categories_seq",
@@ -175,15 +181,19 @@ class AmazonDataset:
                                                               "imurl_sequence": "input_imurl_seq",
                                                               "brand_sequence": "input_brand_seq"})
         input_test_set = input_test_set.groupby(by=["user_id"]).agg(list).reset_index()
-        target_test_set = groupby_obj.nth[-1].rename(columns={"item_sequence": "target_item",
-                                                              "description_sequence": "input_desc_seq",
-                                                              "categories_sequence": "target_categories",
-                                                              "title_sequence": "target_title",
-                                                              "price_sequence": "target_price",
-                                                              "imurl_sequence": "target_imurl",
-                                                              "brand_sequence": "target_brand"})
 
-        test_set = input_test_set.merge(target_test_set, on="user_id")
+        gt_test_set = groupby_obj.nth[-1].rename(columns={"item_sequence": "gt_item",
+                                                          "description_sequence": "input_desc_seq",
+                                                          "categories_sequence": "gt_categories",
+                                                          "title_sequence": "gt_title",
+                                                          "price_sequence": "gt_price",
+                                                          "imurl_sequence": "gt_imurl",
+                                                          "brand_sequence": "gt_brand"})
+        # this is done only for generality purpose, in order to have a list wrapping all target item
+        # features. We are performing Leave One Out, so we are sure there is only one item
+        gt_test_set = gt_test_set.groupby(by=["user_id"]).agg(list).reset_index()
+
+        test_set = input_test_set.merge(gt_test_set, on="user_id")
 
         return train_set, val_set, test_set
 
