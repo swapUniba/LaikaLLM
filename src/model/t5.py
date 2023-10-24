@@ -16,6 +16,8 @@ from sentence_transformers import util
 
 from src import ExperimentConfig
 from src.data.templates import Task
+from src.utils import dict_list2list_dict, list_dict2dict_list
+
 
 # sim_model = SentenceTransformer('all-MiniLM-L6-v2', device="cuda:0")
 
@@ -29,7 +31,6 @@ class UserEmbeds(nn.Module):
         torch.nn.init.xavier_uniform_(self.emb_layer.weight)
 
     def __call__(self, user_idx):
-
         x = self.emb_layer(user_idx)
 
         # we dropout an entire column (neuron)
@@ -227,18 +228,18 @@ class T5FineTuned(T5ForConditionalGeneration):
         return mapped_predictions, target_text, val_loss
 
     def save_pretrained(
-        self,
-        save_directory: Union[str, os.PathLike],
-        is_main_process: bool = True,
-        state_dict: Optional[dict] = None,
-        save_function: Callable = torch.save,
-        push_to_hub: bool = False,
-        max_shard_size: Union[int, str] = "10GB",
-        safe_serialization: bool = False,
-        variant: Optional[str] = None,
-        token: Optional[Union[str, bool]] = None,
-        save_peft_format: bool = True,
-        **kwargs,
+            self,
+            save_directory: Union[str, os.PathLike],
+            is_main_process: bool = True,
+            state_dict: Optional[dict] = None,
+            save_function: Callable = torch.save,
+            push_to_hub: bool = False,
+            max_shard_size: Union[int, str] = "10GB",
+            safe_serialization: bool = False,
+            variant: Optional[str] = None,
+            token: Optional[Union[str, bool]] = None,
+            save_peft_format: bool = True,
+            **kwargs,
     ):
 
         super().save_pretrained(save_directory=save_directory,

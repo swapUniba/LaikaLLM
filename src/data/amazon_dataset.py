@@ -16,6 +16,7 @@ from datasets import Dataset
 from tqdm import tqdm
 
 from src import ExperimentConfig, PROCESSED_DATA_DIR, RAW_DATA_DIR
+from src.utils import dict_list2list_dict, list_dict2dict_list
 
 
 def parse(path):
