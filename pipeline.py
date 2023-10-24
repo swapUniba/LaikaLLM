@@ -6,6 +6,7 @@ from pygit2 import Repository
 from src import ExperimentConfig
 from src.data.amazon_dataset import data_main
 from src.data.templates import Task
+from src.evaluate.metrics import RankingMetric
 from src.model.trainer import trainer_main
 from src.utils import seed_everything, init_wandb, LoadFromYaml
 
@@ -30,8 +31,8 @@ if __name__ == '__main__':
     parser.add_argument('--inject_personalization', type=str, nargs="+", default=(),
                         choices=["train", "eval"],
                         help='',)
-    parser.add_argument('--monitor_strategy', type=str, default="no",
-                        choices=["no", "loss", "hit@10"],
+    parser.add_argument('--monitor_metric', type=str, default="no",
+                        choices=list(RankingMetric.str_alias_cls.keys()),
                         help='',)
     parser.add_argument('--train_batch_size', type=int, default=4,
                         help='',)

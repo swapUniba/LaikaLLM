@@ -15,8 +15,8 @@ from src import MODELS_DIR, ExperimentConfig
 from src.evaluate.evaluator import RecEvaluator
 from src.utils import log_wandb
 from src.data.amazon_dataset import AmazonDataset
-from src.data.templates import Task, SequentialTask
-from src.evaluate.metrics import Hit
+from src.data.templates import Task
+from src.evaluate.metrics import Hit, RankingMetric
 from src.model.t5 import T5FineTuned
 
 
@@ -29,7 +29,7 @@ class RecTrainer:
                  all_labels: np.ndarray,
                  train_sampling_fn: Callable[[Dict], Dict],
                  device: str = 'cuda:0',
-                 monitor_strategy: Literal['loss', 'hit@10'] = 'loss',
+                 monitor_metric: str = 'loss',
                  eval_batch_size: Optional[int] = None,
                  output_name: Optional[str] = None,
                  random_seed: Optional[int] = None):
@@ -42,7 +42,11 @@ class RecTrainer:
         self.eval_batch_size = eval_batch_size if eval_batch_size is not None else batch_size
         self.device = device
         self.random_seed = random_seed
-        self.monitor_strategy = monitor_strategy
+
+        if monitor_metric != "loss":
+            monitor_metric = RankingMetric.from_string(monitor_metric)
+
+        self.monitor_metric = monitor_metric
 
         # output name
         if output_name is None:
@@ -59,9 +63,9 @@ class RecTrainer:
 
         self.rec_model.train()
 
-        # depending on the monitor strategy, we want either this to decrease or to increase,
+        # depending on the monitor metric, we want either this to decrease or to increase,
         # so we have a different initialization
-        best_val_monitor_result = np.inf if self.monitor_strategy == "loss" else 0
+        best_val_monitor_result = np.inf if self.monitor_metric == "loss" else 0
         best_epoch = -1
 
         optimizer = self.rec_model.get_suggested_optimizer()
@@ -136,22 +140,28 @@ class RecTrainer:
 
                 self.rec_model.eval()
 
-                validation_metric = Hit(k=10)
+                # monitor_metric is either the string "loss" or a RankingMetric obj
+                validation_metric = self.monitor_metric
 
                 val_result = self.rec_evaluator.evaluate(validation_dataset,
                                                          metric_list=[validation_metric],
                                                          return_loss=True)
 
-                if self.monitor_strategy == "loss":
+                if validation_metric == "loss":
                     monitor_str = "Val loss"
                     monitor_val = val_result["loss"]
-                    should_save = monitor_val < best_val_monitor_result  # we want loss to decrease
+
+                    # we want loss to decrease
+                    should_save = monitor_val < best_val_monitor_result
                 else:
                     monitor_str = str(validation_metric)
                     monitor_val = val_result[monitor_str]
-                    should_save = monitor_val > best_val_monitor_result  # we want metric (hit) to increase
 
-                # we save the best model based on the reference metric result
+                    # The validation metric chosen should decide how to compare best result
+                    # (mse should decrease, hit should increase, etc.)
+                    should_save = validation_metric.operator_comparison(monitor_val, best_val_monitor_result)
+
+                # we save the best model based on the metric/loss result
                 if should_save:
                     best_epoch = epoch + 1  # we start from 0
                     best_val_monitor_result = monitor_val
@@ -168,7 +178,7 @@ class RecTrainer:
             else:
                 self.rec_model.save_pretrained(self.output_path)
 
-            # log to wandb
+            # log to wandb at each epoch
             log_wandb(dict_to_log)
 
         elapsed_time = (time.time() - start) / 60
@@ -249,7 +259,7 @@ def trainer_main():
         eval_batch_size=eval_batch_size,
         random_seed=random_seed,
         train_sampling_fn=sampling_fn,
-        monitor_strategy=monitor_metric,
+        monitor_metric=monitor_metric,
         output_name=exp_name
     )
 
