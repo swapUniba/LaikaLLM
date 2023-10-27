@@ -105,6 +105,17 @@ class Metric(ABC):
         return string
 
 
+class Loss(Metric):
+
+    @property
+    def operator_comparison(self):
+        # loss metric should be minimized, hence "<"
+        return operator.lt
+
+    def __call__(self, *args, **kwargs):
+        raise NotImplementedError("This should not be called, it is simply defined to make use of polymorphism")
+
+
 class Hit(Metric):
 
     def __call__(self, rel_binary_matrix: np.ndarray[np.ndarray[bool]]) -> float:
