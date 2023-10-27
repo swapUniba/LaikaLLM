@@ -6,8 +6,8 @@ from typing import Tuple, Literal
 
 from src.data.templates import Task
 
-THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-ROOT_PATH = str(Path(os.path.join(THIS_DIR, "..")).resolve())
+_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_PATH = str(Path(os.path.join(_THIS_DIR, "..")).resolve())
 
 DATA_DIR = os.path.join(ROOT_PATH, "data")
 RAW_DATA_DIR = os.path.join(DATA_DIR, "raw")
