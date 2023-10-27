@@ -93,7 +93,7 @@ class RecEvaluator:
         res_eval_dict = self._compute_metrics(total_preds, total_truths, metric_list, max_k)
 
         if return_loss is True:
-            res_eval_dict["loss"] = eval_loss
+            res_eval_dict[f"{split_name} loss"] = eval_loss
 
         return res_eval_dict
 
