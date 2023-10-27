@@ -5,17 +5,20 @@ import datasets
 import numpy as np
 from tqdm import tqdm
 
-from src.evaluate.metrics import RankingMetric, PaddedArr
-from src.model.t5 import T5FineTuned
+from src import ExperimentConfig, MODELS_DIR, METRICS_DIR
+from src.data.amazon_dataset import AmazonDataset
+from src.evaluate.metrics import Metric, PaddedArr
+from src.model.t5 import T5Rec
+from src.utils import log_wandb
 
 
 class RecEvaluator:
 
-    def __init__(self, rec_model: T5FineTuned, eval_batch_size: int):
+    def __init__(self, rec_model: T5Rec, eval_batch_size: int):
         self.rec_model = rec_model
         self.eval_batch_size = eval_batch_size
 
-    def evaluate(self, eval_dataset: datasets.Dataset, metric_list: List[RankingMetric], return_loss: bool = False):
+    def evaluate(self, eval_dataset: datasets.Dataset, metric_list_str: List[str], return_loss: bool = False):
 
         self.rec_model.eval()
 
@@ -95,7 +98,7 @@ class RecEvaluator:
         return res_eval_dict
 
     @staticmethod
-    def _compute_metrics(preds: List[np.ndarray], truths: List[np.ndarray], metric_list: List[RankingMetric],
+    def _compute_metrics(preds: List[np.ndarray], truths: List[np.ndarray], metric_list: List[Metric],
                          max_k: Optional[int]):
 
         # Pad array if necessary
@@ -105,7 +108,7 @@ class RecEvaluator:
         # Build rel binary matrix by cutting predictions to the max k desired
         # Save resources by not computing relevance for predictions outside the k range,
         # which are not used by any metric passed in input
-        rel_binary_matrix = RankingMetric.rel_binary_matrix(preds_so_far, truths_so_far, k=max_k)
+        rel_binary_matrix = Metric.rel_binary_matrix(preds_so_far, truths_so_far, k=max_k)
 
         # when computing the specific metric result, we consider its k value which wil surely be <= max_k
         # (again, saving resources)

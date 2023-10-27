@@ -28,7 +28,7 @@ class PaddedArr(np.ndarray):
         return padded_array.astype(str)
 
 
-class RankingMetric(ABC):
+class Metric(ABC):
 
     # name - class mapping, used for when metrics should be initialized from strings
     str_alias_cls: dict = CaseInsensitiveDict()
@@ -67,7 +67,7 @@ class RankingMetric(ABC):
         return np.divide(num, den, out=np.zeros_like(num, dtype=float), where=den != 0)
 
     @classmethod
-    def from_string(cls, *metric_str: str):
+    def from_string(cls, *metric_str: str) -> List[Metric]:
 
         instantiated_metrics = []
         for metric in metric_str:
@@ -105,7 +105,7 @@ class RankingMetric(ABC):
         return string
 
 
-class Hit(RankingMetric):
+class Hit(Metric):
 
     def __call__(self, rel_binary_matrix: np.ndarray[np.ndarray[bool]]) -> float:
 
@@ -117,7 +117,7 @@ class Hit(RankingMetric):
         return np.mean(per_user_hit).item()
 
 
-class MAP(RankingMetric):
+class MAP(Metric):
 
     def __call__(self, rel_binary_matrix: np.ndarray[np.ndarray[bool]]) -> float:
 
@@ -136,7 +136,7 @@ class MAP(RankingMetric):
         return map
 
 
-class MRR(RankingMetric):
+class MRR(Metric):
 
     def __call__(self, rel_binary_matrix: np.ndarray[np.ndarray[bool]]) -> float:
 
@@ -156,7 +156,10 @@ class MRR(RankingMetric):
         return mrr
 
 
-class NDCG(RankingMetric):
+class NDCG(Metric):
+
+    # no different gains option because atm relevance is binary
+    # thus it won't make a difference if gains were "linear" or "exp"
     def __init__(self,
                  k: int = None,
                  discount_log: Callable = np.log2):

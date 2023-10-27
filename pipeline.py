@@ -32,7 +32,7 @@ if __name__ == '__main__':
                         choices=["train", "eval"],
                         help='',)
     parser.add_argument('--monitor_metric', type=str, default="no",
-                        choices=list(RankingMetric.str_alias_cls.keys()),
+                        choices=list(Metric.str_alias_cls.keys()),
                         help='',)
     parser.add_argument('--train_batch_size', type=int, default=4,
                         help='',)
