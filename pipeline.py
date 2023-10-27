@@ -90,8 +90,7 @@ if __name__ == '__main__':
     dict_args["CUBLAS_WORKSPACE_CONFIG"] = os.environ["CUBLAS_WORKSPACE_CONFIG"]
 
     # log also the current active branch in which experiment is being performed
-
-    dict_args["git_branch"] = Repository('.').head.shorthand  # 'master'
+    dict_args["git_branch"] = Repository('.').head.shorthand
 
     with init_wandb(project="P5-Thesis", name=ExperimentConfig.exp_name, config=dict_args):
 
