@@ -30,24 +30,16 @@ class Task(ABC):
     # keys are integers, values are PromptTarget objects
     templates_dict = {}
     # name obj class mapping, used for when task must be initialized from strings
-    str_alias_obj: dict = CaseInsensitiveDict()
+    str_alias_cls: dict = CaseInsensitiveDict()
     # class attribute since if the model is in training mode, all tasks should be in training mode
     training = False
 
     def __init__(self, all_unique_items: np.ndarray[str]):
         self.all_unique_items = all_unique_items
 
-    # automatically called on subclass definition, will populate the str_alias_obj dict
+    # automatically called on subclass definition, will populate the str_alias_cls dict
     def __init_subclass__(cls, **kwargs):
-        cls.str_alias_obj[cls.__name__] = cls
-
-    @classmethod
-    def train(cls):
-        Task.training = True
-
-    @classmethod
-    def eval(cls):
-        Task.training = False
+        cls.str_alias_cls[cls.__name__] = cls
 
     def all_templates(self, return_id: bool = False):
         return list(self.templates_dict.keys()) if return_id else list(self.templates_dict.values())
@@ -85,6 +77,14 @@ class Task(ABC):
         return decorator
 
     @classmethod
+    def train(cls):
+        Task.training = True
+
+    @classmethod
+    def eval(cls):
+        Task.training = False
+
+    @classmethod
     def from_string(cls, *task_str: str, all_unique_items: np.ndarray[str]):
 
         instantiated_tasks = []
@@ -92,7 +92,7 @@ class Task(ABC):
             try:
                 # remember, we are searching a case-insensitive dict, so we don't care about
                 # lowering all keys
-                instantiated_tasks.append(cls.str_alias_obj[task](all_unique_items))
+                instantiated_tasks.append(cls.str_alias_cls[task](all_unique_items))
             except KeyError:
                 raise KeyError(f"{task} task does not exist!") from None
 

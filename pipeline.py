@@ -21,9 +21,9 @@ if __name__ == '__main__':
                         help='')
     parser.add_argument('--n_epochs', type=int, default=10,
                         help='')
-    parser.add_argument('--train_tasks', type=str, nargs="+", default=tuple(Task.str_alias_obj.keys()),
-                        choices=list(Task.str_alias_obj.keys()),
-                        help='',)
+    parser.add_argument('--train_tasks', type=str, nargs="+", default=tuple(Task.str_alias_cls.keys()),
+                        choices=list(Task.str_alias_cls.keys()),
+                        help='', )
     parser.add_argument('--integer_ids', action="store_true",
                         help='')
     parser.add_argument('--items_start_from_1001', action="store_true",

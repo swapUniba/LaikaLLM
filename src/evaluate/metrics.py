@@ -33,7 +33,7 @@ class RankingMetric(ABC):
     # name - class mapping, used for when metrics should be initialized from strings
     str_alias_cls: dict = CaseInsensitiveDict()
 
-    # automatically called on subclass definition, will populate the str_alias_obj dict
+    # automatically called on subclass definition, will populate the str_alias_cls dict
     def __init_subclass__(cls, **kwargs):
         cls.str_alias_cls[cls.__name__] = cls
 
