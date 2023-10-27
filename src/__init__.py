@@ -12,8 +12,9 @@ ROOT_PATH = str(Path(os.path.join(_THIS_DIR, "..")).resolve())
 DATA_DIR = os.path.join(ROOT_PATH, "data")
 RAW_DATA_DIR = os.path.join(DATA_DIR, "raw")
 PROCESSED_DATA_DIR = os.path.join(DATA_DIR, "processed")
-SNAP_DIR = os.path.join(ROOT_PATH, "snap")
 MODELS_DIR = os.path.join(ROOT_PATH, "models")
+REPORTS_DIR = os.path.join(ROOT_PATH, "reports")
+METRICS_DIR = os.path.join(REPORTS_DIR, "metrics")
 
 
 @dataclass
