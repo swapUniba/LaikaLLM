@@ -6,7 +6,8 @@ from pygit2 import Repository
 from src import ExperimentConfig
 from src.data.amazon_dataset import data_main
 from src.data.templates import Task
-from src.evaluate.metrics import RankingMetric
+from src.evaluate.evaluator import eval_main
+from src.evaluate.metrics import Metric
 from src.model.trainer import trainer_main
 from src.utils import seed_everything, init_wandb, LoadFromYaml
 

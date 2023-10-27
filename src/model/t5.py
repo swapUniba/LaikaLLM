@@ -7,19 +7,13 @@ from typing import List, Union, Optional, Callable
 
 import numpy as np
 import torch
-from cytoolz import merge_with
 from torch import nn, Tensor
 from torch.nn.utils.rnn import pad_sequence
-from transformers import T5ForConditionalGeneration, Adafactor, T5TokenizerFast
-from sentence_transformers import SentenceTransformer
-from sentence_transformers import util
+from transformers import T5ForConditionalGeneration, Adafactor, T5TokenizerFast, T5Config
 
 from src import ExperimentConfig
 from src.data.templates import Task
 from src.utils import dict_list2list_dict, list_dict2dict_list
-
-
-# sim_model = SentenceTransformer('all-MiniLM-L6-v2', device="cuda:0")
 
 
 class UserEmbeds(nn.Module):

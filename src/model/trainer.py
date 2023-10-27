@@ -1,9 +1,7 @@
 import os
 import time
-from collections import defaultdict
-from copy import deepcopy
 from math import ceil
-from typing import Optional, Literal, Callable, Dict
+from typing import Optional, Callable, Dict
 
 import datasets
 import numpy as np
@@ -16,8 +14,8 @@ from src.evaluate.evaluator import RecEvaluator
 from src.utils import log_wandb
 from src.data.amazon_dataset import AmazonDataset
 from src.data.templates import Task
-from src.evaluate.metrics import Hit, RankingMetric
-from src.model.t5 import T5FineTuned
+from src.evaluate.metrics import Metric
+from src.model.t5 import T5Rec
 
 
 class RecTrainer:
