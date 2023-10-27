@@ -23,11 +23,14 @@ class ExperimentConfig:
     exp_name: str = None
     checkpoint: str = "google/flan-t5-small"
     n_epochs: int = 10
-    train_tasks: Tuple[str] = tuple(Task.str_alias_obj.keys())
+    train_tasks: Tuple[str] = tuple(Task.str_alias_cls.keys())
+    val_task: str = None
+    val_task_template_id: str = None
     integer_ids: bool = False
     items_start_from_1001: bool = False
     inject_personalization: Tuple[str] = ()
-    monitor_strategy: Literal['no', 'loss', 'hit@10'] = "no"
+    monitor_strategy: str = "no"
+    eval_metrics: Tuple[str] = ("hit@10", "map@10", "mrr@10")
     train_batch_size: int = 4
     eval_batch_size: int = 2
     add_prefix_items_users: bool = False
