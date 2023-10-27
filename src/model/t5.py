@@ -37,31 +37,51 @@ class UserEmbeds(nn.Module):
         return x
 
 
-class T5FineTuned(T5ForConditionalGeneration):
+class T5RecConfig(T5Config):
+    def __init__(self,
+                 training_tasks_str: List[str] = None,
+                 n_users: int = None,
+                 all_unique_labels: List[str] = None,
+                 inject_personalization: List[str] = None,
+                 **kwargs):
 
+        T5Config.__init__(self, **kwargs)
+
+        self.training_tasks_str = training_tasks_str
+        self.n_users = n_users
+        self.all_unique_labels = all_unique_labels
+        self.inject_personalization = inject_personalization
+
+
+class T5Rec(T5ForConditionalGeneration):
+
+    config_class = T5RecConfig
+
+    # eval_task is here because we don't need it to be saved and loaded back,
+    # even if validation was performed during training
     def __init__(self,
                  config,
-                 n_users: int,
-                 training_tasks: List[Task],
-                 all_unique_labels: np.ndarray[str],
-                 eval_task: Task = None,
+                 eval_task_str: str = None,
+                 force_eval_template_id: int = None,
                  device: str = "cpu"):
 
         super().__init__(config)
 
         self.tokenizer = T5TokenizerFast.from_pretrained(config.name_or_path)
 
-        self.training_tasks = training_tasks
-        self.eval_task = eval_task
+        # copy here relevant config values and manipulate them if necessary
+        self.all_unique_labels = np.array(self.config.all_unique_labels)
+        self.training_tasks = Task.from_string(*self.config.training_tasks_str,
+                                               all_unique_items=self.all_unique_labels)
+        self.n_users = self.config.n_users
+        self.inject_personalization = self.config.inject_personalization
 
-        self.n_users = n_users
-        self.all_unique_labels = all_unique_labels
-        # self.encoded_all_labels = sim_model.encode(list(self.all_unique_labels),
-        #                                            convert_to_tensor=True,
-        #                                            show_progress_bar=True)
+        # custom user_embedding layer
+        self.user_embeddings = UserEmbeds(self.config.n_users, self.config.d_model)
 
-        # Set maximum 512 whole words in a source text
-        self.user_embeddings = UserEmbeds(n_users, self.config.d_model)
+        self.eval_task = None
+        if eval_task_str is not None:
+            self.set_eval_task(eval_task_str, force_eval_template_id)
 
         self.to(device)
 
@@ -79,8 +99,11 @@ class T5FineTuned(T5ForConditionalGeneration):
             warmup_init=False
         )
 
-    def set_eval_task(self, eval_task: Task):
-        self.eval_task = eval_task
+    def set_eval_task(self, eval_task_str: str, template_id: int = None):
+        self.eval_task = Task.from_string(eval_task_str, all_unique_items=self.all_unique_labels)
+
+        if template_id is not None:
+            self.eval_task.force_template_id(template_id)
 
     def tokenize(self, batch):
 
@@ -100,6 +123,7 @@ class T5FineTuned(T5ForConditionalGeneration):
             # an assertion error will be raised
             templates_list = task(**sample)
 
+            # TO DO: make example that works for split different than leave one out
             for input_text, target_text in templates_list:
                 encoded_sequence = self.tokenizer(text=input_text, text_target=target_text, truncation=True)
 
@@ -111,7 +135,8 @@ class T5FineTuned(T5ForConditionalGeneration):
                 whole_word_ids[~special_token_mask] += 1
                 whole_word_ids[special_token_mask] = self.tokenizer.pad_token_id
 
-                encoded_sequence["user_idx"] = int(re.search(r"\d+", sample["user_id"]).group())
+                # even if surely there is only one user, we must wrap it into a list for the batched map fn to work
+                encoded_sequence["user_idx"] = [int(re.search(r"\d+", sample["user_id"]).group())]
                 encoded_sequence["whole_word_ids"] = whole_word_ids.tolist()
                 encoded_sequence["gt_item"] = sample["gt_item"]
 
@@ -165,8 +190,8 @@ class T5FineTuned(T5ForConditionalGeneration):
 
         inputs_embeds = self.shared(batch["input_ids"])  # embedding step - add HERE
 
-        if "train" in ExperimentConfig.inject_personalization:
-            inputs_embeds = self._inject_personalization(inputs_embeds, batch["user_idx"])
+        if "train" in self.inject_personalization:
+            inputs_embeds = self._inject_personalization(inputs_embeds, batch["user_idx"].squeeze())
 
         output = self(inputs_embeds=inputs_embeds,
                       attention_mask=batch["attention_mask"],
@@ -208,13 +233,6 @@ class T5FineTuned(T5ForConditionalGeneration):
         )
 
         generated_sents = self.tokenizer.batch_decode(beam_outputs, skip_special_tokens=True)
-        # encoded_preds = sim_model.encode(generated_sents, show_progress_bar=False, convert_to_tensor=True)
-
-        # sim = util.cos_sim(encoded_preds, self.encoded_all_labels).cpu()
-        # mapped_predictions = self.all_unique_labels[sim.argmax(axis=1)]
-
-        # mapped predictions is 1d. What we want is to have an array of shape (batch_size x num_return sequences)
-        # mapped_predictions = mapped_predictions.reshape((len(target_text), num_return_sequences))
 
         mapped_predictions = np.array(generated_sents).reshape((len(target_text), num_return_sequences))
         val_loss = output.loss
@@ -248,6 +266,7 @@ class T5FineTuned(T5ForConditionalGeneration):
                                 save_peft_format=save_peft_format,
                                 **kwargs)
 
+        # also tokenizer is saved
         self.tokenizer.save_pretrained(save_directory=save_directory)
 
     def train(self, mode: bool = True):
