@@ -155,11 +155,11 @@ class SequentialTask(Task):
     def valid_templates(self, return_id: bool = False):
         return self.all_templates(return_id)
 
-    @Task.validate_args("user_id", "input_item_seq", "target_item")
+    @Task.validate_args("user_id", "input_item_seq", "gt_item")
     def __call__(self, **kwargs):
         user_id = kwargs["user_id"]
         order_history = kwargs["input_item_seq"]
-        target_item = kwargs["target_item"]
+        target_item = kwargs["gt_item"]
 
         # random.choice applied to dict with int key returns a value
         input_prompt, target = random.choice(self.all_templates())
@@ -258,12 +258,15 @@ class SequentialSideInfoTask(Task):
     def pair_templates(self, return_id: bool = False):
         return [self.templates_dict[8], self.templates_dict[9]] if not return_id else [8, 9]
 
-    @Task.validate_args("user_id", "input_item_seq", "input_categories_seq", "target_item")
+    @Task.validate_args("user_id", "input_item_seq", "input_categories_seq", "gt_item")
     def __call__(self, **kwargs):
+
+        assert len(kwargs["gt_item"]) == 1, "This task was designed for Leave One Out strategy!"
+
         user_id = kwargs["user_id"]
         order_history = kwargs["input_item_seq"]
         input_categories_seq = kwargs["input_categories_seq"]
-        target_item = kwargs["target_item"]
+        [target_item] = kwargs["gt_item"]
 
         out_list = []
 
@@ -376,11 +379,11 @@ class DirectTask(Task):
     def valid_templates(self, return_id: bool = False):
         return self.all_templates(return_id)
 
-    @Task.validate_args("user_id", "input_item_seq", "target_item")
+    @Task.validate_args("user_id", "input_item_seq", "gt_item")
     def __call__(self, **kwargs):
         user_id = kwargs["user_id"]
         input_item_seq = kwargs["input_item_seq"]
-        target_item = kwargs["target_item"]
+        target_item = kwargs["gt_item"]
 
         if self.training:
             input_item_seq = input_item_seq + [target_item]
@@ -439,13 +442,13 @@ class DirectSideInfoTask(Task):
     def valid_templates(self, return_id: bool = False):
         return self.all_templates(return_id)[:5]
 
-    @Task.validate_args("user_id", "input_item_seq", "input_categories_seq", "target_item", "target_categories")
+    @Task.validate_args("user_id", "input_item_seq", "input_categories_seq", "gt_item", "gt_categories")
     def __call__(self, **kwargs):
         user_id = kwargs["user_id"]
         input_item_seq = kwargs["input_item_seq"]
         input_categories_seq = kwargs["input_categories_seq"]
         target_categories = kwargs["target_categories"]
-        target_item = kwargs["target_item"]
+        target_item = kwargs["gt_item"]
 
         if self.training:
             input_item_seq = input_item_seq + [target_item]
