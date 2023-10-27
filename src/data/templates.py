@@ -32,10 +32,12 @@ class Task(ABC):
     # name obj class mapping, used for when task must be initialized from strings
     str_alias_cls: dict = CaseInsensitiveDict()
     # class attribute since if the model is in training mode, all tasks should be in training mode
-    training = False
+    training: bool = False
+
+    all_unique_items: np.ndarray = np.array([])
 
     def __init__(self, all_unique_items: np.ndarray[str]):
-        self.all_unique_items = all_unique_items
+        Task.all_unique_items = all_unique_items
 
     # automatically called on subclass definition, will populate the str_alias_cls dict
     def __init_subclass__(cls, **kwargs):
