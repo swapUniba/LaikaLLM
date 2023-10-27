@@ -101,3 +101,7 @@ if __name__ == '__main__':
         # at start of each main phase, we re-initialize the state
         seed_everything(ExperimentConfig.random_seed)
         trainer_main()
+
+        # at start of each main phase, we re-initialize the state
+        seed_everything(ExperimentConfig.random_seed)
+        eval_main()

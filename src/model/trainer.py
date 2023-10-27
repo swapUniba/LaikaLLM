@@ -263,44 +263,7 @@ def trainer_main():
         output_name=exp_name
     )
 
-    best_rec_model_path = trainer.train(train, validation_dataset=val)
-
-    rec_model = T5FineTuned.from_pretrained(
-        best_rec_model_path,
-        n_users=len(all_unique_users),
-        training_tasks=train_task_list,
-        all_unique_labels=all_unique_labels,
-        device=device
-    )
-
-    # eval
-    evaluator = RecEvaluator(rec_model, eval_batch_size)
-    metric_list = [Hit(k=10), Hit(k=5), Hit(k=1)]
-    cumulative_results = defaultdict(list)
-    for task in train_task_list:
-        for template_id in task.valid_templates(return_id=True):
-
-            print(f"Evaluating on {task}/{template_id}")
-            task.force_template(template_id)
-            rec_model.set_eval_task(task)
-
-            res = evaluator.evaluate(test, metric_list=metric_list)
-
-            dict_to_log = {f"test/{task}/template_id": template_id}
-            for metric_name, metric_val in res.items():
-                dict_to_log[f"test/{task}/{metric_name}"] = metric_val
-                cumulative_results[str(metric_name)].append(metric_val)
-
-            log_wandb(dict_to_log)
-
-        average_results = {metric: np.mean(cumulative_metric_result).item()
-                           for metric, cumulative_metric_result in cumulative_results.items()}
-
-        log_wandb({f"test/{task}/avg_results/{metric}": avg_metric_result
-                   for metric, avg_metric_result in average_results.items()})
-
-        print(f"Average result for task {task}:")
-        print(average_results)
+    trainer.train(train, validation_dataset=val)
 
 
 if __name__ == "__main__":

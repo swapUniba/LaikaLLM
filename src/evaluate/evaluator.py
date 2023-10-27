@@ -113,3 +113,71 @@ class RecEvaluator:
                   for metric in metric_list}
 
         return result
+
+
+def eval_main():
+
+    eval_batch_size = ExperimentConfig.eval_batch_size
+    device = ExperimentConfig.device
+    metric_list_str = ExperimentConfig.eval_metrics
+
+    model_pth = os.path.join(MODELS_DIR, ExperimentConfig.exp_name)
+
+    ds = AmazonDataset.load()
+    ds_dict = ds.get_hf_datasets()
+    test_set = ds_dict["test"]
+
+    rec_model = T5Rec.from_pretrained(
+        model_pth,
+        device=device
+    )
+
+    # eval
+
+    # TO DO: it should be possible evaluate on custom tasks and not necessarily those
+    # observed during training
+    task_to_evaluate = rec_model.config.trainining_tasks_str
+
+    evaluator = RecEvaluator(rec_model, eval_batch_size)
+
+    for task in task_to_evaluate:
+
+        # metrics are keys, values are lists containing results for each template
+        task_result = {metric: [] for metric in metric_list_str}
+
+        for template_id in task.valid_templates(return_id=True):
+
+            print(f"Evaluating on {task}/{template_id}")
+
+            rec_model.set_eval_task(task, template_id)
+            res_dict = evaluator.evaluate(test_set, metric_list_str=metric_list_str)
+
+            dict_to_log = {f"test/{task}/template_id": template_id}
+            for metric_name, metric_val in res_dict.items():
+                dict_to_log[f"test/{task}/{metric_name}"] = metric_val
+                task_result[metric_name].append(metric_val)
+
+            log_wandb(dict_to_log)
+
+        task_result_df = pd.DataFrame(task_result)
+
+        task_result_df_mean_max = task_result_df.agg({metric_name: ["mean", "max"]
+                                                      for metric_name in task_result})
+
+        log_wandb({f"test/{task}/{metric}/mean": task_result_df_mean_max[metric]["mean"]
+                   for metric in task_result})
+
+        log_wandb({f"test/{task}/{metric}/max": task_result_df_mean_max[metric]["max"]
+                   for metric in task_result})
+
+        print(f"Mean and max result for task {task}:")
+        print(task_result_df_mean_max)
+
+        # locally we save a single df for each task containing result for each template ids + mean and max
+        task_result_df = pd.concat((task_result_df, task_result_df_mean_max))
+
+        output_path = os.path.join(METRICS_DIR, ExperimentConfig.exp_name)
+        os.makedirs(output_path, exist_ok=True)
+
+        # e.g. SequentialSideInfo.csv
+        task_result_df.to_csv(task)
