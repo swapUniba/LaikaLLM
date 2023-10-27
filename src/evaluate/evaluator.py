@@ -1,6 +1,6 @@
 import os
 from math import ceil
-from typing import List, Optional
+from typing import List, Optional, Iterable
 
 import datasets
 import numpy as np
@@ -20,9 +20,12 @@ class RecEvaluator:
         self.rec_model = rec_model
         self.eval_batch_size = eval_batch_size
 
-    def evaluate(self, eval_dataset: datasets.Dataset, metric_list_str: List[str], return_loss: bool = False):
+    def evaluate(self, eval_dataset: datasets.Dataset, metric_list_str: Iterable[str], return_loss: bool = False):
 
         self.rec_model.eval()
+
+        # convert from str to objects
+        metric_list = Metric.from_string(*metric_list_str)
 
         # used to save some computational resources, we will compute binary relevance binary for
         # predictions cut to max_k (i.e. predictions[:, :max_k]). If there is at least one None,
