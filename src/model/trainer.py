@@ -24,7 +24,6 @@ class RecTrainer:
                  n_epochs: int,
                  batch_size: int,
                  rec_model,
-                 all_labels: np.ndarray,
                  train_sampling_fn: Callable[[Dict], Dict],
                  device: str = 'cuda:0',
                  monitor_metric: str = 'loss',
@@ -35,15 +34,10 @@ class RecTrainer:
         self.rec_model = rec_model
         self.n_epochs = n_epochs
         self.batch_size = batch_size
-        self.all_labels = all_labels
         self.train_sampling_fn = train_sampling_fn
         self.eval_batch_size = eval_batch_size if eval_batch_size is not None else batch_size
         self.device = device
         self.random_seed = random_seed
-
-        if monitor_metric != "loss":
-            monitor_metric = RankingMetric.from_string(monitor_metric)
-
         self.monitor_metric = monitor_metric
 
         # output name
@@ -57,19 +51,44 @@ class RecTrainer:
         # evaluator for validating with validation set during training
         self.rec_evaluator = RecEvaluator(self.rec_model, self.eval_batch_size)
 
+        # from strings to objects initialized
+        train_task_list = Task.from_string(*rec_model.config.training_tasks_str, all_unique_items=all_labels)
+
+        # Log all templates used
+        dataframe_dict = {"task_type": [], "template_id": [], "input_prompt": [], "target_text": []}
+        for task in train_task_list:
+            for template_id in task.templates_dict:
+                input_prompt, target_text = task.templates_dict[template_id]
+
+                dataframe_dict["task_type"].append(str(task))
+                dataframe_dict["template_id"].append(template_id)
+                dataframe_dict["input_prompt"].append(input_prompt)
+                dataframe_dict["target_text"].append(target_text)
+
+        log_wandb({"task_templates": wandb.Table(dataframe=pd.DataFrame(dataframe_dict))})
+
     def train(self, train_dataset: datasets.Dataset, validation_dataset: datasets.Dataset = None):
 
         self.rec_model.train()
 
-        # depending on the monitor metric, we want either this to decrease or to increase,
-        # so we have a different initialization
-        best_val_monitor_result = np.inf if self.monitor_metric == "loss" else 0
+        # init variables for saving best model thanks to validation set (if present)
         best_epoch = -1
+        best_res_op_comparison = None
+        best_val_monitor_result = None
+
+        # depending on the monitor metric, in order to find the best model we should either
+        # minimize the metric (e.g. loss) or maximize it (e.g. hit)
+        if validation_dataset is not None:
+            [monitor_metric_obj] = Metric.from_string(self.monitor_metric)
+            best_res_op_comparison = monitor_metric_obj.operator_comparison
+
+            # small trick to get the initialization value
+            best_val_monitor_result = +np.inf if best_res_op_comparison(-np.inf, +np.inf) else -np.inf
 
         optimizer = self.rec_model.get_suggested_optimizer()
 
         start = time.time()
-        for epoch in range(0, self.n_epochs):
+        for current_epoch in range(start=1, stop=self.n_epochs + 1):
 
             self.rec_model.train()
 
@@ -115,11 +134,11 @@ class RecTrainer:
 
                 train_loss += loss.item()
 
-                # we update the loss every 1% progress considering the total n° of batches
+                # we update the loss every 1% progress considering the total n° of batches.
                 # tqdm update integer percentage (1%, 2%) when float percentage is over .5 threshold (1.501 -> 2%)
                 # so we print infos in the same way
                 if round(100 * (i / total_n_batch)) > progress:
-                    pbar.set_description(f"Epoch {epoch + 1}, Loss -> {(train_loss / i):.6f}")
+                    pbar.set_description(f"Epoch {current_epoch}, Loss -> {(train_loss / i):.6f}")
                     progress += 1
                     log_wandb({
                         "train/loss": train_loss / i
@@ -131,49 +150,43 @@ class RecTrainer:
 
             dict_to_log = {
                 "train/loss": train_loss,
-                "train/epoch": epoch + 1
+                "train/epoch": current_epoch
             }
 
             if validation_dataset is not None:
 
                 self.rec_model.eval()
 
-                # monitor_metric is either the string "loss" or a RankingMetric obj
-                validation_metric = self.monitor_metric
+                # we surely want loss for the progbar
+                metric_list_str = ["loss"]
+                if self.monitor_metric != "loss":
+                    metric_list_str.append(self.monitor_metric)
 
-                val_result = self.rec_evaluator.evaluate(validation_dataset,
-                                                         metric_list=[validation_metric],
-                                                         return_loss=True)
+                val_result = self.rec_evaluator.evaluate(
+                    validation_dataset,
+                    metric_list_str=metric_list_str,
+                    return_loss=True)
 
-                if validation_metric == "loss":
-                    monitor_str = "Val loss"
-                    monitor_val = val_result["loss"]
-
-                    # we want loss to decrease
-                    should_save = monitor_val < best_val_monitor_result
-                else:
-                    monitor_str = str(validation_metric)
-                    monitor_val = val_result[monitor_str]
-
-                    # The validation metric chosen should decide how to compare best result
-                    # (mse should decrease, hit should increase, etc.)
-                    should_save = validation_metric.operator_comparison(monitor_val, best_val_monitor_result)
+                monitor_val = val_result[self.monitor_metric]
+                should_save = best_res_op_comparison(monitor_val,
+                                                     best_val_monitor_result)
 
                 # we save the best model based on the metric/loss result
                 if should_save:
-                    best_epoch = epoch + 1  # we start from 0
+                    best_epoch = current_epoch  # we start from 0
                     best_val_monitor_result = monitor_val
                     self.rec_model.save_pretrained(self.output_path)
 
-                    print(f"{monitor_str} improved, model saved into {self.output_path}!")
+                    print(f"Validation {self.monitor_metric} improved, model saved into {self.output_path}!")
 
                 # prefix "val" for val result dict
                 val_to_log = {f"val/{metric_name}": metric_val for metric_name, metric_val in val_result.items()}
-                val_to_log["val/epoch"] = epoch + 1
+                val_to_log["val/epoch"] = current_epoch
 
                 dict_to_log.update(val_to_log)
 
-            else:
+            # if no validation set, we simply save the model of the last epoch
+            elif current_epoch == self.n_epochs:
                 self.rec_model.save_pretrained(self.output_path)
 
             # log to wandb at each epoch
@@ -204,56 +217,39 @@ def trainer_main():
     random_seed = ExperimentConfig.random_seed
     train_tasks = ExperimentConfig.train_tasks
     monitor_metric = ExperimentConfig.monitor_strategy
+    inject_personalization = ExperimentConfig.inject_personalization
+    val_task = ExperimentConfig.val_task
+    val_task_template_id = ExperimentConfig.val_task_template_id
 
     ds = AmazonDataset.load()
 
     ds_dict = ds.get_hf_datasets()
     all_unique_labels = ds.all_items
     all_unique_users = ds.all_users
+    sampling_fn = ds.sample_train_sequence
 
     train = ds_dict["train"]
     val = ds_dict["validation"] if monitor_metric != "no" else None
-    test = ds_dict["test"]
 
     # REDUCE FOR TESTING
-    # train = Dataset.from_dict(train[:5000])
-    # val = Dataset.from_dict(val[:5000])
-    # test = Dataset.from_dict(test[:100])
+    # train = Dataset.from_dict(train[:100])
+    # val = Dataset.from_dict(val[:100])
 
-    sampling_fn = ds.sample_train_sequence
-
-    # from strings to objects initialized
-    train_task_list = Task.from_string(*train_tasks, all_unique_items=all_unique_labels)
-
-    # Log all templates used
-    dataframe_dict = {"task_type": [], "template_id": [], "input_prompt": [], "target_text": []}
-    for task in train_task_list:
-        for template_id in task.templates_dict:
-            input_prompt, target_text = task.templates_dict[template_id]
-
-            dataframe_dict["task_type"].append(str(task))
-            dataframe_dict["template_id"].append(template_id)
-            dataframe_dict["input_prompt"].append(input_prompt)
-            dataframe_dict["target_text"].append(target_text)
-
-    dataframe = pd.DataFrame(dataframe_dict)
-
-    log_wandb({"task_templates": wandb.Table(dataframe=dataframe)})
-
-    rec_model = T5FineTuned.from_pretrained(
+    rec_model = T5Rec.from_pretrained(
         checkpoint,
+        training_tasks_str=train_tasks,
         n_users=len(all_unique_users),
-        training_tasks=train_task_list,
-        all_unique_labels=all_unique_labels,
+        all_unique_labels=all_unique_labels.tolist(),
+        eval_task_str=val_task,
+        force_eval_template_id=val_task_template_id,
+        inject_personalization=inject_personalization,
         device=device,
-        eval_task=deepcopy(train_task_list[0]).force_template(0)  # validation task
     )
 
     trainer = RecTrainer(
         rec_model=rec_model,
         n_epochs=n_epochs,
         batch_size=batch_size,
-        all_labels=all_unique_labels,
         eval_batch_size=eval_batch_size,
         random_seed=random_seed,
         train_sampling_fn=sampling_fn,
