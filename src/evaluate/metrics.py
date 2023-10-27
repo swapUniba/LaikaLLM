@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-import itertools
-import math
 import operator
-import random
 import time
 from abc import ABC, abstractmethod
 from collections.abc import Collection
-from typing import Callable
+from typing import Callable, List
 
 import numpy as np
 from requests.structures import CaseInsensitiveDict
@@ -228,5 +225,43 @@ class NDCG(Metric):
 
         return ndcgs.mean().item()
 
+if __name__ == "__main__":
 
-        return np.mean(ndcgs).item()
+    # ui_preds = [
+    #     ["11", "12", "13", "14", "15"],
+    #     ["11", "12", "13", "14", "15"],
+    #     ["11", "12", "13", "14", "15"],
+    #     ["11", "12", "13", "14", "15"],
+    #     ["11", "12", "13", "14", "15"]
+    # ]
+    # gt = [
+    #     ["11", "15"],
+    #     ["12", "13"],
+    #     ["21", "1111"],
+    #     ["12", "15", "11"],
+    #     ["i1"]
+    # ]
+    ui_preds = [np.random.choice(range(2000), 100, replace=False).astype(str) for _ in range(100000)]
+    gt = [np.random.choice(range(2000), np.random.randint(0, 100), replace=False).astype(str) for _ in range(100000)]
+
+    print("start")
+    start = time.time()
+
+    predictions = PaddedArr(ui_preds)
+    truths = PaddedArr(gt)
+
+    metric_list = [
+        Hit(k=5),
+        MAP(k=5),
+        MRR(k=5),
+        NDCG(k=5)
+    ]
+
+    rel_bin_mat = Metric.rel_binary_matrix(predictions, truths)
+
+    for metric in metric_list:
+
+        print(metric)
+        print(metric(rel_bin_mat))
+
+    print(time.time() - start)
