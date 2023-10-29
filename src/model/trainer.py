@@ -12,8 +12,8 @@ from tqdm import tqdm
 from src import MODELS_DIR, ExperimentConfig
 from src.evaluate.evaluator import RecEvaluator
 from src.utils import log_wandb
-from src.data.amazon_dataset import AmazonDataset
-from src.data.templates import Task
+from src.data.datasets.amazon_dataset import AmazonDataset
+from src.data.templates.templates import Task
 from src.evaluate.metrics import Metric
 from src.model.t5 import T5Rec
 
