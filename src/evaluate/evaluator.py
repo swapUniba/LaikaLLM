@@ -8,7 +8,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from src import ExperimentConfig, MODELS_DIR, METRICS_DIR
-from src.data.amazon_dataset import AmazonDataset
+from src.data.datasets.amazon_dataset import AmazonDataset
 from src.evaluate.metrics import Metric, PaddedArr
 from src.model.t5 import T5Rec
 from src.utils import log_wandb

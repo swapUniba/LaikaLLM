@@ -16,6 +16,7 @@ from datasets import Dataset
 from tqdm import tqdm
 
 from src import ExperimentConfig, PROCESSED_DATA_DIR, RAW_DATA_DIR
+from src.data.abstract_dataset import LaikaDataset
 from src.utils import dict_list2list_dict, list_dict2dict_list
 
 
@@ -25,7 +26,18 @@ def parse(path):
             yield eval(raw_meta_dict)
 
 
-class AmazonDataset:
+class AmazonDatasetConfig:
+
+    dataset_name: Literal['beauty', 'toys', 'sport']
+    add_prefix: bool = False,
+    integer_ids: bool = False,
+    items_start_from_1001: bool = False
+
+    def parse
+
+
+
+class AmazonDataset(LaikaDataset):
 
     def __init__(self,
                  dataset_name: Literal['beauty', 'toys', 'sport'],
@@ -49,7 +61,7 @@ class AmazonDataset:
         ])
 
         # read mapping between user string id (ABXMSBDSI) and user int idxs (331)
-        with open(os.path.join(RAW_DATA_DIR, dataset_name, 'datamaps.json'), "r") as f:
+        with open(os.path.join(RAW_DATA_DIR, self.dataset_name, 'datamaps.json'), "r") as f:
             datamaps = json.load(f)
 
         self.user_id2idx = {str(key): str(val) for key, val in datamaps['user2id'].items()}
@@ -62,7 +74,7 @@ class AmazonDataset:
         relevant_items_id = set(self.item_id2idx.keys())
         meta_dict = {}
         print("Extracting meta info...")
-        for meta_content in parse(os.path.join(RAW_DATA_DIR, dataset_name, 'meta.json.gz')):
+        for meta_content in parse(os.path.join(RAW_DATA_DIR, self.dataset_name, 'meta.json.gz')):
             item_id = meta_content.pop("asin")
             if item_id in relevant_items_id:
                 item_idx = self.item_id2idx[item_id]
