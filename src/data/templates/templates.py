@@ -220,7 +220,7 @@ class SequentialSideInfoTask(Task):
             input_prompt="sequential recommendation - {}: \n\n"
                          "The user has the following order history -> {} \n"
                          "The categories of each item bought are -> {} \n"
-                         "Which item would the user but next? Select from the following: \n"
+                         "Which item would the user buy next? Select from the following: \n"
                          "{}",
             target_text="{}"
         ),
