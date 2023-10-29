@@ -12,7 +12,7 @@ from torch.nn.utils.rnn import pad_sequence
 from transformers import T5ForConditionalGeneration, Adafactor, T5TokenizerFast, T5Config
 
 from src import ExperimentConfig
-from src.data.templates import Task
+from src.data.templates.templates import Task
 from src.utils import dict_list2list_dict, list_dict2dict_list
 
 
@@ -123,7 +123,7 @@ class T5Rec(T5ForConditionalGeneration):
             # an assertion error will be raised
             templates_list = task(**sample)
 
-            # TO DO: make example that works for split different than leave one out
+            # TO DO: make example that works for split different from leave one out
             for input_text, target_text in templates_list:
                 encoded_sequence = self.tokenizer(text=input_text, text_target=target_text, truncation=True)
 
