@@ -34,6 +34,8 @@ class Metric(ABC):
     def __init_subclass__(cls, **kwargs):
         cls.str_alias_cls[cls.__name__] = cls
 
+        super().__init_subclass__(**kwargs)
+
     def __init__(self, k: int = None):
         self.k = k
 
