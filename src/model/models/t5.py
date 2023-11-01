@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import os
 import random
 import re
-from typing import List, Union, Optional, Callable
+from typing import List
 
 import numpy as np
 import torch
@@ -11,8 +10,9 @@ from torch import nn, Tensor
 from torch.nn.utils.rnn import pad_sequence
 from transformers import T5ForConditionalGeneration, Adafactor, T5TokenizerFast, T5Config
 
-from src import ExperimentConfig
+from src.data.abstract_dataset import LaikaDataset
 from src.data.templates.templates import Task
+from src.model.abstract_model import LaikaModel
 from src.utils import dict_list2list_dict, list_dict2dict_list
 
 
@@ -42,10 +42,9 @@ class T5RecConfig(T5Config):
                  training_tasks_str: List[str] = None,
                  n_users: int = None,
                  all_unique_labels: List[str] = None,
-                 inject_personalization: List[str] = None,
+                 inject_personalization: bool = False,
                  **kwargs):
-
-        T5Config.__init__(self, **kwargs)
+        super().__init__(**kwargs)
 
         self.training_tasks_str = training_tasks_str
         self.n_users = n_users
@@ -53,38 +52,35 @@ class T5RecConfig(T5Config):
         self.inject_personalization = inject_personalization
 
 
-class T5Rec(T5ForConditionalGeneration):
-
+class T5Rec(LaikaModel, T5ForConditionalGeneration):
     config_class = T5RecConfig
 
-    # eval_task is here because we don't need it to be saved and loaded back,
-    # even if validation was performed during training
     def __init__(self,
                  config,
                  eval_task_str: str = None,
-                 force_eval_template_id: int = None,
-                 device: str = "cpu"):
+                 eval_template_id: int = None):
 
-        super().__init__(config)
+        T5ForConditionalGeneration.__init__(self, config)
+
+        LaikaModel.__init__(
+            self,
+            training_tasks_str=config.training_tasks_str,
+            all_unique_labels=config.all_unique_labels,
+            eval_task_str=eval_task_str,
+            eval_template_id=eval_template_id
+        )
 
         self.tokenizer = T5TokenizerFast.from_pretrained(config.name_or_path)
 
-        # copy here relevant config values and manipulate them if necessary
-        self.all_unique_labels = np.array(self.config.all_unique_labels)
-        self.training_tasks = Task.from_string(*self.config.training_tasks_str,
-                                               all_unique_items=self.all_unique_labels)
-        self.n_users = self.config.n_users
-        self.inject_personalization = self.config.inject_personalization
+        if config.inject_personalization is True:
 
-        # custom user_embedding layer
-        self.user_embeddings = UserEmbeds(self.config.n_users, self.config.d_model)
+            if config.n_users is None:
+                raise AttributeError("n_users parameter can't be None when "
+                                     "inject_personalization is True!")
 
-        self.eval_task = None
-        if eval_task_str is not None:
-            self.set_eval_task(eval_task_str, force_eval_template_id)
+            self.user_embeddings = UserEmbeds(config.n_users, self.config.d_model)
 
-        self.to(device)
-
+    @property
     def get_suggested_optimizer(self):
         return Adafactor(
             list(self.parameters()),
@@ -98,12 +94,6 @@ class T5Rec(T5ForConditionalGeneration):
             scale_parameter=False,
             warmup_init=False
         )
-
-    def set_eval_task(self, eval_task_str: str, template_id: int = None):
-        self.eval_task = Task.from_string(eval_task_str, all_unique_items=self.all_unique_labels)
-
-        if template_id is not None:
-            self.eval_task.force_template_id(template_id)
 
     def tokenize(self, batch):
 
@@ -188,9 +178,9 @@ class T5Rec(T5ForConditionalGeneration):
 
     def train_step(self, batch):
 
-        inputs_embeds = self.shared(batch["input_ids"])  # embedding step - add HERE
+        inputs_embeds = self.shared(batch["input_ids"])
 
-        if "train" in self.inject_personalization:
+        if self.config.inject_personalization is True:
             inputs_embeds = self._inject_personalization(inputs_embeds, batch["user_idx"].squeeze())
 
         output = self(inputs_embeds=inputs_embeds,
@@ -200,7 +190,7 @@ class T5Rec(T5ForConditionalGeneration):
         return output.loss
 
     @torch.no_grad()
-    def valid_step(self, batch):
+    def generate_step(self, batch):
 
         if self.eval_task is None:
             raise ValueError("Model can't perform valid_step since no eval_task is set! "
@@ -212,11 +202,11 @@ class T5Rec(T5ForConditionalGeneration):
         no_repeat_ngram_size = 0
         early_stopping = True
 
-        target_text = batch.pop("target_item")
+        gt_items = batch.pop("gt_item")
 
         inputs_embeds = self.shared(batch["input_ids"])
-        if "eval" in ExperimentConfig.inject_personalization:
-            inputs_embeds = self._inject_personalization(inputs_embeds, batch["user_idx"])
+        if self.config.inject_personalization is True:
+            inputs_embeds = self._inject_personalization(inputs_embeds, batch["user_idx"].squeeze())
 
         output = self(inputs_embeds=inputs_embeds,
                       attention_mask=batch["attention_mask"],
@@ -234,40 +224,22 @@ class T5Rec(T5ForConditionalGeneration):
 
         generated_sents = self.tokenizer.batch_decode(beam_outputs, skip_special_tokens=True)
 
-        mapped_predictions = np.array(generated_sents).reshape((len(target_text), num_return_sequences))
+        mapped_predictions = np.array(generated_sents).reshape((len(gt_items), num_return_sequences))
         val_loss = output.loss
 
-        return mapped_predictions, target_text, val_loss
+        return mapped_predictions, gt_items, val_loss
 
-    def save_pretrained(
-            self,
-            save_directory: Union[str, os.PathLike],
-            is_main_process: bool = True,
-            state_dict: Optional[dict] = None,
-            save_function: Callable = torch.save,
-            push_to_hub: bool = False,
-            max_shard_size: Union[int, str] = "10GB",
-            safe_serialization: bool = False,
-            variant: Optional[str] = None,
-            token: Optional[Union[str, bool]] = None,
-            save_peft_format: bool = True,
-            **kwargs,
-    ):
+    def save(self, output_dir: str):
 
-        super().save_pretrained(save_directory=save_directory,
-                                is_main_process=is_main_process,
-                                state_dict=state_dict,
-                                save_function=save_function,
-                                push_to_hub=push_to_hub,
-                                max_shard_size=max_shard_size,
-                                safe_serialization=safe_serialization,
-                                variant=variant,
-                                token=token,
-                                save_peft_format=save_peft_format,
-                                **kwargs)
+        # save hf model and parameters that we added to the config
+        self.save_pretrained(save_directory=output_dir)
 
         # also tokenizer is saved
-        self.tokenizer.save_pretrained(save_directory=save_directory)
+        self.tokenizer.save_pretrained(save_directory=output_dir)
+
+    @classmethod
+    def load(cls, dir_path: str, **kwargs):
+        return cls.from_pretrained(dir_path, **kwargs)
 
     def train(self, mode: bool = True):
 
@@ -276,10 +248,15 @@ class T5Rec(T5ForConditionalGeneration):
         else:
             Task.eval()
 
-        return super().train(mode)
+        return T5ForConditionalGeneration.train(self, mode)
 
-    def eval(self):
+    def to(self, device: str):
+        return T5ForConditionalGeneration.to(self, device)
 
-        Task.eval()
+    @classmethod
+    def from_automatic_usage(cls, dataset_obj: LaikaDataset, **kwargs):
 
-        return super().eval()
+        kwargs["all_unique_labels"] = dataset_obj.all_items.tolist()
+        kwargs["n_users"] = len(dataset_obj.all_users)
+
+        return cls.from_pretrained(**kwargs)

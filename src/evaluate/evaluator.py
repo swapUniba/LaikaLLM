@@ -1,22 +1,17 @@
-import os
 from math import ceil
 from typing import List, Optional, Iterable
 
 import datasets
 import numpy as np
-import pandas as pd
 from tqdm import tqdm
 
-from src import ExperimentConfig, MODELS_DIR, METRICS_DIR
-from src.data.datasets.amazon_dataset import AmazonDataset
-from src.evaluate.metrics import Metric, PaddedArr
-from src.model.t5 import T5Rec
-from src.utils import log_wandb
+from src.evaluate.abstract_metric import Metric, PaddedArr
+from src.model import LaikaModel
 
 
 class RecEvaluator:
 
-    def __init__(self, rec_model: T5Rec, eval_batch_size: int):
+    def __init__(self, rec_model: LaikaModel, eval_batch_size: int):
         self.rec_model = rec_model
         self.eval_batch_size = eval_batch_size
 
@@ -66,7 +61,7 @@ class RecEvaluator:
         for i, batch in enumerate(pbar_eval, start=1):
 
             prepared_input = self.rec_model.prepare_input(batch)
-            predictions, truths, loss = self.rec_model.valid_step(prepared_input)
+            predictions, truths, loss = self.rec_model.generate_step(prepared_input)
 
             eval_loss += loss.item()
 

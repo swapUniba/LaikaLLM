@@ -9,23 +9,20 @@ import pandas as pd
 import wandb
 from tqdm import tqdm
 
-from src import MODELS_DIR, ExperimentConfig
 from src.evaluate.evaluator import RecEvaluator
+from src.model import LaikaModel
 from src.utils import log_wandb
-from src.data.datasets.amazon_dataset import AmazonDataset
-from src.data.templates.templates import Task
-from src.evaluate.metrics import Metric
-from src.model.t5 import T5Rec
+from src.evaluate.abstract_metric import Metric
 
 
 class RecTrainer:
 
     def __init__(self,
+                 rec_model: LaikaModel,
                  n_epochs: int,
                  batch_size: int,
-                 rec_model,
                  train_sampling_fn: Callable[[Dict], Dict],
-                 device: str = 'cuda:0',
+                 output_dir: str,
                  monitor_metric: str = 'loss',
                  eval_batch_size: Optional[int] = None,
                  output_name: Optional[str] = None,
@@ -36,23 +33,15 @@ class RecTrainer:
         self.batch_size = batch_size
         self.train_sampling_fn = train_sampling_fn
         self.eval_batch_size = eval_batch_size if eval_batch_size is not None else batch_size
-        self.device = device
-        self.random_seed = random_seed
         self.monitor_metric = monitor_metric
-
-        # output name
-        if output_name is None:
-            # replace '/' with '_' to avoid creation of subdir (google/flan-t5-small -> google_flan-t5-small)
-            output_name = f"{rec_model.config.name_or_path.replace('/', '_')}_{n_epochs}"
-
-        self.output_name = output_name
-        self.output_path = os.path.join(MODELS_DIR, output_name)
+        self.output_dir = output_dir
+        self.should_log = should_log
 
         # evaluator for validating with validation set during training
         self.rec_evaluator = RecEvaluator(self.rec_model, self.eval_batch_size)
 
         # from strings to objects initialized
-        train_task_list = Task.from_string(*rec_model.config.training_tasks_str, all_unique_items=all_labels)
+        train_task_list = rec_model.training_tasks
 
         # Log all templates used
         dataframe_dict = {"task_type": [], "template_id": [], "input_prompt": [], "target_text": []}
@@ -65,7 +54,7 @@ class RecTrainer:
                 dataframe_dict["input_prompt"].append(input_prompt)
                 dataframe_dict["target_text"].append(target_text)
 
-        log_wandb({"task_templates": wandb.Table(dataframe=pd.DataFrame(dataframe_dict))})
+        log_wandb({"task_templates": wandb.Table(dataframe=pd.DataFrame(dataframe_dict))}, should_log)
 
     def train(self, train_dataset: datasets.Dataset, validation_dataset: datasets.Dataset = None):
 
