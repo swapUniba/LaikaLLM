@@ -15,7 +15,7 @@ import pandas as pd
 from datasets import Dataset
 from tqdm import tqdm
 
-from src import ExperimentConfig, PROCESSED_DATA_DIR, RAW_DATA_DIR
+from src import RAW_DATA_DIR
 from src.data.abstract_dataset import LaikaDataset
 from src.utils import dict_list2list_dict, list_dict2dict_list
 
@@ -26,27 +26,16 @@ def parse(path):
             yield eval(raw_meta_dict)
 
 
-class AmazonDatasetConfig:
-
-    dataset_name: Literal['beauty', 'toys', 'sport']
-    add_prefix: bool = False,
-    integer_ids: bool = False,
-    items_start_from_1001: bool = False
-
-    def parse
-
-
-
 class AmazonDataset(LaikaDataset):
 
     def __init__(self,
                  dataset_name: Literal['beauty', 'toys', 'sport'],
-                 add_prefix: bool = False,
+                 add_prefix_items_users: bool = False,
                  integer_ids: bool = False,
                  items_start_from_1001: bool = False):
 
         self.dataset_name = dataset_name
-        self.add_prefix = add_prefix
+        self.add_prefix = add_prefix_items_users
         self.integer_ids = integer_ids
         self.items_start_from_1001 = items_start_from_1001
 
@@ -131,7 +120,7 @@ class AmazonDataset(LaikaDataset):
             data_df["item_sequence"] = "item_" + data_df["item_sequence"]
 
         self.original_df = data_df
-        self.train_df, self.val_df, self.test_df = self._split_data(data_df)
+        self.train_df, self.val_df, self.test_df = self.split_data(data_df)
 
     @cached_property
     def all_users(self):
@@ -141,8 +130,7 @@ class AmazonDataset(LaikaDataset):
     def all_items(self):
         return pd.unique(self.original_df["item_sequence"].explode())
 
-    @staticmethod
-    def _split_data(exploded_data_df: pd.DataFrame):
+    def split_data(self, exploded_data_df: pd.DataFrame):
 
         # For Amazon Dataset, Leave One Out is performed following P5 paper
 
@@ -306,15 +294,17 @@ class AmazonDataset(LaikaDataset):
 
         return dataset_dict
 
-    def save(self, output_path: str = os.path.join(PROCESSED_DATA_DIR, "amzn_dat.pkl")):
+    def save(self, output_dir: str):
 
+        output_path = os.path.join(output_dir, "amzn_dat.pkl")
         with open(output_path, "wb") as f:
             pickle.dump(self, f)
 
     @classmethod
-    def load(cls, path: str = os.path.join(PROCESSED_DATA_DIR, "amzn_dat.pkl")) -> AmazonDataset:
+    def load(cls, dir_path: str) -> AmazonDataset:
 
-        with open(path, "rb") as f:
+        dat_path = os.path.join(dir_path, "amzn_dat.pkl")
+        with open(dat_path, "rb") as f:
             obj = pickle.load(f)
 
         return obj
