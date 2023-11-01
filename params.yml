@@ -1,0 +1,25 @@
+exp_name: prova
+device: cuda:0
+random_seed: 42
+
+data:
+  AmazonDataset:
+    dataset_name: toys
+    integer_ids: true
+    add_prefix_items_users: true
+    items_start_from_1001: false
+
+model:
+  T5Rec:
+    pretrained_model_name_or_path: "google/flan-t5-small"
+    inject_personalization: true
+  n_epochs: 1
+  train_batch_size: 4
+  train_tasks:
+    - SequentialSideInfoTask
+
+eval:
+  eval_batch_size: 2
+  metrics:
+    - hit@1
+    - mrr@1
