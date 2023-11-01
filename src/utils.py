@@ -11,7 +11,7 @@ import wandb
 import yaml
 from cytoolz import merge_with
 
-from src import ExperimentConfig
+from src import SharedParams
 
 
 def seed_everything(seed: int):
@@ -39,14 +39,14 @@ def seed_everything(seed: int):
     return seed
 
 
-def log_wandb(parameters_to_log: dict):
-    if ExperimentConfig.log_wandb:
+def log_wandb(parameters_to_log: dict, should_log: bool):
+    if should_log is True:
         wandb.log(parameters_to_log)
 
 
 @contextmanager
-def init_wandb(**kwargs):
-    if ExperimentConfig.log_wandb:
+def init_wandb(should_log: bool, **kwargs):
+    if should_log is True:
         project = kwargs.pop("project", "P5-Thesis")
         exp_name = kwargs.pop("name", None)
 
