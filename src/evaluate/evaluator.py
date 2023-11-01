@@ -117,7 +117,7 @@ class RecEvaluator:
 
         # when computing the specific metric result, we consider its k value which wil surely be <= max_k
         # (again, saving resources)
-        result = {str(metric): metric(rel_binary_matrix[:, metric.k])
+        result = {str(metric): metric(rel_binary_matrix[:, :metric.k])
                   for metric in metric_list}
 
         return result
