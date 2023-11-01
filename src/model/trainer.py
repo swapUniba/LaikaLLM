@@ -1,4 +1,3 @@
-import os
 import time
 from math import ceil
 from typing import Optional, Callable, Dict
@@ -25,8 +24,7 @@ class RecTrainer:
                  output_dir: str,
                  monitor_metric: str = 'loss',
                  eval_batch_size: Optional[int] = None,
-                 output_name: Optional[str] = None,
-                 random_seed: Optional[int] = None):
+                 should_log: bool = False):
 
         self.rec_model = rec_model
         self.n_epochs = n_epochs
@@ -74,10 +72,10 @@ class RecTrainer:
             # small trick to get the initialization value
             best_val_monitor_result = +np.inf if best_res_op_comparison(-np.inf, +np.inf) else -np.inf
 
-        optimizer = self.rec_model.get_suggested_optimizer()
+        optimizer = self.rec_model.get_suggested_optimizer
 
         start = time.time()
-        for current_epoch in range(start=1, stop=self.n_epochs + 1):
+        for current_epoch in range(1, self.n_epochs + 1):
 
             self.rec_model.train()
 
@@ -131,7 +129,7 @@ class RecTrainer:
                     progress += 1
                     log_wandb({
                         "train/loss": train_loss / i
-                    })
+                    }, self.should_log)
 
             train_loss /= total_n_batch
 
@@ -164,9 +162,9 @@ class RecTrainer:
                 if should_save:
                     best_epoch = current_epoch  # we start from 0
                     best_val_monitor_result = monitor_val
-                    self.rec_model.save_pretrained(self.output_path)
+                    self.rec_model.save(self.output_dir)
 
-                    print(f"Validation {self.monitor_metric} improved, model saved into {self.output_path}!")
+                    print(f"Validation {self.monitor_metric} improved, model saved into {self.output_dir}!")
 
                 # prefix "val" for val result dict
                 val_to_log = {f"val/{metric_name}": metric_val for metric_name, metric_val in val_result.items()}
@@ -176,10 +174,10 @@ class RecTrainer:
 
             # if no validation set, we simply save the model of the last epoch
             elif current_epoch == self.n_epochs:
-                self.rec_model.save_pretrained(self.output_path)
+                self.rec_model.save(self.output_dir)
 
             # log to wandb at each epoch
-            log_wandb(dict_to_log)
+            log_wandb(dict_to_log, self.should_log)
 
         elapsed_time = (time.time() - start) / 60
         print(" Train completed! Check models saved into 'models' dir ".center(100, "*"))
@@ -189,8 +187,8 @@ class RecTrainer:
         log_wandb({
             "train/elapsed_time": elapsed_time,
             "train/best_epoch": best_epoch
-        })
+        }, self.should_log)
 
-        # return best model path if validation was set, otherwise this return the path of the model
+        # return best model pif validation was set, otherwise this return the model
         # saved at the last epoch
         return self.rec_model.load(self.output_dir)
