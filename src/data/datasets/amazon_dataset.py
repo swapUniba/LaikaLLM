@@ -308,24 +308,3 @@ class AmazonDataset(LaikaDataset):
             obj = pickle.load(f)
 
         return obj
-
-
-def data_main():
-    add_prefix = ExperimentConfig.add_prefix_items_users
-    integer_ids = ExperimentConfig.integer_ids
-    items_start_from_1001 = ExperimentConfig.items_start_from_1001
-
-    ds = AmazonDataset(dataset_name="toys",
-                       add_prefix=add_prefix,
-                       integer_ids=integer_ids,
-                       items_start_from_1001=items_start_from_1001)
-
-    ds.save()
-
-
-if __name__ == "__main__":
-    ExperimentConfig.add_prefix_items_users = True
-    ExperimentConfig.integer_ids = True
-    ExperimentConfig.items_start_from_1001 = True
-
-    data_main()
