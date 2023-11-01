@@ -1,46 +1,54 @@
 from __future__ import annotations
-import inspect
-from collections import OrderedDict
-from typing import get_type_hints
 
-from src.parser_utils import CMDExec
+from abc import ABC, abstractmethod
+from typing import Dict, Tuple
+
+import datasets
+import numpy as np
+import pandas as pd
 
 
-class LaikaDataset:
+class LaikaDataset(ABC):
 
+    config_class = None
+
+    str_alias_cls = {}
+
+    # automatically called on subclass definition, will populate the str_alias_cls dict
     def __init_subclass__(cls, **kwargs):
-        current_dataset_parser = CMDExec.dataset_parser.add_parser(cls.__name__)
+        cls.str_alias_cls[cls.__name__] = cls
 
-        constructor_signature = inspect.signature(cls.__init__)
-        param_annotations = get_type_hints(cls.__init__)
+        super().__init_subclass__(**kwargs)
 
-        all_params = OrderedDict(constructor_signature.parameters.items())
+    @property
+    @abstractmethod
+    def all_users(self) -> np.ndarray[str]:
+        raise NotImplementedError
 
-        # remove "self" parameter
-        all_params.popitem(last=False)
+    @property
+    @abstractmethod
+    def all_items(self) -> np.ndarray[str]:
+        raise NotImplementedError
 
-        for param_name, param in all_params.items():
+    @abstractmethod
+    def split_data(self, original_data: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        raise NotImplementedError
 
-            if param.default == param.empty:
-                # Parameter is mandatory
-                current_dataset_parser.add_argument(f"--{param_name}",
-                                                    type=param_annotations[param_name],
-                                                    required=True)
+    @staticmethod
+    @abstractmethod
+    # important that this is a static method, otherwise slow hashing for map fn of huggingface!
+    def sample_train_sequence(batch: Dict[str, list]) -> Dict[str, list]:
+        raise NotImplementedError
 
-                # # Handle Literal type hint
-                # if param.annotation == Literal:
-                #     data_parser.add_argument(f'--{param_name}', choices=param.default, required=True)
-            elif param.default != param.empty:
-                # Parameter is optional
-                current_dataset_parser.add_argument(f'--{param_name}',
-                                                    type=param_annotations[param_name],
-                                                    default=param.default)
+    @abstractmethod
+    def get_hf_datasets(self, merge_train_val: bool = False) -> Dict[str, datasets.Dataset]:
+        raise NotImplementedError
 
-            elif param.kind == param.VAR_POSITIONAL:
-                current_dataset_parser.add_argument(f'--{param_name}',
-                                                    type=param_annotations[param_name],
-                                                    default=param.default)
+    @abstractmethod
+    def save(self, output_dir: str):
+        raise NotImplementedError
 
-                # # Handle Literal type hint
-                # if param.annotation == Literal:
-                #     data_parser.add_argument(f'--{param_name}', choices=param.default)
+    @classmethod
+    @abstractmethod
+    def load(cls, dir_path: str) -> LaikaDataset:
+        raise NotImplementedError
