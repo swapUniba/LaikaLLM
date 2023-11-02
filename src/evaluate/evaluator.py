@@ -145,8 +145,8 @@ class RecEvaluator:
         latex_code += r"\multicolumn{1}{|c}{" + res_df.columns[0] + "}" + "\t&"
 
         # all the other column headers are c
-        for metric_name in res_df.columns[1:]:
-            latex_code += r"\multicolumn{1}{c}{" + metric_name + "}" + "\t&"
+        latex_code += "\t&".join(r"\multicolumn{1}{c}{" + metric_name + "}" for metric_name in res_df.columns[1:])
+        latex_code += r"\\" + "\n"
 
         # --column headers end
 
