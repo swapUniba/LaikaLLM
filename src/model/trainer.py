@@ -37,12 +37,14 @@ class RecTrainer:
         self.should_log = should_log
 
         # evaluator for validating with validation set during training
-        self.rec_evaluator = RecEvaluator(self.rec_model, self.eval_batch_size)
+        # we set should_log to False because we want to have full control,
+        # and we will log differently during validation phase
+        self.rec_evaluator = RecEvaluator(self.rec_model, self.eval_batch_size, should_log=False)
 
         # from strings to objects initialized
         train_task_list = rec_model.training_tasks
 
-        # Log all templates used
+        # Log all train templates used
         dataframe_dict = {"task_type": [], "template_id": [], "input_prompt": [], "target_text": []}
         for task in train_task_list:
             for template_id in task.templates_dict:
@@ -53,7 +55,7 @@ class RecTrainer:
                 dataframe_dict["input_prompt"].append(input_prompt)
                 dataframe_dict["target_text"].append(target_text)
 
-        log_wandb({"task_templates": wandb.Table(dataframe=pd.DataFrame(dataframe_dict))}, should_log)
+        log_wandb({"train/task_templates": wandb.Table(dataframe=pd.DataFrame(dataframe_dict))}, should_log)
 
     def train(self, train_dataset: datasets.Dataset, validation_dataset: datasets.Dataset = None):
 
