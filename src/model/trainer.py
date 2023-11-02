@@ -9,6 +9,7 @@ import wandb
 from tqdm import tqdm
 
 from src.evaluate.evaluator import RecEvaluator
+from src.evaluate.metrics.metrics import Loss
 from src.model import LaikaModel
 from src.utils import log_wandb
 from src.evaluate.abstract_metric import Metric
@@ -22,7 +23,7 @@ class RecTrainer:
                  batch_size: int,
                  train_sampling_fn: Callable[[Dict], Dict],
                  output_dir: str,
-                 monitor_metric: str = 'loss',
+                 monitor_metric: Metric = Loss(),
                  eval_batch_size: Optional[int] = None,
                  should_log: bool = False):
 
@@ -66,8 +67,7 @@ class RecTrainer:
         # depending on the monitor metric, in order to find the best model we should either
         # minimize the metric (e.g. loss) or maximize it (e.g. hit)
         if validation_dataset is not None:
-            [monitor_metric_obj] = Metric.from_string(self.monitor_metric)
-            best_res_op_comparison = monitor_metric_obj.operator_comparison
+            best_res_op_comparison = self.monitor_metric.operator_comparison
 
             # small trick to get the initialization value
             best_val_monitor_result = +np.inf if best_res_op_comparison(-np.inf, +np.inf) else -np.inf
@@ -145,16 +145,16 @@ class RecTrainer:
                 self.rec_model.eval()
 
                 # we surely want loss for the progbar
-                metric_list_str = ["loss"]
-                if self.monitor_metric != "loss":
-                    metric_list_str.append(self.monitor_metric)
+                metric_list = [Loss()]
+                if self.monitor_metric != Loss():
+                    metric_list.append(self.monitor_metric)
 
                 val_result = self.rec_evaluator.evaluate(
                     validation_dataset,
                     metric_list_str=metric_list_str,
                     return_loss=True)
 
-                monitor_val = val_result[self.monitor_metric]
+                monitor_val = val_result[str(self.monitor_metric)]
                 should_save = best_res_op_comparison(monitor_val,
                                                      best_val_monitor_result)
 

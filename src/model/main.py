@@ -51,13 +51,14 @@ def model_main(shared_params: SharedParams, model_params: ModelParams, dataset_o
     output_dir = os.path.join(MODELS_DIR, shared_params.exp_name)
     os.makedirs(output_dir, exist_ok=True)
 
+    [monitor_metric_obj] = Metric.from_string(monitor_metric)
     trainer = RecTrainer(
         rec_model=rec_model,
         n_epochs=n_epochs,
         batch_size=train_batch_size,
         eval_batch_size=eval_batch_size,
         train_sampling_fn=sampling_fn,
-        monitor_metric=monitor_metric,
+        monitor_metric=monitor_metric_obj,
         output_dir=output_dir
     )
 
