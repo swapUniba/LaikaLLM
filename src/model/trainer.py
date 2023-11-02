@@ -149,10 +149,11 @@ class RecTrainer:
                 if self.monitor_metric != Loss():
                     metric_list.append(self.monitor_metric)
 
-                val_result = self.rec_evaluator.evaluate(
+                val_result = self.rec_evaluator.evaluate_task(
                     validation_dataset,
-                    metric_list_str=metric_list_str,
-                    return_loss=True)
+                    task=self.rec_model.eval_task,
+                    metric_list=metric_list
+                )
 
                 monitor_val = val_result[str(self.monitor_metric)]
                 should_save = best_res_op_comparison(monitor_val,

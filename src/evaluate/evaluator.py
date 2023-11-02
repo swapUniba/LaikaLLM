@@ -1,26 +1,120 @@
+import operator
+import os
+from collections import defaultdict
 from math import ceil
 from typing import List, Optional, Iterable
 
 import datasets
 import numpy as np
+import pandas as pd
+import wandb
 from tqdm import tqdm
 
+from src.data.abstract_templates import Task
 from src.evaluate.abstract_metric import Metric, PaddedArr
+from src.evaluate.metrics.metrics import Loss
 from src.model import LaikaModel
+from src.utils import log_wandb
 
 
 class RecEvaluator:
 
-    def __init__(self, rec_model: LaikaModel, eval_batch_size: int):
+    def __init__(self, rec_model: LaikaModel, eval_batch_size: int, should_log: bool = False):
         self.rec_model = rec_model
         self.eval_batch_size = eval_batch_size
+        self.should_log = should_log
 
-    def evaluate(self, eval_dataset: datasets.Dataset, metric_list_str: Iterable[str], return_loss: bool = False):
+    def evaluate_suite(self,
+                       eval_dataset: datasets.Dataset,
+                       tasks_to_evaluate: list[Task],
+                       metric_list: list[Metric],
+                       output_dir: str,
+                       create_latex_table: bool = True):
+
+        split_name = eval_dataset.split if eval_dataset.split is not None else "eval"
+
+        # Log all eval templates used
+        dataframe_dict = {"task_type": [], "template_id": [], "input_prompt": [], "target_text": []}
+        for task in tasks_to_evaluate:
+
+            # we evaluate only on valid templates, that's why we iterate over only those
+            for template_id in task.valid_templates(return_id=True):
+                input_prompt, target_text = task.templates_dict[template_id]
+
+                dataframe_dict["task_type"].append(str(task))
+                dataframe_dict["template_id"].append(template_id)
+                dataframe_dict["input_prompt"].append(input_prompt)
+                dataframe_dict["target_text"].append(target_text)
+
+        log_wandb({f"{split_name}/task_templates": wandb.Table(dataframe=pd.DataFrame(dataframe_dict))},
+                  self.should_log)
+
+        for task in tasks_to_evaluate:
+
+            # metrics names are keys, values are lists containing results for each template
+            task_result = defaultdict(list)
+
+            template_ids_to_evaluate = task.valid_templates(return_id=True)
+            for template_id in template_ids_to_evaluate:
+
+                print(f"Evaluating on {task}/{template_id}")
+
+                res_dict = self.evaluate_task(eval_dataset, metric_list=metric_list,
+                                              task=task,
+                                              template_id=template_id,)
+
+                dict_to_log = {f"{split_name}/{task}/template_id": template_id}
+                for metric_name, metric_val in res_dict.items():
+                    dict_to_log[f"{split_name}/{task}/{metric_name}"] = metric_val
+                    task_result[metric_name].append(metric_val)
+
+                log_wandb(dict_to_log, self.should_log)
+
+            task_result_df = pd.DataFrame(task_result, index=template_ids_to_evaluate)
+
+            task_result_df_mean_max = task_result_df.agg({metric_name: ["mean", "max"]
+                                                          for metric_name in task_result})
+
+            log_wandb({f"{split_name}/{task}/{metric}/mean": task_result_df_mean_max[metric]["mean"]
+                       for metric in task_result}, self.should_log)
+
+            log_wandb({f"{split_name}/{task}/{metric}/max": task_result_df_mean_max[metric]["max"]
+                       for metric in task_result}, self.should_log)
+
+            print(f"Mean and max result for task {task}:")
+            print(task_result_df_mean_max)
+
+            # locally we save a single df for each task containing result for each template ids + mean and max
+            task_result_df = pd.concat((task_result_df, task_result_df_mean_max))
+            task_result_df.index.name = "Template ID"
+
+            # e.g. reports/metrics/eval_exp/SequentialSideInfo.csv
+            os.makedirs(output_dir, exist_ok=True)
+            task_result_df.to_csv(os.path.join(output_dir, f"{task}.csv"))
+
+            if create_latex_table is True:
+                latex_table = self._create_latex_table(task_result_df, task_name=str(task))
+
+                with open(os.path.join(output_dir, f"{task}_latex.tex"), "w") as f:
+                    f.write(latex_table)
+
+    def evaluate_task(self, eval_dataset: datasets.Dataset,
+                      metric_list: list[Metric],
+                      task: Task, template_id: int = None):
 
         self.rec_model.eval()
 
-        # convert from str to objects
-        metric_list = Metric.from_string(*metric_list_str)
+        if template_id is not None:
+            task = task.force_template(template_id)
+
+        # we don't call set_eval_task because task are already instantiated
+        self.rec_model.eval_task = task
+
+        # Loss() metric it's just a placeholder needed for exploiting polymorphism
+        return_loss = False
+        if Loss() in metric_list:
+            return_loss = True
+            metric_list.remove(Loss())
 
         # used to save some computational resources, we will compute binary relevance binary for
         # predictions cut to max_k (i.e. predictions[:, :max_k]). If there is at least one None,
@@ -28,14 +122,10 @@ class RecEvaluator:
         max_k = None
         all_ks = [metric.k for metric in metric_list]
         if None not in all_ks:
-            max_k = max(all_ks)
+            # if no metric has k set, default is None
+            max_k = max(all_ks, default=None)
 
-        split_name = eval_dataset.split
-        if split_name is None:
-            print("WARNING: split name for the eval dataset passed is None. Fallback to 'eval'")
-            split_name = "eval"
-        else:
-            split_name = str(split_name)
+        split_name = eval_dataset.split if eval_dataset.split is not None else "eval"
 
         preprocessed_eval = eval_dataset.map(
             self.rec_model.tokenize,
@@ -93,7 +183,7 @@ class RecEvaluator:
         res_eval_dict = self._compute_metrics(total_preds, total_truths, metric_list, max_k)
 
         if return_loss is True:
-            res_eval_dict[f"{split_name} loss"] = eval_loss
+            res_eval_dict[str(Loss())] = eval_loss
 
         return res_eval_dict
 
