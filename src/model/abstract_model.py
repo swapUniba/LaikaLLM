@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod, ABC
-from typing import List, Optional
+from typing import List
 
 import numpy as np
 import torch
@@ -38,7 +38,7 @@ class LaikaModel(ABC):
             self.set_eval_task(eval_task_str, eval_template_id)
 
     def set_eval_task(self, eval_task_str: str, template_id: int = None):
-        self.eval_task = Task.from_string(eval_task_str, all_unique_items=self.all_unique_labels)
+        [self.eval_task] = Task.from_string(eval_task_str, all_unique_items=self.all_unique_labels)
 
         if template_id is not None:
             self.eval_task.force_template_id(template_id)
