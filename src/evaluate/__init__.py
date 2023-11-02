@@ -16,4 +16,12 @@ class EvalParams:
 
         # the eval section does not have any nested structure,
         # thus for now complex parsing is not needed
-        return cls(**eval_section)
+        obj = cls(**eval_section)
+
+        # normalize string params to lower
+        obj.metrics = tuple(metric_name.lower() for metric_name in obj.metrics)
+
+        if obj.eval_tasks is not None:
+            obj.eval_tasks = tuple(eval_task_name.lower() for eval_task_name in obj.eval_tasks)
+
+        return obj

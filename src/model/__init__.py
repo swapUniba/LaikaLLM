@@ -42,4 +42,11 @@ class ModelParams:
         # as it will contain only the trainer params
         model_section.pop(model_name)
 
-        return cls(model_cls_name=model_name, model_kwargs=model_kwargs, **model_section)
+        obj = cls(model_cls_name=model_name, model_kwargs=model_kwargs, **model_section)
+
+        # normalize strings params to lower
+        obj.train_tasks = tuple(train_task_name.lower() for train_task_name in obj.train_tasks)
+        obj.val_task = obj.val_task.lower() if obj.val_task is not None else None
+        obj.monitor_metric = obj.monitor_metric.lower()
+
+        return obj
