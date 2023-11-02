@@ -13,12 +13,12 @@ class ModelParams:
     # model params
     model_cls_name: str
     model_kwargs: dict
+    train_tasks: tuple[str]
+    val_task: str = None
+    val_task_template_id: str = None
 
     # trainer params
     n_epochs: int = 10
-    train_tasks: tuple[str] = tuple(Task.str_alias_cls.keys())
-    val_task: str = None
-    val_task_template_id: str = None
     monitor_strategy: str = None
     train_batch_size: int = 4
     eval_batch_size: int = train_batch_size
