@@ -116,3 +116,71 @@ class RecEvaluator:
                   for metric in metric_list}
 
         return result
+
+    @staticmethod
+    def _create_latex_table(res_df: pd.DataFrame, task_name: str):
+
+        title = task_name
+        n_metrics = len(res_df.columns)
+
+        # preliminary code for the tex file
+        latex_code = r"\documentclass{article}" + "\n"
+        latex_code += r"\usepackage{booktabs}" + "\n"
+        latex_code += r"\begin{document}" + " \n\n"
+
+        # title start
+        latex_code += r"\begin{tabular}{c|" + "c" * n_metrics + "}\n\n"
+        latex_code += r"\multicolumn{" + str(n_metrics + 1) + r"}{c}{\textbf{" + title + r"}} \\" + "\n"
+        latex_code += r"\noalign{\smallskip}" + "\n"
+        latex_code += r"\noalign{\smallskip}" + "\n"
+        # title end
+
+        # table start
+        latex_code += r"\toprule" + "\n"
+
+        # --column headers start
+        latex_code += r"\multicolumn{1}{c}{Template ID}" + "\t&"
+
+        # first is |c
+        latex_code += r"\multicolumn{1}{|c}{" + res_df.columns[0] + "}" + "\t&"
+
+        # all the other column headers are c
+        for metric_name in res_df.columns[1:]:
+            latex_code += r"\multicolumn{1}{c}{" + metric_name + "}" + "\t&"
+
+        # --column headers end
+
+        # --start numeric values
+        latex_code += r"\midrule" + "\n"
+
+        template_res = res_df[:-2]
+        max_mean = res_df[-2:]
+
+        # set bold for template id which gave best result for each metric
+        for metric_name in template_res.columns:
+            max_metric_idx = template_res[metric_name].idxmax()
+
+            template_res[metric_name] = template_res[metric_name].map(lambda x: "%.4f" % x)
+
+            template_res.loc[max_metric_idx, metric_name] = r"\textbf{" + template_res.loc[
+                max_metric_idx, metric_name] + "}"
+
+        # fill cell values row by row
+        for index, row in template_res.iterrows():
+            latex_code += f"{index}\t&\t" + "\t&\t".join(row) + r"\\" + "\n"
+
+        # --start max mean results
+        latex_code += r"\midrule" + "\n"
+
+        # fill cell values row by row
+        max_mean = max_mean.map(lambda x: "%.4f" % x)
+        for index, row in max_mean.iterrows():
+            latex_code += f"{index}\t&\t" + "\t&\t".join(row) + r"\\" + "\n"
+
+        latex_code += r"\bottomrule" + "\n\n"
+
+        latex_code += r"\end{tabular}" + "\n\n"
+
+        latex_code += r"\end{document}" + "\n"
+
+        return latex_code
