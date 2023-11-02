@@ -229,13 +229,14 @@ class RecEvaluator:
         latex_code += r"\toprule" + "\n"
 
         # --column headers start
-        latex_code += r"\multicolumn{1}{c}{Template ID}" + "\t&"
+        latex_code += r"\multicolumn{1}{c}{Template ID}" + "\t&\t"
 
         # first is |c
-        latex_code += r"\multicolumn{1}{|c}{" + res_df.columns[0] + "}" + "\t&"
+        latex_code += r"\multicolumn{1}{|c}{" + res_df.columns[0] + "}"
 
         # all the other column headers are c
-        latex_code += "\t&".join(r"\multicolumn{1}{c}{" + metric_name + "}" for metric_name in res_df.columns[1:])
+        latex_code += "\t&\t" + "\t&\t".join(r"\multicolumn{1}{c}{" + metric_name + "}"
+                                             for metric_name in res_df.columns[1:])
         latex_code += r"\\" + "\n"
 
         # --column headers end
@@ -248,12 +249,19 @@ class RecEvaluator:
 
         # set bold for template id which gave best result for each metric
         for metric_name in template_res.columns:
-            max_metric_idx = template_res[metric_name].idxmax()
 
-            template_res[metric_name] = template_res[metric_name].map(lambda x: "%.4f" % x)
+            [metric_obj] = Metric.from_string(metric_name)
 
-            template_res.loc[max_metric_idx, metric_name] = r"\textbf{" + template_res.loc[
-                max_metric_idx, metric_name] + "}"
+            # depending on the metric, best result is obtained by maximizing or minimizing
+            if metric_obj.operator_comparison == operator.gt:
+                best_metric_idx = template_res[metric_name].idxmax()
+            else:
+                best_metric_idx = template_res[metric_name].idxmin()
+
+            template_res.loc[:, metric_name] = template_res[metric_name].map(lambda x: "%.4f" % x)
+
+            template_res.loc[best_metric_idx, metric_name] = r"\textbf{" + template_res.loc[
+                best_metric_idx, metric_name] + "}"
 
         # fill cell values row by row
         for index, row in template_res.iterrows():
