@@ -98,6 +98,11 @@ class Metric(ABC):
     def __call__(self, rel_binary_matrix: np.ndarray[np.ndarray[bool]]) -> float:
         raise NotImplementedError
 
+    def __eq__(self, other):
+        if isinstance(other, self.__class__) and other.k == self.k:
+            return True
+        return False
+
     def __str__(self):
         string = self.__class__.__name__
         if self.k is not None:
