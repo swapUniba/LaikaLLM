@@ -11,6 +11,9 @@ from src.evaluate.abstract_metric import Metric
 
 class Loss(Metric):
 
+    def __init__(self):
+        super().__init__(k=None)
+
     @property
     def operator_comparison(self):
         # loss metric should be minimized, hence "<"
