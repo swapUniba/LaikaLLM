@@ -2,8 +2,9 @@ import os
 
 from datasets import Dataset
 
-from src import SharedParams, PROCESSED_DATA_DIR, MODELS_DIR
+from src import SharedParams, MODELS_DIR
 from src.data.abstract_dataset import LaikaDataset
+from src.evaluate.abstract_metric import Metric
 from src.model import ModelParams, LaikaModel
 from src.model.trainer import RecTrainer
 
@@ -12,13 +13,12 @@ def model_main(shared_params: SharedParams, model_params: ModelParams, dataset_o
     # shared
     exp_name = shared_params.exp_name
     device = shared_params.device
-    random_seed = shared_params.random_seed
 
     # trainer
     n_epochs = model_params.n_epochs
     train_batch_size = model_params.train_batch_size
     eval_batch_size = model_params.eval_batch_size
-    monitor_metric = model_params.monitor_strategy
+    monitor_metric = model_params.monitor_metric
 
     # model
     model_cls_name = model_params.model_cls_name
@@ -35,7 +35,7 @@ def model_main(shared_params: SharedParams, model_params: ModelParams, dataset_o
 
     # REDUCE FOR TESTING
     train = Dataset.from_dict(train[:100])
-    # val = Dataset.from_dict(val[:100])
+    val = Dataset.from_dict(val[:100])
 
     model_cls = LaikaModel.str_alias_cls[model_cls_name]
 
@@ -48,7 +48,7 @@ def model_main(shared_params: SharedParams, model_params: ModelParams, dataset_o
                                                **model_kwargs)
     rec_model.to(device)
 
-    output_dir = os.path.join(MODELS_DIR, shared_params.exp_name)
+    output_dir = os.path.join(MODELS_DIR, exp_name)
     os.makedirs(output_dir, exist_ok=True)
 
     [monitor_metric_obj] = Metric.from_string(monitor_metric)
