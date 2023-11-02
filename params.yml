@@ -20,6 +20,8 @@ model:
 
 eval:
   eval_batch_size: 2
+  eval_tasks:
+    - SequentialSideInfoTask
   metrics:
     - hit@1
     - mrr@1

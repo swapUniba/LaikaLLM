@@ -34,4 +34,9 @@ def parse_yml_config(yml_path: str):
     if eval_params.eval_batch_size is None:
         eval_params.eval_batch_size = model_params.eval_batch_size
 
+    # If the user doesn't specify eval tasks, then we will evaluate all train
+    # tasks
+    if eval_params.eval_tasks is None:
+        eval_params.eval_tasks = model_params.train_tasks
+
     return shared_params, data_params, model_params, eval_params
