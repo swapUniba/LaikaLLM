@@ -31,7 +31,7 @@ def model_main(shared_params: SharedParams, model_params: ModelParams, dataset_o
     sampling_fn = dataset_obj.sample_train_sequence
 
     train = ds_dict["train"]
-    val = ds_dict["validation"] if monitor_metric is not None else None
+    val = ds_dict["validation"] if val_task is not None else None
 
     # REDUCE FOR TESTING
     train = Dataset.from_dict(train[:100])

@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from . import models
 from .models import *
 
-from src.data.abstract_templates import Task
 from src.model.abstract_model import LaikaModel
 
 
@@ -19,7 +18,7 @@ class ModelParams:
 
     # trainer params
     n_epochs: int = 10
-    monitor_strategy: str = None
+    monitor_metric: str = "loss"
     train_batch_size: int = 4
     eval_batch_size: int = train_batch_size
 
