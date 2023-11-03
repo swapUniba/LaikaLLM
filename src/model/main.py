@@ -34,8 +34,8 @@ def model_main(shared_params: SharedParams, model_params: ModelParams, dataset_o
     val = ds_dict["validation"] if val_task is not None else None
 
     # REDUCE FOR TESTING
-    train = Dataset.from_dict(train[:100])
-    val = Dataset.from_dict(val[:100])
+    # train = Dataset.from_dict(train[:100])
+    # val = Dataset.from_dict(val[:100])
 
     # some parameters are "internal", in the sense that are used by any model implemented and are
     # not passed directly via yaml configuration (e.g., dataset_obj), others are passed via yaml configuration and

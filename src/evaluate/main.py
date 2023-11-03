@@ -26,7 +26,7 @@ def eval_main(shared_params: SharedParams, eval_params: EvalParams, dataset_obj:
     test_set = ds_dict["test"]
 
     # REDUCE FOR TEST
-    test_set = Dataset.from_dict(test_set[:100])
+    # test_set = Dataset.from_dict(test_set[:100])
 
     # set model to correct device
     rec_model.to(device)
