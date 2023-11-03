@@ -100,6 +100,10 @@ class T5Rec(LaikaModel, T5ForConditionalGeneration):
         if "user_id" not in batch or "gt_item" not in batch:
             raise AttributeError("This model expects 'user_id' and 'gt_item' columns in the dataset to tokenize!")
 
+        if self.eval_task is None and not self.training:
+            raise ValueError("Model can't tokenize the eval task since no eval_task is set! "
+                             "Pass it when initializing the model or with `set_eval_task()`")
+
         # from dict of lists to list of dicts
         batch = dict_list2list_dict(batch)
 
@@ -193,7 +197,7 @@ class T5Rec(LaikaModel, T5ForConditionalGeneration):
     def generate_step(self, batch):
 
         if self.eval_task is None:
-            raise ValueError("Model can't perform valid_step since no eval_task is set! "
+            raise ValueError("Model can't perform generate_step since no eval_task is set! "
                              "Pass it when initializing the model or with `set_eval_task()`")
 
         num_return_sequences = 10
