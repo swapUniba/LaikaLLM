@@ -22,7 +22,7 @@ class LaikaModel(ABC):
     def __init__(self, training_tasks_str: List[str],
                  all_unique_labels: List[str],
                  eval_task_str: str = None,
-                 eval_template_id: int = None):
+                 eval_template_id: int | str = None):
 
         if training_tasks_str is None:
             raise AttributeError("training_tasks_str parameter can't be None!")

@@ -14,7 +14,7 @@ class ModelParams:
     model_kwargs: dict
     train_tasks: tuple[str]
     val_task: str = None
-    val_task_template_id: str = None
+    val_task_template_id: int | str = None
 
     # trainer params
     n_epochs: int = 10
