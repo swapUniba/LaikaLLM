@@ -2,13 +2,12 @@ import argparse
 import dataclasses
 import os
 
-import wandb
 from pygit2 import Repository
 
 from src.data.main import data_main
 from src.evaluate.main import eval_main
 from src.model.main import model_main
-from src.utils import seed_everything, init_wandb, LoadFromYaml
+from src.utils import seed_everything, init_wandb
 
 from src.yml_parse import parse_yml_config
 
