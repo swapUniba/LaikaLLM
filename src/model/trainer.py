@@ -62,7 +62,7 @@ class RecTrainer:
         self.rec_model.train()
 
         # init variables for saving best model thanks to validation set (if present)
-        best_epoch = -1
+        best_epoch = None
         best_res_op_comparison = None
         best_val_monitor_result = None
 
@@ -163,7 +163,7 @@ class RecTrainer:
 
                 # we save the best model based on the metric/loss result
                 if should_save:
-                    best_epoch = current_epoch  # we start from 0
+                    best_epoch = current_epoch
                     best_val_monitor_result = monitor_val
                     self.rec_model.save(self.output_dir)
 
@@ -183,14 +183,17 @@ class RecTrainer:
             log_wandb(dict_to_log, self.should_log)
 
         elapsed_time = (time.time() - start) / 60
+
+        dict_to_log = {"train/elapsed_time": elapsed_time}
+
         print(" Train completed! Check models saved into 'models' dir ".center(100, "*"))
         print(f"Time -> {elapsed_time}")
-        print(f"Best epoch -> {best_epoch}")
 
-        log_wandb({
-            "train/elapsed_time": elapsed_time,
-            "train/best_epoch": best_epoch
-        }, self.should_log)
+        if best_epoch is not None:
+            print(f"Best epoch -> {best_epoch}")
+            dict_to_log["train/best_epoch"] = best_epoch
+
+        log_wandb(dict_to_log, self.should_log)
 
         # return best model pif validation was set, otherwise this return the model
         # saved at the last epoch
