@@ -47,7 +47,7 @@ class RecTrainer:
         # Log all train templates used
         dataframe_dict = {"task_type": [], "template_id": [], "input_prompt": [], "target_text": []}
         for task in train_task_list:
-            for template_id in task.templates_dict:
+            for template_id in task.all_templates(return_id=True):
                 input_prompt, target_text = task.templates_dict[template_id]
 
                 dataframe_dict["task_type"].append(str(task))
@@ -58,8 +58,6 @@ class RecTrainer:
         log_wandb({"train/task_templates": wandb.Table(dataframe=pd.DataFrame(dataframe_dict))}, should_log)
 
     def train(self, train_dataset: datasets.Dataset, validation_dataset: datasets.Dataset = None):
-
-        self.rec_model.train()
 
         # init variables for saving best model thanks to validation set (if present)
         best_epoch = None
