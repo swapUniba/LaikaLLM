@@ -79,18 +79,27 @@ class LaikaModel(ABC):
     def save(self, output_dir: str):
         raise NotImplementedError
 
-    @abstractmethod
-    def to(self, device: str):
-        raise NotImplementedError
-
     @classmethod
     @abstractmethod
     def load(cls, dir_path: str, **kwargs) -> LaikaModel:
         raise NotImplementedError
 
+    @abstractmethod
+    def to(self, device: str):
+        raise NotImplementedError
+
     @classmethod
-    def from_automatic_usage(cls, dataset_obj: LaikaDataset, **kwargs):
+    def from_cls(cls, model_cls: type[LaikaModel], dataset_obj: LaikaDataset, **kwargs):
+        raise NotImplementedError
 
-        kwargs["all_unique_labels"] = dataset_obj.all_items.tolist()
+    @classmethod
+    def from_string(cls, model_cls_name: str, dataset_obj: LaikaDataset, **kwargs):
 
-        return cls(**kwargs)
+        try:
+            model_cls = cls.str_alias_cls[model_cls_name]
+        except KeyError:
+            raise KeyError(f"Model {model_cls_name} does not exist!") from None
+
+        # it seems a recursive call, but the top level (LaikaModel) is an abstract class,
+        # we are basically calling the from_string of the subclass
+        return model_cls.from_cls(model_cls, dataset_obj, **kwargs)

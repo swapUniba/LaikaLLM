@@ -254,9 +254,9 @@ class T5Rec(LaikaModel, T5ForConditionalGeneration):
         return T5ForConditionalGeneration.to(self, device)
 
     @classmethod
-    def from_automatic_usage(cls, dataset_obj: LaikaDataset, **kwargs):
+    def from_cls(cls, model_cls: type[T5Rec], dataset_obj: LaikaDataset, **kwargs):
 
         kwargs["all_unique_labels"] = dataset_obj.all_items.tolist()
         kwargs["n_users"] = len(dataset_obj.all_users)
 
-        return cls.from_pretrained(**kwargs)
+        return model_cls.from_pretrained(**kwargs)

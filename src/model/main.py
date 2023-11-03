@@ -37,15 +37,13 @@ def model_main(shared_params: SharedParams, model_params: ModelParams, dataset_o
     train = Dataset.from_dict(train[:100])
     val = Dataset.from_dict(val[:100])
 
-    model_cls = LaikaModel.str_alias_cls[model_cls_name]
-
     # some parameters are "internal", in the sense that are used by any model implemented and are
     # not passed directly via yaml configuration (e.g., dataset_obj), others are passed via yaml configuration and
     # are forwarded to the model. The peculiarity is that via **model_kwargs, even new parameters not initially
     # considered are forwarded
-    rec_model = model_cls.from_automatic_usage(training_tasks_str=train_tasks, dataset_obj=dataset_obj,
-                                               eval_task_str=val_task, eval_template_id=val_task_template_id,
-                                               **model_kwargs)
+    rec_model = LaikaModel.from_string(model_cls_name, training_tasks_str=train_tasks, dataset_obj=dataset_obj,
+                                       eval_task_str=val_task, eval_template_id=val_task_template_id,
+                                       **model_kwargs)
     rec_model.to(device)
 
     output_dir = os.path.join(MODELS_DIR, exp_name)

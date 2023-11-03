@@ -52,3 +52,13 @@ class LaikaDataset(ABC):
     @abstractmethod
     def load(cls, dir_path: str) -> LaikaDataset:
         raise NotImplementedError
+
+    @classmethod
+    def from_string(cls, dataset_cls_name: str, **dataset_params):
+
+        try:
+            dataset_cls = cls.str_alias_cls[dataset_cls_name]
+        except KeyError:
+            raise KeyError(f"Dataset {dataset_cls_name} does not exist!") from None
+
+        return dataset_cls(**dataset_params)
