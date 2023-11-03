@@ -25,16 +25,13 @@ class ModelParams:
     @classmethod
     def from_parse(cls, model_section: dict):
 
-        valid_model_found = set(model_section.keys()).intersection(LaikaModel.str_alias_cls.keys())
+        # model specification should be the first subsection of the model section
+        model_name = list(model_section.keys())[0]
 
-        if len(valid_model_found) == 0:
-            raise ValueError("Missing model class from the 'model' section!")
-        if len(valid_model_found) > 1:
-            raise ValueError(f"Only one model expected, found {list(valid_model_found)}")
+        if model_name in cls.__annotations__.keys():
+            raise ValueError(f"Found {model_name} as first element of the 'model' section, "
+                             f"but the model definition with its params it's expected!")
 
-        # we are sure there is only one element from the above checks, so
-        # we are popping the valid model name
-        model_name = valid_model_found.pop()
         model_kwargs = model_section[model_name]
 
         # pop so that we can forward all the model section to the dataclass __init__,
