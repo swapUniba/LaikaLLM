@@ -337,7 +337,7 @@ class DirectSideInfoTask(Task):
         6: PromptTarget(
             input_prompt="direct recommendation - {}: \n\n"
                          "The categories liked by the user are -> {} \n"
-                         "Which item from the catalog would the user buy? Select from the following: \n"
+                         "Which item can interest the user? Select one from the following: \n"
                          "{}",
             target_text="{}"
         ),
