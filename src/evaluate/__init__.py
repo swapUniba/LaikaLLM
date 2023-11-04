@@ -3,6 +3,9 @@ from dataclasses import dataclass
 from . import metrics
 from .metrics import *
 
+from src.evaluate.abstract_metric import Metric
+from src.data.abstract_templates import Task
+
 
 @dataclass
 class EvalParams:
@@ -18,10 +21,13 @@ class EvalParams:
         # thus for now complex parsing is not needed
         obj = cls(**eval_section)
 
-        # normalize string params to lower
-        obj.metrics = tuple(metric_name.lower() for metric_name in obj.metrics)
+        # check that each metric exists
+        for metric_name in obj.metrics:
+            Metric.metric_exists(metric_name, raise_error=True)
 
+        # check that each eval task exists
         if obj.eval_tasks is not None:
-            obj.eval_tasks = tuple(eval_task_name.lower() for eval_task_name in obj.eval_tasks)
+            for task_name in obj.eval_tasks:
+                Task.task_exists(task_name, raise_error=True)
 
         return obj

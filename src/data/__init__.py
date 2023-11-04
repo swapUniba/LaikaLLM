@@ -1,7 +1,11 @@
+from __future__ import annotations
 from dataclasses import dataclass
 
-from . import datasets
+from . import datasets, templates
 from .datasets import *
+from .templates import *
+
+from src.data.abstract_dataset import LaikaDataset
 
 
 @dataclass
@@ -17,4 +21,9 @@ class DataParams:
         dataset_name = list(data_section.keys())[0]
         dataset_params = data_section[dataset_name]
 
-        return cls(dataset_name, dataset_params)
+        obj = cls(dataset_name, dataset_params)
+
+        # check that string params are valid
+        LaikaDataset.dataset_exists(dataset_cls_name=obj.dataset_cls_name, raise_error=True)
+
+        return obj

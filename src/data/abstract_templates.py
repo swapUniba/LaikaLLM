@@ -104,6 +104,29 @@ class Task(ABC):
 
         return instantiated_tasks
 
+    @classmethod
+    def all_tasks_available(cls, return_str: bool = False):
+        return list(cls.str_alias_cls.values()) if return_str else list(cls.str_alias_cls.keys())
+
+    @classmethod
+    def task_exists(cls, task_cls_name: str, template_id: int | str = None, raise_error: bool = True):
+
+        # if no template id specified, then it should not count towards the result,
+        # hence set to True (True is neutral element of AND operation)
+        template_exists = True
+        task_exists = task_cls_name in cls.str_alias_cls.keys()
+
+        if task_exists and template_id is not None:
+            template_exists = template_id in cls.str_alias_cls[task_cls_name].templates_dict.keys()
+
+            if not template_exists and raise_error is True:
+                raise KeyError(f"Template {template_id} for task {task_cls_name} does not exist!")
+
+        if not task_exists and raise_error is True:
+            raise KeyError(f"Task {task_cls_name} does not exist!")
+
+        return task_exists and template_exists
+
     @abstractmethod
     def __call__(self, *args, **kwargs):
         raise NotImplementedError

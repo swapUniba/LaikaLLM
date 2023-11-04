@@ -94,6 +94,22 @@ class Metric(ABC):
 
         return instantiated_metrics
 
+    @classmethod
+    def all_metrics_available(cls, return_str: bool = False):
+        return list(cls.str_alias_cls.values()) if return_str else list(cls.str_alias_cls.keys())
+
+    @classmethod
+    def metric_exists(cls, metric_cls_name: str, raise_error: bool = True):
+
+        # regardless if there is the cutoff value k or not, we are only interested in the metric name
+        # which is the part before the '@' symbol
+        metric_exists = metric_cls_name.split("@")[0] in cls.str_alias_cls.keys()
+
+        if not metric_exists and raise_error is True:
+            raise KeyError(f"Metric {metric_cls_name} does not exist!")
+
+        return metric_exists
+
     @abstractmethod
     def __call__(self, rel_binary_matrix: np.ndarray[np.ndarray[bool]]) -> float:
         raise NotImplementedError

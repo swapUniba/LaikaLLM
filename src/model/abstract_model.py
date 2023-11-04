@@ -104,3 +104,17 @@ class LaikaModel(ABC):
         # it seems a recursive call, but the top level (LaikaModel) is an abstract class,
         # we are basically calling the from_string of the subclass
         return model_cls.from_cls(model_cls, dataset_obj, **kwargs)
+
+    @classmethod
+    def all_models_available(cls, return_str: bool = False):
+        return list(cls.str_alias_cls.values()) if return_str else list(cls.str_alias_cls.keys())
+
+    @classmethod
+    def model_exists(cls, model_cls_name: str, raise_error: bool = True):
+
+        model_exists = model_cls_name in cls.str_alias_cls.keys()
+
+        if not model_exists and raise_error is True:
+            raise KeyError(f"Metric {model_cls_name} does not exist!")
+
+        return model_exists
