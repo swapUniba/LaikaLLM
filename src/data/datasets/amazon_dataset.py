@@ -207,28 +207,31 @@ class AmazonDataset(LaikaDataset):
         for sample in batch:
 
             single_out_dict = {}
-            
-            if len(sample["item_sequence"]) < 2:
-                raise ValueError(f"{sample['user_id']} has less than 2 items in its order history, can't divide "
-                                 "in input and ground truth!")
-    
-            elif len(sample["item_sequence"]) == 2:
-                # if we have only two data points, then we have no choice and consider only a sequence of
-                # one data point as input
-                minimum_sliding_size = 1
-            else:
-                # if the sequence 3 or more data points, then we prefer to have input sequences of
-                # at least 2 data points
-                minimum_sliding_size = 2
-    
-            # a training sequence has at least 1 data point (2 if the sequence has at least 3 data points),
-            # but it can have more depending on the length of the sequence
-            # We must ensure that at least an element can be used as ground truth (that's why -1).
-            # In the "sliding_size" is included the ground truth item
-            sliding_size = random.randint(minimum_sliding_size, len(sample["item_sequence"]) - 1)
-    
-            start_index = random.randint(0, len(sample["item_sequence"]) - sliding_size - 1)  # -1 since we start from 0
-            end_index = start_index + sliding_size
+            #
+            # if len(sample["item_sequence"]) < 2:
+            #     raise ValueError(f"{sample['user_id']} has less than 2 items in its order history, can't divide "
+            #                      "in input and ground truth!")
+            #
+            # elif len(sample["item_sequence"]) == 2:
+            #     # if we have only two data points, then we have no choice and consider only a sequence of
+            #     # one data point as input
+            #     minimum_sliding_size = 1
+            # else:
+            #     # if the sequence 3 or more data points, then we prefer to have input sequences of
+            #     # at least 2 data points
+            #     minimum_sliding_size = 2
+            #
+            # # a training sequence has at least 1 data point (2 if the sequence has at least 3 data points),
+            # # but it can have more depending on the length of the sequence
+            # # We must ensure that at least an element can be used as ground truth (that's why -1).
+            # # In the "sliding_size" is included the ground truth item
+            # sliding_size = random.randint(minimum_sliding_size, len(sample["item_sequence"]) - 1)
+            #
+            # start_index = random.randint(0, len(sample["item_sequence"]) - sliding_size - 1)  # -1 since we start from 0
+            # end_index = start_index + sliding_size
+
+            start_index = 0
+            end_index = len(sample["item_sequence"]) - 1
 
             single_out_dict["user_id"] = sample["user_id"]
             single_out_dict["input_item_seq"] = sample["item_sequence"][start_index:end_index]
