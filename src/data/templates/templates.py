@@ -1,9 +1,7 @@
 import itertools
-from abc import ABC, abstractmethod
 import random
 
 import numpy as np
-from requests.structures import CaseInsensitiveDict
 
 from src.data.abstract_templates import Task, PromptTarget
 
@@ -333,19 +331,47 @@ class DirectSideInfoTask(Task):
                          "Please predict what item is best to recommend to the user. The categories that it likes "
                          "are -> {}",
             target_text="{}"
-        )
+        ),
+
+        # extractive qa
+        6: PromptTarget(
+            input_prompt="direct recommendation - {}: \n\n"
+                         "The categories liked by the user are -> {} \n"
+                         "Which item from the catalog would the user buy? Select from the following: \n"
+                         "{}",
+            target_text="{}"
+        ),
+        7: PromptTarget(
+            input_prompt="direct recommendation - {}: \n\n"
+                         "The user so far has bought items with these categories -> {}. \n"
+                         "Choose an item to recommend to the user selecting from: \n"
+                         "{}",
+            target_text="{}"
+        ),
+        8: PromptTarget(
+            input_prompt="direct recommendation - {}: \n\n"
+                         "These are the categories of the items bought by the user -> {}. \n"
+                         "Predict an item to suggest to the user from the followings: \n"
+                         "{}",
+            target_text="{}"
+        ),
     }
 
     def valid_templates(self, return_id: bool = False):
-        return self.all_templates(return_id)[:5]
+        return self.all_templates(return_id)[:6]
+
+    def qa_templates(self, return_id: bool = False):
+        return self.all_templates(return_id)[6:]
 
     @Task.validate_args("user_id", "input_item_seq", "input_categories_seq", "gt_item", "gt_categories")
     def __call__(self, **kwargs):
         user_id = kwargs["user_id"]
         input_item_seq = kwargs["input_item_seq"]
         input_categories_seq = kwargs["input_categories_seq"]
-        target_categories = kwargs["target_categories"]
-        target_item = kwargs["gt_item"]
+        [target_categories] = kwargs["gt_categories"]
+        [target_item] = kwargs["gt_item"]
+
+        out_list = []
 
         if self.training:
             input_item_seq = input_item_seq + [target_item]
@@ -354,19 +380,46 @@ class DirectSideInfoTask(Task):
             target_idx = random.randint(0, len(input_item_seq) - 1)
 
             target_item = input_item_seq.pop(target_idx)
-            target_categories = input_categories_seq.pop(target_idx)
+            input_categories_seq.pop(target_idx)  # this is simply removed , we don't use this
 
         # we use only unique categories
-        unique_categories = np.unique(list(itertools.chain.from_iterable(input_categories_seq)))
+        unique_categories = set(itertools.chain.from_iterable(input_categories_seq))
 
-        # random.choice applied to dict with int key returns a value
-        input_prompt, target = random.choice(self.all_templates())
+        input_prompt_valid, target_valid = random.choice(self.valid_templates())
 
         # random select of string separator for titles sequence and the prompt to use
         separator = " , " if random.getrandbits(1) else " ; "
         categories_liked_str = separator.join(unique_categories)
 
-        input_text = input_prompt.format(user_id, categories_liked_str)
-        target_text = target.format(target_item)
+        input_text_valid = input_prompt_valid.format(user_id, categories_liked_str)
+        target_text_valid = target_valid.format(target_item)
 
-        return input_text, target_text
+        out_list.append((input_text_valid, target_text_valid))
+
+        if self.training:
+            input_text_qa, target_text_qa = self._create_input_target_qa(user_id,
+                                                                         categories_liked_str,
+                                                                         target_item)
+
+            out_list.append((input_text_qa, target_text_qa))
+
+        return out_list
+
+    def _create_input_target_qa(self, user_id, input_categories_str, target_item):
+        # random choice of qa template
+        input_prompt_support, target_support = random.choice(self.qa_templates())
+
+        bullet_list_wrong_size = 4
+        all_possible_candidates = self.all_unique_items[self.all_unique_items != target_item]
+        candidates = np.random.choice(all_possible_candidates, size=bullet_list_wrong_size, replace=False)
+
+        candidates = np.append(candidates, target_item)
+        np.random.shuffle(candidates)
+
+        bullet_notation = "* " if random.getrandbits(1) else "- "
+        bullet_list = (f"{bullet_notation} {{}}\n" * len(candidates)).format(*candidates)
+
+        input_text_qa = input_prompt_support.format(user_id, input_categories_str, bullet_list)
+        target_text_qa = target_support.format(target_item)
+
+        return input_text_qa, target_text_qa
