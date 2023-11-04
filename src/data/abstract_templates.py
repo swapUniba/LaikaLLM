@@ -1,3 +1,4 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
 
 import numpy as np
@@ -25,10 +26,13 @@ class PromptTarget:
 
 
 class Task(ABC):
+
     # keys are integers, values are PromptTarget objects
     templates_dict = {}
+
     # name obj class mapping, used for when task must be initialized from strings
-    str_alias_cls: dict = CaseInsensitiveDict()
+    str_alias_cls: dict[str, type[Task]] = CaseInsensitiveDict()
+
     # class attribute since if the model is in training mode, all tasks should be in training mode
     training: bool = False
 

@@ -5,13 +5,14 @@ from typing import List
 
 import numpy as np
 import torch
+from requests.structures import CaseInsensitiveDict
 
 from src.data.abstract_dataset import LaikaDataset
 from src.data.abstract_templates import Task
 
 
 class LaikaModel(ABC):
-    str_alias_cls = {}
+    str_alias_cls: dict[str, type[LaikaModel]] = CaseInsensitiveDict()
 
     # automatically called on subclass definition, will populate the str_alias_cls dict
     def __init_subclass__(cls, **kwargs):

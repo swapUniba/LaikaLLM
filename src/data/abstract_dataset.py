@@ -6,13 +6,12 @@ from typing import Dict, Tuple
 import datasets
 import numpy as np
 import pandas as pd
+from requests.structures import CaseInsensitiveDict
 
 
 class LaikaDataset(ABC):
 
-    config_class = None
-
-    str_alias_cls = {}
+    str_alias_cls: dict[str, type[LaikaDataset]] = CaseInsensitiveDict()
 
     # automatically called on subclass definition, will populate the str_alias_cls dict
     def __init_subclass__(cls, **kwargs):

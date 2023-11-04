@@ -28,7 +28,7 @@ class PaddedArr(np.ndarray):
 class Metric(ABC):
 
     # name - class mapping, used for when metrics should be initialized from strings
-    str_alias_cls: dict = CaseInsensitiveDict()
+    str_alias_cls: dict[str, type[Metric]] = CaseInsensitiveDict()
 
     # automatically called on subclass definition, will populate the str_alias_cls dict
     def __init_subclass__(cls, **kwargs):
