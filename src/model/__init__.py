@@ -1,9 +1,12 @@
+from __future__ import annotations
 from dataclasses import dataclass
 
 from . import models
 from .models import *
 
 from src.model.abstract_model import LaikaModel
+from src.data.abstract_templates import Task
+from src.evaluate.abstract_metric import Metric
 
 
 @dataclass
