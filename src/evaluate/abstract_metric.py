@@ -50,7 +50,7 @@ class Metric(ABC):
     @staticmethod
     def rel_binary_matrix(predictions: np.ndarray[np.ndarray[str]], truths: np.ndarray[np.ndarray[str]], k: int = None):
 
-        # If K is none a new dimension is added! Important to be sure is != None
+        # If K is none a new dimension is added! Important to be sure k is not None
         if k is not None:
             predictions = predictions[:, :k]
 
