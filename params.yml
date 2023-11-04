@@ -12,16 +12,15 @@ data:
 model:
   T5Rec:
     pretrained_model_name_or_path: "google/flan-t5-small"
-    inject_personalization: true
   n_epochs: 1
   train_batch_size: 4
   train_tasks:
-    - SequentialSideInfoTask
+    - DirectSideInfoTask
 
 eval:
   eval_batch_size: 2
   eval_tasks:
-    - SequentialSideInfoTask
+    - DirectSideInfoTask
   metrics:
     - hit@1
     - mrr@1
