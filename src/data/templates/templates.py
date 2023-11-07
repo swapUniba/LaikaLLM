@@ -301,18 +301,20 @@ class SequentialSideInfoTask(Task):
 
     def _create_input_target_pair(self, user_id, order_history, input_categories, target_item):
         # random choice of pair template
-        input_prompt_support, target_support = random.choice(self.pair_templates())
+        input_prompt_support, target_support, _ = random.choice(self.pair_templates())
 
-        first_of_pair_idx = random.randint(0, len(order_history) - 1)
+        # we consider all the order history, including the target item
+        order_history = order_history + [target_item]
+
+        # first "- 1" because we start from 0, second "- 1" because we don't want to pick the last item
+        # as first of the pair
+        first_of_pair_idx = random.randint(0, len(order_history) - 1 - 1)
+
         first_of_pair = order_history[first_of_pair_idx]
+        second_of_pair = order_history[first_of_pair_idx + 1]
 
         separator = " , " if random.getrandbits(1) else " ; "
         first_of_pair_cat = separator.join(input_categories[first_of_pair_idx])
-
-        if first_of_pair_idx == (len(order_history) - 1):
-            second_of_pair = target_item
-        else:
-            second_of_pair = order_history[first_of_pair_idx + 1]
 
         input_text_pair = input_prompt_support.format(user_id, first_of_pair, first_of_pair_cat)
         target_text_pair = second_of_pair
