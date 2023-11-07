@@ -217,17 +217,18 @@ class SequentialSideInfoTask(Task):
         out_list.append(PromptTarget(input_text_inference, target_text_inference, gt=[target_item]))
 
         if self.training:
-            prompt_target_qa = self._create_input_target_qa(user_id,
-                                                            order_history_str,
-                                                            input_categories_str,
-                                                            target_item)
+            input_text_qa, target_text_qa = self._create_input_target_qa(user_id,
+                                                                         order_history_str,
+                                                                         input_categories_str,
+                                                                         target_item)
 
-            prompt_target_pair = self._create_input_target_pair(user_id,
-                                                                order_history,
-                                                                input_categories_seq,
-                                                                target_item)
+            input_text_pair, target_text_pair = self._create_input_target_pair(user_id,
+                                                                               order_history,
+                                                                               input_categories_seq,
+                                                                               target_item)
 
-            out_list.extend([prompt_target_qa, prompt_target_pair])
+            out_list.extend([PromptTarget(input_text_qa, target_text_qa),
+                             PromptTarget(input_text_pair, target_text_pair)])
 
         return out_list
 
@@ -251,7 +252,7 @@ class SequentialSideInfoTask(Task):
                                                     candidate_items=bullet_list)
         target_text_qa = target_support.format(target_item=target_item)
 
-        return PromptTarget(input_text_qa, target_text_qa)
+        return input_text_qa, target_text_qa
 
     def _create_input_target_pair(self, user_id, order_history, input_categories, target_item):
         # random choice of pair template
@@ -275,7 +276,7 @@ class SequentialSideInfoTask(Task):
                                                       categories_precedent_item=first_of_pair_cat)
         target_text_pair = target_support.format(target_item=second_of_pair)
 
-        return PromptTarget(input_text_pair, target_text_pair)
+        return input_text_pair, target_text_pair
 
 
 class DirectSideInfoTask(Task):
