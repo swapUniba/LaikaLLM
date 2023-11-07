@@ -94,75 +94,81 @@ class RatingPredictionTask(Task):
 class SequentialSideInfoTask(Task):
     templates_dict = {
         0: PromptTarget(
-            input_prompt="sequential recommendation - {}: \n\n"
-                         "Predict for the user the next element of the following sequence -> {} \n"
-                         "The category of each element of the sequence is -> {}",
-            target_text="{}"
+            input_prompt="sequential recommendation - {user_id}: \n\n"
+                         "Predict for the user the next element of the following sequence -> {order_history} \n"
+                         "The category of each element of the sequence is -> {category_history}",
+            target_text="{target_item}"
         ),
         1: PromptTarget(
-            input_prompt="sequential recommendation - {}: \n\n"
-                         "Predict the next element which the user will buy given the following order history -> {} \n"
-                         "Each item bought belongs to these categories (in order) -> {}",
-            target_text="{}"
+            input_prompt="sequential recommendation - {user_id}: \n\n"
+                         "Predict the next element which the user will buy given the following order "
+                         "history -> {order_history} \n"
+                         "Each item bought belongs to these categories (in order) -> {category_history}",
+            target_text="{target_item}"
         ),
         2: PromptTarget(
-            input_prompt="sequential recommendation - {}: \n\n"
+            input_prompt="sequential recommendation - {user_id}: \n\n"
                          "What is the element that should be recommended to the user knowing that it has "
-                         "bought -> {} \n"
-                         "Categories of the items are -> {}",
-            target_text="{}"
+                         "bought -> {order_history} \n"
+                         "Categories of the items are -> {category_history}",
+            target_text="{target_item}"
         ),
         3: PromptTarget(
-            input_prompt="sequential recommendation - {}: \n\n"
-                         "Recommend to the user an item from the catalog given its order history -> {} \n"
-                         "Each item of the order history belongs to the following categories (in order) -> {}",
-            target_text="{}"
+            input_prompt="sequential recommendation - {user_id}: \n\n"
+                         "Recommend to the user an item from the catalog given its order history -> {order_history} \n"
+                         "Each item of the order history belongs to the following categories "
+                         "(in order) -> {category_history}",
+            target_text="{target_item}"
         ),
         4: PromptTarget(
-            input_prompt="sequential recommendation - {}: \n\n"
-                         "This is the order history of the user -> {} \n"
-                         "These are the categories of each item -> {} \n"
+            input_prompt="sequential recommendation - {user_id}: \n\n"
+                         "This is the order history of the user -> {order_history} \n"
+                         "These are the categories of each item -> {category_history} \n"
                          "Please recommend the next element that the user will buy",
-            target_text="{}"
+            target_text="{target_item}"
         ),
         5: PromptTarget(
-            input_prompt="sequential recommendation - {}: \n\n"
-                         "Please predict what item is best to recommend to the user given its order history -> {} \n"
-                         "Categories of each item -> {}",
-            target_text="{}"
+            input_prompt="sequential recommendation - {user_id}: \n\n"
+                         "Please predict what item is best to recommend to the user given its order "
+                         "history -> {order_history} \n"
+                         "Categories of each item -> {category_history}",
+            target_text="{target_item}"
         ),
 
         # extractive qa
         6: PromptTarget(
-            input_prompt="sequential recommendation - {}: \n\n"
-                         "The user has the following order history -> {} \n"
-                         "The categories of each item bought are -> {} \n"
+            input_prompt="sequential recommendation - {user_id}: \n\n"
+                         "The user has the following order history -> {order_history} \n"
+                         "The categories of each item bought are -> {category_history} \n"
                          "Which item would the user buy next? Select from the following: \n"
-                         "{}",
-            target_text="{}"
+                         "{candidate_items}",
+            target_text="{target_item}"
         ),
 
         7: PromptTarget(
-            input_prompt="sequential recommendation - {}: \n\n"
-                         "The user has bought {}, and the categories of those items are {}. \n"
+            input_prompt="sequential recommendation - {user_id}: \n\n"
+                         "The user has bought {order_history}, and the categories of those items are "
+                         "{category_history}. \n"
                          "Choose an item to recommend to the user selecting from: \n"
-                         "{}",
-            target_text="{}"
+                         "{candidate_items}",
+            target_text="{target_item}"
         ),
 
         # pair seq
         8: PromptTarget(
-            input_prompt="sequential recommendation - {}: \n\n"
-                         "The user has recently bought {} which has the following categories: {} \n"
+            input_prompt="sequential recommendation - {user_id}: \n\n"
+                         "The user has recently bought {precedent_item_id} which has the following "
+                         "categories: {categories_precedent_item} \n"
                          "What is the next item to recommend?",
-            target_text="{}"
+            target_text="{target_item}"
         ),
 
         9: PromptTarget(
-            input_prompt="sequential recommendation - {}: \n\n"
-                         "The latest item bought by the user is {}. The categories of that item are {}. "
+            input_prompt="sequential recommendation - {user_id}: \n\n"
+                         "The latest item bought by the user is {precedent_item_id}. "
+                         "The categories of that item are {categories_precedent_item}. "
                          "Predict which item the user will buy next",
-            target_text="{}"
+            target_text="{target_item}"
         )
     }
 
@@ -195,7 +201,7 @@ class SequentialSideInfoTask(Task):
         # using all categories is maybe too much, let's use only one category for each item in the seq
         reduced_categories = [random.choice(categories) for categories in input_categories_seq]
 
-        input_prompt_valid, target_valid, _ = random.choice(self.inference_templates())
+        input_prompt_inference, target_inference, _ = random.choice(self.inference_templates())
 
         # random select of string separator for titles sequence and the prompt to use
         separator = " , " if random.getrandbits(1) else " ; "
@@ -203,10 +209,12 @@ class SequentialSideInfoTask(Task):
         input_categories_str = separator.join(reduced_categories)
 
         # random choice of valid template
-        input_text_valid = input_prompt_valid.format(user_id, order_history_str, input_categories_str)
-        target_text_valid = target_valid.format(target_item)
+        input_text_inference = input_prompt_inference.format(user_id=user_id,
+                                                             order_history=order_history_str,
+                                                             category_history=input_categories_str)
+        target_text_inference = target_inference.format(target_item=target_item)
 
-        out_list.append(PromptTarget(input_text_valid, target_text_valid, gt=[target_item]))
+        out_list.append(PromptTarget(input_text_inference, target_text_inference, gt=[target_item]))
 
         if self.training:
             prompt_target_qa = self._create_input_target_qa(user_id,
@@ -237,8 +245,11 @@ class SequentialSideInfoTask(Task):
         bullet_notation = "* " if random.getrandbits(1) else "- "
         bullet_list = (f"{bullet_notation} {{}}\n" * len(candidates)).format(*candidates)
 
-        input_text_qa = input_prompt_support.format(user_id, order_history_str, input_categories_str, bullet_list)
-        target_text_qa = target_support.format(target_item)
+        input_text_qa = input_prompt_support.format(user_id=user_id,
+                                                    order_history=order_history_str,
+                                                    category_history=input_categories_str,
+                                                    candidate_items=bullet_list)
+        target_text_qa = target_support.format(target_item=target_item)
 
         return PromptTarget(input_text_qa, target_text_qa)
 
@@ -259,8 +270,10 @@ class SequentialSideInfoTask(Task):
         separator = " , " if random.getrandbits(1) else " ; "
         first_of_pair_cat = separator.join(input_categories[first_of_pair_idx])
 
-        input_text_pair = input_prompt_support.format(user_id, first_of_pair, first_of_pair_cat)
-        target_text_pair = second_of_pair
+        input_text_pair = input_prompt_support.format(user_id=user_id,
+                                                      precedent_item_id=first_of_pair,
+                                                      categories_precedent_item=first_of_pair_cat)
+        target_text_pair = target_support.format(target_item=second_of_pair)
 
         return PromptTarget(input_text_pair, target_text_pair)
 
