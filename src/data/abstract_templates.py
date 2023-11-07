@@ -61,6 +61,7 @@ class Task(ABC):
         super().__init_subclass__(**kwargs)
 
     @property
+    @abstractmethod
     def is_ranking_task(self) -> bool:
         raise NotImplementedError
 
