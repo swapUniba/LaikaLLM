@@ -1,26 +1,39 @@
 exp_name: prova
 device: cuda:0
 random_seed: 42
+log_wandb: false
 
 data:
   AmazonDataset:
     dataset_name: toys
-    integer_ids: true
     add_prefix_items_users: true
-    items_start_from_1001: false
+    items_start_from_1001: true
 
 model:
   T5Rec:
     pretrained_model_name_or_path: "google/flan-t5-small"
-  n_epochs: 1
-  train_batch_size: 4
+    train_task_selection_strat: random
+  n_epochs: 10
+  train_batch_size: 32
   train_tasks:
     - DirectSideInfoTask
+    - SequentialSideInfoTask
+    - RatingPredictionTask
 
 eval:
-  eval_batch_size: 2
+  eval_batch_size: 16
+  create_latex_table: true
   eval_tasks:
-    - DirectSideInfoTask
-  metrics:
-    - hit@1
-    - mrr@1
+    DirectSideInfoTask:
+      - hit@10
+      - hit@5
+      - ndcg@10
+      - ndcg@5
+    SequentialSideInfoTask:
+      - hit@10
+      - hit@5
+      - ndcg@10
+      - ndcg@5
+    RatingPredictionTask:
+      - mae
+      - rmse
