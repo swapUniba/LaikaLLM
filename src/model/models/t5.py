@@ -209,7 +209,11 @@ class T5Rec(LaikaModel, T5ForConditionalGeneration):
             raise ValueError("Model can't perform generate_step since no eval_task is set! "
                              "Pass it when initializing the model or with `set_eval_task()`")
 
-        num_return_sequences = 10
+        # if it's not a ranking task (e.g., it is a rating prediction task),
+        # we should return one prediction for ground truth element.
+        # In theory there could be a complex way of mixing multiple text generated into a single prediction
+        # (e.g., avg of 10 rating predictions), but here we simply reduce the num return sequences
+        num_return_sequences = 10 if self.eval_task.is_ranking_task else 1
         max_new_tokens = 50
         num_beams = 30
         no_repeat_ngram_size = 0
@@ -236,11 +240,11 @@ class T5Rec(LaikaModel, T5ForConditionalGeneration):
         )
 
         generated_sents = self.tokenizer.batch_decode(beam_outputs, skip_special_tokens=True)
+        mapped_predictions = np.array(generated_sents).reshape((len(gt), num_return_sequences))
 
-        mapped_predictions = np.array(generated_sents).reshape((len(gt_items), num_return_sequences))
-        val_loss = output.loss
+        loss = output.loss
 
-        return mapped_predictions, gt_items, val_loss
+        return mapped_predictions, gt, loss
 
     def save(self, output_dir: str):
 

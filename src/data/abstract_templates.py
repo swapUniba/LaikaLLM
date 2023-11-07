@@ -2,9 +2,13 @@ from __future__ import annotations
 
 import inspect
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
 
 import numpy as np
 from requests.structures import CaseInsensitiveDict
+
+if TYPE_CHECKING:
+    from src.evaluate.abstract_metric import LaikaMetric
 
 
 class PromptTarget:
@@ -30,8 +34,11 @@ class PromptTarget:
 
 class Task(ABC):
 
-    # keys are integers, values are PromptTarget objects
-    templates_dict = {}
+    # keys are integers or str, values are PromptTarget objects
+    templates_dict: dict[int | str, PromptTarget] = {}
+
+    # all metrics which can be used to evaluate the results of the task
+    compatible_metrics: list[type[LaikaMetric]] = []
 
     # name obj class mapping, used for when task must be initialized from strings
     str_alias_cls: dict[str, type[Task]] = CaseInsensitiveDict()
@@ -39,6 +46,7 @@ class Task(ABC):
     # class attribute since if the model is in training mode, all tasks should be in training mode
     training: bool = False
 
+    # some task may use randomly other items of the catalog (e.g., create candidate lists)
     all_unique_items: np.ndarray = np.array([])
 
     def __init__(self, all_unique_items: np.ndarray[str]):
@@ -51,6 +59,10 @@ class Task(ABC):
             cls.str_alias_cls[cls.__name__] = cls
 
         super().__init_subclass__(**kwargs)
+
+    @property
+    def is_ranking_task(self) -> bool:
+        raise NotImplementedError
 
     def all_templates(self, return_id: bool = False):
         return list(self.templates_dict.keys()) if return_id else list(self.templates_dict.values())
@@ -133,7 +145,7 @@ class Task(ABC):
         return task_exists and template_exists
 
     @abstractmethod
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs) -> list[tuple[str, str]]:
         raise NotImplementedError
 
     def __repr__(self):
@@ -141,3 +153,6 @@ class Task(ABC):
 
     def __str__(self):
         return repr(self)
+
+    def __hash__(self):
+        return hash(str(self))
