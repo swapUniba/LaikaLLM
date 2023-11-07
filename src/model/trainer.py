@@ -1,7 +1,6 @@
-import os
 import time
 from math import ceil
-from typing import Optional, Literal, Callable, Dict
+from typing import Optional, Callable, Dict
 
 import datasets
 import numpy as np
@@ -9,76 +8,100 @@ import pandas as pd
 import wandb
 from tqdm import tqdm
 
-from src import MODELS_DIR, ExperimentConfig
+from src.evaluate.evaluator import RecEvaluator
+from src.evaluate.abstract_metric import Loss
+from src.model import LaikaModel
 from src.utils import log_wandb
-from src.data.amazon_dataset import AmazonDataset
-from src.data.templates import SequentialTask
-from src.evaluate.metrics import Metric, Accuracy, Hit
-from src.model.t5 import T5FineTuned
+from src.evaluate.abstract_metric import LaikaMetric
 
 
 class RecTrainer:
 
     def __init__(self,
+                 rec_model: LaikaModel,
                  n_epochs: int,
                  batch_size: int,
-                 rec_model,
-                 all_labels: np.ndarray,
                  train_sampling_fn: Callable[[Dict], Dict],
-                 device: str = 'cuda:0',
-                 monitor_strategy: Literal['loss', 'metric'] = 'metric',
+                 output_dir: str,
+                 monitor_metric: LaikaMetric = Loss(),
                  eval_batch_size: Optional[int] = None,
-                 output_name: Optional[str] = None,
-                 random_seed: Optional[int] = None):
+                 should_log: bool = False):
 
         self.rec_model = rec_model
         self.n_epochs = n_epochs
         self.batch_size = batch_size
-        self.all_labels = all_labels
         self.train_sampling_fn = train_sampling_fn
         self.eval_batch_size = eval_batch_size if eval_batch_size is not None else batch_size
-        self.device = device
-        self.random_seed = random_seed
-        self.monitor_strategy = monitor_strategy
+        self.monitor_metric = monitor_metric
+        self.output_dir = output_dir
+        self.should_log = should_log
 
-        # output name
-        if output_name is None:
-            # replace '/' with '_' to avoid creation of subdir (google/flan-t5-small -> google_flan-t5-small)
-            output_name = f"{rec_model.config.name_or_path.replace('/', '_')}_{n_epochs}"
+        # evaluator for validating with validation set during training
+        # we set should_log to False because we want to have full control,
+        # and we will log differently during validation phase
+        self.rec_evaluator = RecEvaluator(self.rec_model, self.eval_batch_size, should_log=False)
 
-        self.output_name = output_name
-        self.output_path = os.path.join(MODELS_DIR, output_name)
+        # from strings to objects initialized
+        train_task_list = rec_model.training_tasks
+
+        # Log all train templates used
+        dataframe_dict = {"task_type": [], "template_id": [], "input_prompt": [], "target_text": []}
+        for task in train_task_list:
+            for template_id in task.all_templates(return_id=True):
+                input_prompt, target_text, _ = task.templates_dict[template_id]
+
+                dataframe_dict["task_type"].append(str(task))
+                dataframe_dict["template_id"].append(template_id)
+                dataframe_dict["input_prompt"].append(input_prompt)
+                dataframe_dict["target_text"].append(target_text)
+
+        log_wandb({"train/task_templates": wandb.Table(dataframe=pd.DataFrame(dataframe_dict))}, should_log)
 
     def train(self, train_dataset: datasets.Dataset, validation_dataset: datasets.Dataset = None):
 
-        self.rec_model.train()
+        # init variables for saving best model thanks to validation set (if present)
+        best_epoch = None
+        best_res_op_comparison = None
+        best_val_monitor_result = None
 
-        # depending on the monitor strategy, we want either this to decrease or to increase,
-        # so we have a different initialization
-        best_val_monitor_result = np.inf if self.monitor_strategy == "loss" else 0
-        best_epoch = -1
+        # depending on the monitor metric, in order to find the best model we should either
+        # minimize the metric (e.g. loss) or maximize it (e.g. hit)
+        if validation_dataset is not None:
+            best_res_op_comparison = self.monitor_metric.operator_comparison
 
-        optimizer = self.rec_model.get_suggested_optimizer()
+            # small trick to get the initialization value
+            best_val_monitor_result = +np.inf if best_res_op_comparison(-np.inf, +np.inf) else -np.inf
+
+        optimizer = self.rec_model.get_suggested_optimizer
 
         start = time.time()
-        for epoch in range(0, self.n_epochs):
+        for current_epoch in range(1, self.n_epochs + 1):
+
+            self.rec_model.train()
 
             # at the start of each iteration, we randomly sample the train sequence and tokenize it
-            shuffled_train = train_dataset.shuffle(seed=self.random_seed)
-            sampled_train = shuffled_train.map(self.train_sampling_fn,
-                                               remove_columns=train_dataset.column_names,
-                                               keep_in_memory=True,
-                                               desc="Sampling train set")
+            # batched set to True because data can be augmented, either when sampling or when
+            # tokenizing (e.g. a task as multiple support templates)
+
+            sampled_train = train_dataset.map(self.train_sampling_fn,
+                                              remove_columns=train_dataset.column_names,
+                                              keep_in_memory=True,
+                                              load_from_cache_file=False,
+                                              batched=True,
+                                              desc="Sampling train set")
 
             preprocessed_train = sampled_train.map(self.rec_model.tokenize,
                                                    remove_columns=sampled_train.column_names,
-                                                   load_from_cache_file=False,
                                                    keep_in_memory=True,
+                                                   load_from_cache_file=False,
+                                                   batched=True,
                                                    desc="Tokenizing train set")
+
+            # shuffle here so that if we augment data (2 or more row for a single user) it is shuffled
+            preprocessed_train = preprocessed_train.shuffle()
             preprocessed_train.set_format("torch")
 
-            # ceil because we don't drop the last batch. It's here since if we are in
-            # augment strategy, row number increases after preprocessing
+            # ceil because we don't drop the last batch
             total_n_batch = ceil(preprocessed_train.num_rows / self.batch_size)
 
             pbar = tqdm(preprocessed_train.iter(batch_size=self.batch_size),
@@ -100,201 +123,78 @@ class RecTrainer:
 
                 train_loss += loss.item()
 
-                # we update the loss every 1% progress considering the total n° of batches
+                # we update the loss every 1% progress considering the total n° of batches.
                 # tqdm update integer percentage (1%, 2%) when float percentage is over .5 threshold (1.501 -> 2%)
                 # so we print infos in the same way
                 if round(100 * (i / total_n_batch)) > progress:
-
-                    pbar.set_description(f"Epoch {epoch + 1}, Loss -> {(train_loss / i):.6f}")
+                    pbar.set_description(f"Epoch {current_epoch}, Loss -> {(train_loss / i):.6f}")
                     progress += 1
                     log_wandb({
                         "train/loss": train_loss / i
-                    })
+                    }, self.should_log)
 
             train_loss /= total_n_batch
 
-            log_wandb({
-                "train/loss": train_loss,
-                "train/epoch": epoch + 1
-            })
-
             pbar.close()
 
+            dict_to_log = {
+                "train/loss": train_loss,
+                "train/epoch": current_epoch
+            }
+
             if validation_dataset is not None:
-                val_result = self.validation(validation_dataset=validation_dataset)
 
-                if self.monitor_strategy == "loss":
-                    monitor_str = "Val loss"
-                    monitor_val = val_result["loss"]
-                    should_save = monitor_val < best_val_monitor_result  # we want loss to decrease
-                else:
-                    metric_obj, monitor_val = val_result["metric"]
-                    monitor_str = str(metric_obj)
-                    should_save = monitor_val > best_val_monitor_result  # we want metric (acc/hit) to increase
+                self.rec_model.eval()
 
-                # we save the best model based on the reference metric result
+                # we surely want loss for the progbar
+                metric_list = [Loss()]
+                if self.monitor_metric != Loss():
+                    metric_list.append(self.monitor_metric)
+
+                val_result = self.rec_evaluator.evaluate_task(
+                    validation_dataset,
+                    task=self.rec_model.eval_task,
+                    metric_list=metric_list
+                )
+
+                monitor_val = val_result[str(self.monitor_metric)]
+                should_save = best_res_op_comparison(monitor_val,
+                                                     best_val_monitor_result)
+
+                # we save the best model based on the metric/loss result
                 if should_save:
-                    best_epoch = epoch + 1  # we start from 0
+                    best_epoch = current_epoch
                     best_val_monitor_result = monitor_val
-                    self.rec_model.save(self.output_path)
+                    self.rec_model.save(self.output_dir)
 
-                    print(f"{monitor_str} improved, model saved into {self.output_path}!")
-            else:
-                self.rec_model.save_pretrained(self.output_path)
+                    print(f"Validation {self.monitor_metric} improved, model saved into {self.output_dir}!")
+
+                # prefix "val" for val result dict
+                val_to_log = {f"val/{metric_name}": metric_val for metric_name, metric_val in val_result.items()}
+                val_to_log["val/epoch"] = current_epoch
+
+                dict_to_log.update(val_to_log)
+
+            # if no validation set, we simply save the model of the last epoch
+            elif current_epoch == self.n_epochs:
+                self.rec_model.save(self.output_dir)
+
+            # log to wandb at each epoch
+            log_wandb(dict_to_log, self.should_log)
 
         elapsed_time = (time.time() - start) / 60
+
+        dict_to_log = {"train/elapsed_time": elapsed_time}
+
         print(" Train completed! Check models saved into 'models' dir ".center(100, "*"))
         print(f"Time -> {elapsed_time}")
-        print(f"Best epoch -> {best_epoch}")
 
-        log_wandb({
-            "train/elapsed_time": elapsed_time,
-            "train/best_epoch": best_epoch
-        })
+        if best_epoch is not None:
+            print(f"Best epoch -> {best_epoch}")
+            dict_to_log["train/best_epoch"] = best_epoch
 
-    def validation(self, validation_dataset: datasets.Dataset):
+        log_wandb(dict_to_log, self.should_log)
 
-        print("VALIDATION")
-        self.rec_model.eval()
-
-        preprocessed_val = validation_dataset.map(
-            self.rec_model.tokenize,
-            remove_columns=validation_dataset.column_names,
-            keep_in_memory=True,
-            desc="Tokenizing val set"
-        )
-        preprocessed_val.set_format("torch")
-
-        # ceil because we don't drop the last batch
-        total_n_batch = ceil(preprocessed_val.num_rows / self.eval_batch_size)
-
-        pbar_val = tqdm(preprocessed_val.iter(batch_size=self.eval_batch_size),
-                        total=total_n_batch)
-
-        metric: Metric = Hit(k=10)
-        val_loss = 0
-        total_preds = []
-        total_truths = []
-
-        # progress will go from 0 to 100. Init to -1 so at 0 we perform the first print
-        progress = -1
-        for i, batch in enumerate(pbar_val, start=1):
-
-            prepared_input = self.rec_model.prepare_input(batch)
-            predictions, truths, loss = self.rec_model.valid_step(prepared_input)
-
-            val_loss += loss.item()
-
-            total_preds.extend(predictions)
-            total_truths.extend(truths)
-
-            # we update the loss every 1% progress considering the total n° of batches
-            # tqdm update integer percentage (1%, 2%) when float percentage is over .5 threshold (1.501 -> 2%)
-            # so we print infos in the same way
-            if round(100 * (i / total_n_batch)) > progress:
-                preds_so_far = np.array(total_preds)
-                truths_so_far = np.array(total_truths)
-
-                result = metric(preds_so_far.squeeze(), truths_so_far)
-                pbar_val.set_description(f"Val Loss -> {(val_loss / i):.6f}, "
-                                         f"{metric} -> {result:.3f}")
-
-                progress += 1
-
-        pbar_val.close()
-
-        val_loss /= total_n_batch
-        val_metric = metric(np.array(total_preds).squeeze(), np.array(total_truths))
-
-        # val_loss is computed for the entire batch, not for each sample, that's why is safe
-        # to use pbar_val
-        return {"loss": val_loss, "metric": (metric, val_metric)}
-
-
-def trainer_main():
-
-    n_epochs = ExperimentConfig.n_epochs
-    batch_size = ExperimentConfig.train_batch_size
-    eval_batch_size = ExperimentConfig.eval_batch_size
-    device = ExperimentConfig.device
-    checkpoint = ExperimentConfig.checkpoint
-    random_seed = ExperimentConfig.random_seed
-
-    ds = AmazonDataset(dataset_name="toys", add_prefix=ExperimentConfig.add_prefix_item_users)
-
-    ds_dict = ds.get_hf_datasets()
-    all_unique_labels = ds.all_items
-
-    train = ds_dict["train"]
-    val = ds_dict["validation"]
-
-    # REDUCE FOR TESTING
-    # train = Dataset.from_dict(train[:5000])
-    # val = Dataset.from_dict(val[:5000])
-
-    sampling_fn = ds.sample_train_sequence
-
-    train_task_list = [SequentialTask()]
-
-    # Log all templates used
-    dataframe_dict = {"task_type": [], "template_id": [], "input_prompt": [], "target_text": []}
-    for task in train_task_list:
-        for template_id in task.templates_dict:
-
-            input_prompt, target_text = task.templates_dict[template_id]
-
-            dataframe_dict["task_type"].append(repr(task))
-            dataframe_dict["template_id"].append(template_id)
-            dataframe_dict["input_prompt"].append(input_prompt)
-            dataframe_dict["target_text"].append(target_text)
-
-    dataframe = pd.DataFrame(dataframe_dict)
-
-    log_wandb({"task_templates": wandb.Table(dataframe=dataframe)})
-
-    rec_model = T5FineTuned.from_pretrained(
-        checkpoint,
-        training_tasks=train_task_list,
-        all_unique_labels=all_unique_labels,
-        device=device
-    )
-
-    # new_words = ['<']
-    #
-    # model_ntp.tokenizer.add_tokens(new_words)
-    # model_ntp.model.resize_token_embeddings(len(model_ntp.tokenizer))
-
-    trainer = RecTrainer(
-        rec_model=rec_model,
-        n_epochs=n_epochs,
-        batch_size=batch_size,
-        all_labels=all_unique_labels,
-        eval_batch_size=eval_batch_size,
-        random_seed=random_seed,
-        train_sampling_fn=sampling_fn,
-        monitor_strategy="loss",
-        output_name=ExperimentConfig.exp_name
-    )
-
-    # validation only at last epoch
-    trainer.train(train)
-
-    for template_id in SequentialTask.templates_dict.keys():
-
-        print(f"Validating on {template_id}")
-
-        rec_model.set_eval_task(SequentialTask(force_template_id=template_id))
-        res = trainer.validation(val)
-
-        val_loss = res["loss"]
-        metric_name, metric_val = res["metric"]
-
-        log_wandb({
-            "val/template_id": template_id,
-            "val/loss": val_loss,
-            f"val/{metric_name}": metric_val,
-        })
-
-
-if __name__ == "__main__":
-    trainer_main()
+        # return best model pif validation was set, otherwise this return the model
+        # saved at the last epoch
+        return self.rec_model.load(self.output_dir)
