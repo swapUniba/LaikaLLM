@@ -10,10 +10,8 @@ from functools import cached_property
 from typing import Literal, Dict
 
 import datasets
-import numpy as np
 import pandas as pd
 from datasets import Dataset
-from tqdm import tqdm
 
 from src import RAW_DATA_DIR
 from src.data.abstract_dataset import LaikaDataset
@@ -46,21 +44,33 @@ class AmazonDataset(LaikaDataset):
         self.user_idx2id = {str(key): str(val) for key, val in datamaps['id2user'].items()}
         self.item_idx2id = {str(key): str(val) for key, val in datamaps['id2item'].items()}
 
+        print("Reading sequential data...", end="")
+        user_items, _ = self._read_sequential()
+        print("Done!")
+
+        print("Reading ratings data...", end="")
+        user_items = self._read_ratings(user_items)
+        print("Done!")
+
         # here we save meta information (the "content") about items.
         # We only save info about items which appear in the user profiles
         relevant_items_id = set(self.item_id2idx.keys())
         meta_dict = {}
-        print("Extracting meta info...")
+        print("Extracting meta info...", end="")
         for meta_content in parse(os.path.join(RAW_DATA_DIR, self.dataset_name, 'meta.json.gz')):
             item_id = meta_content.pop("asin")
             if item_id in relevant_items_id:
                 item_idx = self.item_id2idx[item_id]
+
+                # categories are list of lists for no reason
+                meta_content["categories"] = meta_content["categories"][0]
                 meta_dict[item_idx] = meta_content
         print("Done!")
 
         df_dict = {
             "user_id": [],
             "item_sequence": [],
+            "rating_sequence": [],
             "title_sequence": [],
             "description_sequence": [],
             "categories_sequence": [],
@@ -69,21 +79,19 @@ class AmazonDataset(LaikaDataset):
             "brand_sequence": []
         }
 
-        for user_idx, item_list_idxs in tqdm(user_items.items(), desc="Creating tabular data..."):
+        print("Creating tabular data...", end="")
+        for user_idx, item_list_idxs in user_items.items():
 
-            if self.integer_ids is True:
-                user_col_repeated = [user_idx for _ in range(len(item_list_idxs))]
-                item_col_value = item_list_idxs
-            else:
-                user_col_repeated = [self.user_idx2id[user_idx] for _ in range(len(item_list_idxs))]
-                item_col_value = [self.item_idx2id[item_idx] for item_idx in item_list_idxs]
+            user_col_repeated = [user_idx for _ in range(len(item_list_idxs))]
+            [item_col_value, ratings_col_value] = list(zip(*item_list_idxs))
 
             df_dict["user_id"].extend(user_col_repeated)
             df_dict["item_sequence"].extend(item_col_value)
+            df_dict["rating_sequence"].extend(ratings_col_value)
 
-            for item_idx in item_list_idxs:
+            for item_idx in item_col_value:
                 desc = meta_dict[item_idx].get("description", "")
-                item_categories = meta_dict[item_idx].get("categories", [[]])[0]
+                item_categories = meta_dict[item_idx].get("categories", [])
                 title = meta_dict[item_idx].get("title", "")
                 price = meta_dict[item_idx].get("price", "")
                 imurl = meta_dict[item_idx].get("imUrl", "")
@@ -98,6 +106,8 @@ class AmazonDataset(LaikaDataset):
 
         data_df = pd.DataFrame.from_dict(df_dict)
 
+        print("Done!")
+
         # start indexing from 1001 for better tokenization sentencepiece
         if self.items_start_from_1001:
             data_df["item_sequence"] = data_df["item_sequence"].astype(int) + 1000
@@ -108,7 +118,10 @@ class AmazonDataset(LaikaDataset):
             data_df["item_sequence"] = "item_" + data_df["item_sequence"]
 
         self.original_df = data_df
+
+        print("Splitting data with Leave One Out protocol...", end="")
         self.train_df, self.val_df, self.test_df = self.split_data(data_df)
+        print("Done!")
 
     @cached_property
     def all_users(self):
@@ -137,22 +150,27 @@ class AmazonDataset(LaikaDataset):
         # if sequence is -> [1 2 3 4 5 6 7 8], VAL SET will have
         # input_sequence: [1 2 3 4 5 6]
         # gt_item: [7]
-        input_val_set = groupby_obj.nth[:-2].rename(columns={"item_sequence": "input_item_seq",
-                                                             "description_sequence": "input_desc_seq",
-                                                             "categories_sequence": "input_categories_seq",
-                                                             "title_sequence": "input_title_seq",
-                                                             "price_sequence": "input_price_seq",
-                                                             "imurl_sequence": "input_imurl_seq",
-                                                             "brand_sequence": "input_brand_seq"})
+        input_val_set = groupby_obj.nth[:-2].rename(columns={
+            "item_sequence": "input_item_seq",
+            "rating_sequence": "input_rating_seq",
+            "description_sequence": "input_desc_seq",
+            "categories_sequence": "input_categories_seq",
+            "title_sequence": "input_title_seq",
+            "price_sequence": "input_price_seq",
+            "imurl_sequence": "input_imurl_seq",
+            "brand_sequence": "input_brand_seq"
+        })
         input_val_set = input_val_set.groupby(by=["user_id"]).agg(list).reset_index()
 
-        gt_val_set = groupby_obj.nth[-2].rename(columns={"item_sequence": "gt_item",
-                                                         "description_sequence": "input_desc_seq",
-                                                         "categories_sequence": "gt_categories",
-                                                         "title_sequence": "gt_title",
-                                                         "price_sequence": "gt_price",
-                                                         "imurl_sequence": "gt_imurl",
-                                                         "brand_sequence": "gt_brand"})
+        gt_val_set = groupby_obj.nth[-2].rename(columns={
+            "item_sequence": "gt_item",
+            "rating_sequence": "gt_rating",
+            "description_sequence": "gt_desc_seq",
+            "categories_sequence": "gt_categories",
+            "title_sequence": "gt_title",
+            "price_sequence": "gt_price",
+            "imurl_sequence": "gt_imurl",
+            "brand_sequence": "gt_brand"})
         # this is done only for generality purpose, in order to have a list wrapping all target item
         # features. We are performing Leave One Out, so we are sure there is only one item
         gt_val_set = gt_val_set.groupby(by=["user_id"]).agg(list).reset_index()
@@ -162,22 +180,26 @@ class AmazonDataset(LaikaDataset):
         # if sequence is -> [1 2 3 4 5 6 7 8], TEST SET will have
         # input_sequence: [1 2 3 4 5 6 7]
         # gt_item: [8]
-        input_test_set = groupby_obj.nth[:-1].rename(columns={"item_sequence": "input_item_seq",
-                                                              "description_sequence": "input_desc_seq",
-                                                              "categories_sequence": "input_categories_seq",
-                                                              "title_sequence": "input_title_seq",
-                                                              "price_sequence": "input_price_seq",
-                                                              "imurl_sequence": "input_imurl_seq",
-                                                              "brand_sequence": "input_brand_seq"})
+        input_test_set = groupby_obj.nth[:-1].rename(columns={
+            "item_sequence": "input_item_seq",
+            "rating_sequence": "input_rating_seq",
+            "description_sequence": "input_desc_seq",
+            "categories_sequence": "input_categories_seq",
+            "title_sequence": "input_title_seq",
+            "price_sequence": "input_price_seq",
+            "imurl_sequence": "input_imurl_seq",
+            "brand_sequence": "input_brand_seq"})
         input_test_set = input_test_set.groupby(by=["user_id"]).agg(list).reset_index()
 
-        gt_test_set = groupby_obj.nth[-1].rename(columns={"item_sequence": "gt_item",
-                                                          "description_sequence": "input_desc_seq",
-                                                          "categories_sequence": "gt_categories",
-                                                          "title_sequence": "gt_title",
-                                                          "price_sequence": "gt_price",
-                                                          "imurl_sequence": "gt_imurl",
-                                                          "brand_sequence": "gt_brand"})
+        gt_test_set = groupby_obj.nth[-1].rename(columns={
+            "item_sequence": "gt_item",
+            "rating_sequence": "gt_rating",
+            "description_sequence": "gt_desc_seq",
+            "categories_sequence": "gt_categories",
+            "title_sequence": "gt_title",
+            "price_sequence": "gt_price",
+            "imurl_sequence": "gt_imurl",
+            "brand_sequence": "gt_brand"})
         # this is done only for generality purpose, in order to have a list wrapping all target item
         # features. We are performing Leave One Out, so we are sure there is only one item
         gt_test_set = gt_test_set.groupby(by=["user_id"]).agg(list).reset_index()
@@ -188,49 +210,47 @@ class AmazonDataset(LaikaDataset):
 
     @staticmethod
     def sample_train_sequence(batch: Dict[str, list]) -> Dict[str, list]:
-        
+
         batch = dict_list2list_dict(batch)
 
         out_dict_list = []
         for sample in batch:
-
             single_out_dict = {}
-            #
-            # if len(sample["item_sequence"]) < 2:
-            #     raise ValueError(f"{sample['user_id']} has less than 2 items in its order history, can't divide "
-            #                      "in input and ground truth!")
-            #
-            # elif len(sample["item_sequence"]) == 2:
-            #     # if we have only two data points, then we have no choice and consider only a sequence of
-            #     # one data point as input
-            #     minimum_sliding_size = 1
-            # else:
-            #     # if the sequence 3 or more data points, then we prefer to have input sequences of
-            #     # at least 2 data points
-            #     minimum_sliding_size = 2
-            #
-            # # a training sequence has at least 1 data point (2 if the sequence has at least 3 data points),
-            # # but it can have more depending on the length of the sequence
-            # # We must ensure that at least an element can be used as ground truth (that's why -1).
-            # # In the "sliding_size" is included the ground truth item
-            # sliding_size = random.randint(minimum_sliding_size, len(sample["item_sequence"]) - 1)
-            #
-            # start_index = random.randint(0, len(sample["item_sequence"]) - sliding_size - 1)  # -1 since we start from 0
-            # end_index = start_index + sliding_size
 
-            start_index = 0
-            end_index = len(sample["item_sequence"]) - 1
+            if len(sample["item_sequence"]) < 2:
+                raise ValueError(f"{sample['user_id']} has less than 2 items in its order history, can't divide "
+                                 "in input and ground truth!")
+
+            elif len(sample["item_sequence"]) == 2:
+                # if we have only two data points, then we have no choice and consider only a sequence of
+                # one data point as input
+                minimum_sliding_size = 1
+            else:
+                # if the sequence 3 or more data points, then we prefer to have input sequences of
+                # at least 2 data points
+                minimum_sliding_size = 2
+
+            # a training sequence has at least 1 data point (2 if the sequence has at least 3 data points),
+            # but it can have more depending on the length of the sequence
+            # We must ensure that at least an element can be used as ground truth (that's why -1).
+            # In the "sliding_size" is included the ground truth item
+            sliding_size = random.randint(minimum_sliding_size, len(sample["item_sequence"]) - 1)
+
+            start_index = random.randint(0, len(sample["item_sequence"]) - sliding_size - 1)  # -1 since we start from 0
+            end_index = start_index + sliding_size
 
             single_out_dict["user_id"] = sample["user_id"]
             single_out_dict["input_item_seq"] = sample["item_sequence"][start_index:end_index]
+            single_out_dict["input_rating_seq"] = sample["rating_sequence"][start_index:end_index]
             single_out_dict["input_description_seq"] = sample["description_sequence"][start_index:end_index]
             single_out_dict["input_categories_seq"] = sample["categories_sequence"][start_index:end_index]
             single_out_dict["input_title_seq"] = sample["title_sequence"][start_index:end_index]
             single_out_dict["input_price_seq"] = sample["price_sequence"][start_index:end_index]
             single_out_dict["input_imurl_seq"] = sample["imurl_sequence"][start_index:end_index]
             single_out_dict["input_brand_seq"] = sample["brand_sequence"][start_index:end_index]
-    
+
             single_out_dict["gt_item"] = [sample["item_sequence"][end_index]]
+            single_out_dict["gt_rating"] = [sample["rating_sequence"][end_index]]
             single_out_dict["gt_description"] = [sample["description_sequence"][end_index]]
             single_out_dict["gt_categories"] = [sample["categories_sequence"][end_index]]
             single_out_dict["gt_title"] = [sample["title_sequence"][end_index]]
@@ -257,6 +277,38 @@ class AmazonDataset(LaikaDataset):
         item_count = dict(Counter(itertools.chain.from_iterable(user_items.values())))
 
         return user_items, item_count
+
+    def _read_ratings(self, user_items: dict):
+
+        with open(os.path.join(RAW_DATA_DIR, self.dataset_name, "rating_splits_augmented.pkl"), "rb") as f:
+            ratings_list = pickle.load(f)
+
+        # here we use data from all splits because these splits originally are different
+        # from the splits used for sequential data (i.e., the test item is different
+        # from the test item in the sequential data), which does not make a lot of sense.
+        # That's why we fix this by considering the splits defined for the sequential data.
+        # This also gives us more flexibility: if another split protocol should be used,
+        # in split_data() method you fully control how ALL data is split, rather than
+        # controlling how data is split for each task independently
+
+        for rating_dict in ratings_list["train"] + ratings_list["val"] + ratings_list["test"]:
+            user_idx = self.user_id2idx[rating_dict["reviewerID"]]
+            item_idx = self.item_id2idx[rating_dict["asin"]]
+            # rating is an integer number between 1 and 5 (included)
+            rating = int(rating_dict["overall"])
+
+            item_sequence = user_items[user_idx]
+
+            # if the rating is for an item id which is not present in the sequence of items rated by the user,
+            # we don't consider it
+            try:
+                item_index = item_sequence.index(item_idx)
+
+                user_items[user_idx][item_index] = (item_idx, rating)
+            except ValueError:
+                pass
+
+        return user_items
 
     def get_hf_datasets(self, merge_train_val: bool = False) -> Dict[str, datasets.Dataset]:
 
