@@ -390,61 +390,63 @@ class DirectTask(Task):
 class DirectSideInfoTask(Task):
     templates_dict = {
         0: PromptTarget(
-            input_prompt="direct recommendation - {}: \n\n"
+            input_prompt="direct recommendation - {user_id}: \n\n"
                          "Pick an item from the catalog knowing that these are the categories "
-                         "the user likes -> {}",
-            target_text="{}"
+                         "the user likes -> {unique_categories_liked}",
+            target_text="{target_item}"
         ),
         1: PromptTarget(
-            input_prompt="direct recommendation - {}: \n\n"
-                         "Recommend an item to the user. The categories of the items bought by the user are -> {}",
-            target_text="{}"
+            input_prompt="direct recommendation - {user_id}: \n\n"
+                         "Recommend an item to the user. The categories of the items bought by the user are -> "
+                         "{unique_categories_liked}",
+            target_text="{target_item}"
         ),
         2: PromptTarget(
-            input_prompt="direct recommendation - {}: \n\n"
+            input_prompt="direct recommendation - {user_id}: \n\n"
                          "What is the item that should be recommended to the user? It likes "
-                         "these categories -> {}",
-            target_text="{}"
+                         "these categories -> {unique_categories_liked}",
+            target_text="{target_item}"
         ),
         3: PromptTarget(
-            input_prompt="direct recommendation - {}: \n\n"
-                         "Select an item to present to the user given the categories that it likes -> {}",
-            target_text="{}"
+            input_prompt="direct recommendation - {user_id}: \n\n"
+                         "Select an item to present to the user given the categories that it likes -> "
+                         "{unique_categories_liked}",
+            target_text="{target_item}"
         ),
         4: PromptTarget(
-            input_prompt="direct recommendation - {}: \n\n"
-                         "These are the categories of the items bought by the user -> {} \n"
+            input_prompt="direct recommendation - {user_id}: \n\n"
+                         "These are the categories of the items bought by the user -> {unique_categories_liked} \n"
                          "Please recommend an item that the user will buy",
-            target_text="{}"
+            target_text="{target_item}"
         ),
         5: PromptTarget(
-            input_prompt="direct recommendation - {}: \n\n"
+            input_prompt="direct recommendation - {user_id}: \n\n"
                          "Please predict what item is best to recommend to the user. The categories that it likes "
-                         "are -> {}",
-            target_text="{}"
+                         "are -> {unique_categories_liked}",
+            target_text="{target_item}"
         ),
 
         # extractive qa
         6: PromptTarget(
-            input_prompt="direct recommendation - {}: \n\n"
-                         "The categories liked by the user are -> {} \n"
+            input_prompt="direct recommendation - {user_id}: \n\n"
+                         "The categories liked by the user are -> {unique_categories_liked} \n"
                          "Which item can interest the user? Select one from the following: \n"
-                         "{}",
-            target_text="{}"
+                         "{candidate_items}",
+            target_text="{target_item}"
         ),
         7: PromptTarget(
-            input_prompt="direct recommendation - {}: \n\n"
-                         "The user so far has bought items with these categories -> {}. \n"
+            input_prompt="direct recommendation - {user_id}: \n\n"
+                         "The user so far has bought items with these categories -> {unique_categories_liked}. \n"
                          "Choose an item to recommend to the user selecting from: \n"
-                         "{}",
-            target_text="{}"
+                         "{candidate_items}",
+            target_text="{target_item}"
         ),
         8: PromptTarget(
-            input_prompt="direct recommendation - {}: \n\n"
-                         "These are the categories of the items bought by the user -> {}. \n"
+            input_prompt="direct recommendation - {user_id}: \n\n"
+                         "These are the categories of the items bought by the user -> {unique_categories_liked}. \n"
                          "Predict an item to suggest to the user from the followings: \n"
-                         "{}",
-            target_text="{}"
+                         "{candidate_items}",
+            target_text="{target_item}"
         ),
     }
 
@@ -471,28 +473,28 @@ class DirectSideInfoTask(Task):
             target_idx = random.randint(0, len(input_item_seq) - 1)
 
             target_item = input_item_seq.pop(target_idx)
-            input_categories_seq.pop(target_idx)  # this is simply removed , we don't use this
+            input_categories_seq.pop(target_idx)  # this is simply removed, we don't use target categories
 
         # we use only unique categories
         unique_categories = set(itertools.chain.from_iterable(input_categories_seq))
 
-        input_prompt_valid, target_valid = random.choice(self.inference_templates())
+        input_prompt_inference, target_inference = random.choice(self.inference_templates())
 
         # random select of string separator for titles sequence and the prompt to use
         separator = " , " if random.getrandbits(1) else " ; "
         categories_liked_str = separator.join(unique_categories)
 
-        input_text_valid = input_prompt_valid.format(user_id, categories_liked_str)
-        target_text_valid = target_valid.format(target_item)
+        input_text_valid = input_prompt_inference.format(user_id=user_id, unique_categories_liked=categories_liked_str)
+        target_text_valid = target_inference.format(target_item=target_item)
 
-        out_list.append((input_text_valid, target_text_valid))
+        out_list.append(PromptTarget(input_text_valid, target_text_valid, gt=[target_item]))
 
         if self.training:
             input_text_qa, target_text_qa = self._create_input_target_qa(user_id,
                                                                          categories_liked_str,
                                                                          target_item)
 
-            out_list.append((input_text_qa, target_text_qa))
+            out_list.append(PromptTarget(input_text_qa, target_text_qa))
 
         return out_list
 
@@ -510,7 +512,9 @@ class DirectSideInfoTask(Task):
         bullet_notation = "* " if random.getrandbits(1) else "- "
         bullet_list = (f"{bullet_notation} {{}}\n" * len(candidates)).format(*candidates)
 
-        input_text_qa = input_prompt_support.format(user_id, input_categories_str, bullet_list)
-        target_text_qa = target_support.format(target_item)
+        input_text_qa = input_prompt_support.format(user_id=user_id,
+                                                    unique_categories_liked=input_categories_str,
+                                                    candidate_items=bullet_list)
+        target_text_qa = target_support.format(target_item=target_item)
 
         return input_text_qa, target_text_qa
