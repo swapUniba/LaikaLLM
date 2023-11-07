@@ -450,6 +450,8 @@ class DirectSideInfoTask(Task):
         ),
     }
 
+    compatible_metrics = [RankingMetric]
+
     def inference_templates(self, return_id: bool = False):
         return self.all_templates(return_id)[:6]
 
