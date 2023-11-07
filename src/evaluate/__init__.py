@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 
-from . import metrics
 from .metrics import *
 
 from src.evaluate.abstract_metric import Metric

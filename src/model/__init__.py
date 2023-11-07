@@ -1,7 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
 
-from . import models
 from .models import *
 
 from src.model.abstract_model import LaikaModel

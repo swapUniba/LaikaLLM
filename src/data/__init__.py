@@ -1,7 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
 
-from . import datasets, templates
 from .datasets import *
 from .templates import *
 
