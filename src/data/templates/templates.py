@@ -75,7 +75,7 @@ class RatingPredictionTask(Task):
         [target_rating] = kwargs["gt_rating"]
 
         # random.choice applied to dict with int key returns a value
-        input_prompt, target, _ = random.choice(self.all_templates())
+        input_prompt, target, _ = random.choice(self.inference_templates())
 
         # random select of string separator for item ids
         separator = " , " if random.getrandbits(1) else " ; "
