@@ -9,14 +9,15 @@ from requests.structures import CaseInsensitiveDict
 
 class PromptTarget:
 
-    def __init__(self, input_prompt: str, target_text: str):
+    def __init__(self, input_prompt: str, target_text: str, gt: list[str] = None):
         self.input_prompt = input_prompt
         self.target_text = target_text
+        self.gt = gt
 
     # iter just so that this class can be unpacked,
-    # e.g. input_prompt, target_text = PromptTarget(...)
+    # e.g. input_prompt, target_text, gt = PromptTarget(...)
     def __iter__(self):
-        return iter((self.input_prompt, self.target_text))
+        return iter((self.input_prompt, self.target_text, self.gt))
 
     def __str__(self):
         string = " Input ".center(50, "#") + "\n"

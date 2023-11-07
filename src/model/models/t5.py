@@ -118,7 +118,8 @@ class T5Rec(LaikaModel, T5ForConditionalGeneration):
             templates_list = task(**sample)
 
             # TO DO: make example that works for split different from leave one out
-            for input_text, target_text in templates_list:
+            for (input_text, target_text, gt) in templates_list:
+
                 encoded_sequence = self.tokenizer(text=input_text, text_target=target_text, truncation=True)
 
                 # get word ids from t5 tokenizer fast
@@ -132,7 +133,15 @@ class T5Rec(LaikaModel, T5ForConditionalGeneration):
                 # even if surely there is only one user, we must wrap it into a list for the batched map fn to work
                 encoded_sequence["user_idx"] = [int(re.search(r"\d+", sample["user_id"]).group())]
                 encoded_sequence["whole_word_ids"] = whole_word_ids.tolist()
-                encoded_sequence["gt_item"] = sample["gt_item"]
+
+                if not self.training:
+
+                    if gt is None:
+                        raise ValueError("In the __call__ method of the template, the `gt` attribute should be "
+                                         "set for templates used in the evaluation phase!")
+
+                    # it may be the item id or the item rating for example, depending on the task chosen
+                    encoded_sequence["gt"] = gt
 
                 encoded_sequence_list.append(encoded_sequence)
 
@@ -161,8 +170,8 @@ class T5Rec(LaikaModel, T5ForConditionalGeneration):
 
             input_dict["labels"] = lm_labels.to(self.device)
 
-        if not self.training:
-            input_dict["gt_item"] = batch["gt_item"]
+        if "gt" in batch:
+            input_dict["gt"] = batch["gt"]
 
         return input_dict
 
@@ -206,7 +215,7 @@ class T5Rec(LaikaModel, T5ForConditionalGeneration):
         no_repeat_ngram_size = 0
         early_stopping = True
 
-        gt_items = batch.pop("gt_item")
+        gt = batch.pop("gt")
 
         inputs_embeds = self.shared(batch["input_ids"])
         if self.config.inject_personalization is True:

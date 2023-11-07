@@ -48,7 +48,7 @@ class RecTrainer:
         dataframe_dict = {"task_type": [], "template_id": [], "input_prompt": [], "target_text": []}
         for task in train_task_list:
             for template_id in task.all_templates(return_id=True):
-                input_prompt, target_text = task.templates_dict[template_id]
+                input_prompt, target_text, _ = task.templates_dict[template_id]
 
                 dataframe_dict["task_type"].append(str(task))
                 dataframe_dict["template_id"].append(template_id)

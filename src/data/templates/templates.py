@@ -240,7 +240,6 @@ class SequentialSideInfoTask(Task):
 
     @Task.validate_args("user_id", "input_item_seq", "input_categories_seq", "gt_item")
     def __call__(self, **kwargs):
-
         assert len(kwargs["gt_item"]) == 1, "This task was designed for Leave One Out strategy!"
 
         user_id = kwargs["user_id"]
@@ -253,7 +252,7 @@ class SequentialSideInfoTask(Task):
         # using all categories is maybe too much, let's use only one category for each item in the seq
         reduced_categories = [random.choice(categories) for categories in input_categories_seq]
 
-        input_prompt_valid, target_valid = random.choice(self.valid_templates())
+        input_prompt_valid, target_valid, _ = random.choice(self.inference_templates())
 
         # random select of string separator for titles sequence and the prompt to use
         separator = " , " if random.getrandbits(1) else " ; "
@@ -264,27 +263,26 @@ class SequentialSideInfoTask(Task):
         input_text_valid = input_prompt_valid.format(user_id, order_history_str, input_categories_str)
         target_text_valid = target_valid.format(target_item)
 
-        out_list.append((input_text_valid, target_text_valid))
+        out_list.append(PromptTarget(input_text_valid, target_text_valid, gt=[target_item]))
 
         if self.training:
+            prompt_target_qa = self._create_input_target_qa(user_id,
+                                                            order_history_str,
+                                                            input_categories_str,
+                                                            target_item)
 
-            input_text_qa, target_text_qa = self._create_input_target_qa(user_id,
-                                                                         order_history_str,
-                                                                         input_categories_str,
-                                                                         target_item)
+            prompt_target_pair = self._create_input_target_pair(user_id,
+                                                                order_history,
+                                                                input_categories_seq,
+                                                                target_item)
 
-            input_text_pair, target_text_pair = self._create_input_target_pair(user_id,
-                                                                               order_history,
-                                                                               input_categories_seq,
-                                                                               target_item)
-
-            out_list.extend([(input_text_qa,  target_text_qa), (input_text_pair, target_text_pair)])
+            out_list.extend([prompt_target_qa, prompt_target_pair])
 
         return out_list
 
     def _create_input_target_qa(self, user_id, order_history_str, input_categories_str, target_item):
         # random choice of qa template
-        input_prompt_support, target_support = random.choice(self.qa_templates())
+        input_prompt_support, target_support, _ = random.choice(self.qa_templates())
 
         bullet_list_wrong_size = 4
         all_possible_candidates = self.all_unique_items[self.all_unique_items != target_item]
@@ -299,7 +297,7 @@ class SequentialSideInfoTask(Task):
         input_text_qa = input_prompt_support.format(user_id, order_history_str, input_categories_str, bullet_list)
         target_text_qa = target_support.format(target_item)
 
-        return input_text_qa, target_text_qa
+        return PromptTarget(input_text_qa, target_text_qa)
 
     def _create_input_target_pair(self, user_id, order_history, input_categories, target_item):
         # random choice of pair template
@@ -319,7 +317,7 @@ class SequentialSideInfoTask(Task):
         input_text_pair = input_prompt_support.format(user_id, first_of_pair, first_of_pair_cat)
         target_text_pair = second_of_pair
 
-        return input_text_pair, target_text_pair
+        return PromptTarget(input_text_pair, target_text_pair)
 
 
 class DirectTask(Task):
