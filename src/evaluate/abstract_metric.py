@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import inspect
 from abc import abstractmethod, ABC
 import operator
 
@@ -32,7 +34,9 @@ class Metric(ABC):
 
     # automatically called on subclass definition, will populate the str_alias_cls dict
     def __init_subclass__(cls, **kwargs):
-        cls.str_alias_cls[cls.__name__] = cls
+
+        if not inspect.isabstract(cls):
+            cls.str_alias_cls[cls.__name__] = cls
 
         super().__init_subclass__(**kwargs)
 
