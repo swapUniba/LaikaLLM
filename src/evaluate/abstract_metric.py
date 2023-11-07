@@ -44,26 +44,19 @@ class LaikaMetric(ABC):
         self.k = k
 
     @property
+    @abstractmethod
     def operator_comparison(self):
 
         # What is the operator to use if we want to obtain the best result the metric?
         # e.g. loss is "<", hit is ">", mse is "<", etc.
         # By default is ">"
-        return operator.gt
+        raise NotImplementedError
 
     @staticmethod
-    def rel_binary_matrix(predictions: np.ndarray[np.ndarray[str]], truths: np.ndarray[np.ndarray[str]], k: int = None):
-
-        # If K is none a new dimension is added! Important to be sure k is not None
-        if k is not None:
-            predictions = predictions[:, :k]
-
-        result = (predictions[:, np.newaxis, :] == truths[:, :, np.newaxis]) & \
-                 (predictions[:, np.newaxis, :] != "<PAD>")
-
-        rel_matrix = result.any(axis=1)
-
-        return rel_matrix
+    @abstractmethod
+    def per_user_precomputed_matrix(predictions: np.ndarray[np.ndarray[str]], truths: np.ndarray[np.ndarray[str]],
+                                    **kwargs):
+        raise NotImplementedError
 
     @staticmethod
     def safe_div(num: np.ndarray, den: np.ndarray):
@@ -93,6 +86,8 @@ class LaikaMetric(ABC):
                     if not k.isdigit():
                         raise KeyError
 
+                    # wrong warning, ErrorMetrics don't have k, but this is expected behaviour,
+                    # if the user sets for example mae@5 obviously it doesn't make sense and an error is raised
                     instantiated_metrics.append(cls.str_alias_cls[metric_name](k=int(k)))
 
             except KeyError:
@@ -107,8 +102,10 @@ class LaikaMetric(ABC):
     @classmethod
     def metric_exists(cls, metric_cls_name: str, raise_error: bool = True):
 
+        # this should be improved: make use of subclasses polymorphism to convert from string to object
+
         # regardless if there is the cutoff value k or not, we are only interested in the metric name
-        # which is the part before the '@' symbol
+        # which is the part before the optional '@' symbol
         metric_exists = metric_cls_name.split("@")[0] in cls.str_alias_cls.keys()
 
         if not metric_exists and raise_error is True:
@@ -117,17 +114,34 @@ class LaikaMetric(ABC):
         return metric_exists
 
     @abstractmethod
-    def __call__(self, rel_binary_matrix: np.ndarray[np.ndarray[bool]]) -> float:
+    def __call__(self, precomputed_matrix: np.ndarray) -> float:
         raise NotImplementedError
 
     def __eq__(self, other):
-        if isinstance(other, self.__class__) and other.k == self.k:
+        if isinstance(other, self.__class__):
             return True
         return False
 
+    def __repr__(self):
+        return str(self)
+
     def __str__(self):
         string = self.__class__.__name__
-        if self.k is not None:
-            string += f"@{self.k}"
 
         return string
+
+
+class Loss(LaikaMetric):
+
+    @property
+    def operator_comparison(self):
+        # loss metric should be minimized, hence "<"
+        return operator.lt
+
+    @staticmethod
+    def per_user_precomputed_matrix(predictions: np.ndarray[np.ndarray[str]], truths: np.ndarray[np.ndarray[str]],
+                                    **kwargs):
+        raise NotImplementedError("This should not be called, it is simply defined to make use of polymorphism")
+
+    def __call__(self, *args, **kwargs):
+        raise NotImplementedError("This should not be called, it is simply defined to make use of polymorphism")
