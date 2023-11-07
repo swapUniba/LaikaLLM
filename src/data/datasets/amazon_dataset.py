@@ -39,16 +39,6 @@ class AmazonDataset(LaikaDataset):
         self.integer_ids = integer_ids
         self.items_start_from_1001 = items_start_from_1001
 
-        user_items, item_count = self._read_sequential()
-
-        # we compute the relative frequency of each item,
-        # i.e. how many times an item is chosen by users divided total number of total items chosen by users
-        total_occurrences = np.sum(list(item_count.values()))
-        self.rel_freq_items = np.array([
-            n_occurrences / total_occurrences
-            for n_occurrences in item_count.values()
-        ])
-
         # read mapping between user string id (ABXMSBDSI) and user int idxs (331)
         with open(os.path.join(RAW_DATA_DIR, self.dataset_name, 'datamaps.json'), "r") as f:
             datamaps = json.load(f)
