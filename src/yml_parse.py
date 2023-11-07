@@ -2,11 +2,8 @@ import yaml
 
 from src import SharedParams
 from src.data import DataParams
-from src.data.main import data_main
 from src.evaluate import EvalParams
-from src.evaluate.main import eval_main
 from src.model import ModelParams
-from src.model.main import model_main
 
 
 def parse_yml_config(yml_path: str):
@@ -33,10 +30,5 @@ def parse_yml_config(yml_path: str):
     # to train_batch_size)
     if eval_params.eval_batch_size is None:
         eval_params.eval_batch_size = model_params.eval_batch_size
-
-    # If the user doesn't specify eval tasks, then we will evaluate all train
-    # tasks
-    if eval_params.eval_tasks is None:
-        eval_params.eval_tasks = model_params.train_tasks
 
     return shared_params, data_params, model_params, eval_params

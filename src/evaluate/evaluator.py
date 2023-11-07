@@ -49,7 +49,7 @@ class RecEvaluator:
         log_wandb({f"{split_name}/task_templates": wandb.Table(dataframe=pd.DataFrame(dataframe_dict))},
                   self.should_log)
 
-        for task in tasks_to_evaluate:
+        for task, metric_list in tasks_to_evaluate.items():
 
             # metrics names are keys, values are lists containing results for each template
             task_result = defaultdict(list)
@@ -61,7 +61,7 @@ class RecEvaluator:
 
                 res_dict = self.evaluate_task(eval_dataset, metric_list=metric_list,
                                               task=task,
-                                              template_id=template_id,)
+                                              template_id=template_id)
 
                 dict_to_log = {f"{split_name}/{task}/template_id": template_id}
                 for metric_name, metric_val in res_dict.items():

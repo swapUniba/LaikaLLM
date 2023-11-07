@@ -1,3 +1,4 @@
+import itertools
 from dataclasses import dataclass
 
 from .metrics import *
@@ -8,9 +9,10 @@ from src.data.abstract_templates import Task
 
 @dataclass
 class EvalParams:
-    metrics: tuple[str] = ("hit@10", "map@10", "mrr@10", "ndcg@10")
+
+    # dict where keys are task name, values are lists of metric to use to evaluate the task
+    eval_tasks: dict[str, list[str]]
     eval_batch_size: int = None
-    eval_tasks: tuple[str] = None
     create_latex_table: bool = True
 
     @classmethod
@@ -20,13 +22,12 @@ class EvalParams:
         # thus for now complex parsing is not needed
         obj = cls(**eval_section)
 
-        # check that each metric exists
-        for metric_name in obj.metrics:
-            Metric.metric_exists(metric_name, raise_error=True)
-
         # check that each eval task exists
-        if obj.eval_tasks is not None:
-            for task_name in obj.eval_tasks:
-                Task.task_exists(task_name, raise_error=True)
+        for task_name in obj.eval_tasks.keys():
+            Task.task_exists(task_name, raise_error=True)
+
+        # check that each metric exists
+        for metric_name in itertools.chain.from_iterable(obj.eval_tasks.values()):
+            LaikaMetric.metric_exists(metric_name, raise_error=True)
 
         return obj
