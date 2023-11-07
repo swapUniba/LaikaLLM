@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import inspect
 from abc import abstractmethod, ABC
-from typing import List, Optional
+from typing import List, Optional, Literal
 
 import numpy as np
 import torch
@@ -25,12 +25,15 @@ class LaikaModel(ABC):
     def __init__(self, training_tasks_str: List[str],
                  all_unique_labels: List[str],
                  eval_task_str: str = None,
-                 eval_template_id: int | str = None):
+                 eval_template_id: int | str = None,
+                 train_task_selection_strat: Literal['random', 'all'] = "all"):
 
         if training_tasks_str is None:
             raise AttributeError("training_tasks_str parameter can't be None!")
         if all_unique_labels is None:
             raise AttributeError("all_unique_labels parameter can't be None!")
+        if train_task_selection_strat not in {"random", "all"}:
+            raise AttributeError("train_task_selection_strat should be 'all' or 'random'!")
 
         self.all_unique_labels = np.array(all_unique_labels)
         self.training_tasks = Task.from_string(*training_tasks_str,
@@ -39,6 +42,8 @@ class LaikaModel(ABC):
         self.eval_task: Optional[Task] = None
         if eval_task_str is not None:
             self.set_eval_task(eval_task_str, eval_template_id)
+
+        self.train_task_selection_strat = train_task_selection_strat
 
     def set_eval_task(self, eval_task_str: str, template_id: int = None):
         [self.eval_task] = Task.from_string(eval_task_str, all_unique_items=self.all_unique_labels)

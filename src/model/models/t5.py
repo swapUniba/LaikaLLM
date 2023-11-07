@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import random
 import re
-from typing import List
+from typing import List, Literal
 
 import numpy as np
 import torch
@@ -58,7 +58,8 @@ class T5Rec(LaikaModel, T5ForConditionalGeneration):
     def __init__(self,
                  config,
                  eval_task_str: str = None,
-                 eval_template_id: int = None):
+                 eval_template_id: int = None,
+                 train_task_selection_strat: Literal['random', 'all'] = 'all'):
 
         T5ForConditionalGeneration.__init__(self, config)
 
@@ -67,7 +68,8 @@ class T5Rec(LaikaModel, T5ForConditionalGeneration):
             training_tasks_str=config.training_tasks_str,
             all_unique_labels=config.all_unique_labels,
             eval_task_str=eval_task_str,
-            eval_template_id=eval_template_id
+            eval_template_id=eval_template_id,
+            train_task_selection_strat=train_task_selection_strat
         )
 
         self.tokenizer = T5TokenizerFast.from_pretrained(config.name_or_path)
@@ -110,40 +112,50 @@ class T5Rec(LaikaModel, T5ForConditionalGeneration):
         encoded_sequence_list = []
         for sample in batch:
 
-            task = random.choice(self.training_tasks) if self.training else self.eval_task
+            if not self.training:
+                tasks = [self.eval_task]
+            elif self.train_task_selection_strat == "all":
+                # Create a new shuffled list without modifying the original
+                # we shuffle the train tasks to inject some randomness
+                tasks = random.sample(self.training_tasks, len(self.training_tasks))
+            else:
+                tasks = [random.choice(self.training_tasks)]
 
-            # give all info that we have about the sample to the task randomly sampled to generate
-            # input prompt and target text. Each task may have mandatory arguments, if they are missing
-            # an assertion error will be raised
-            templates_list = task(**sample)
+            for task in tasks:
+                # give all info that we have about the sample to the task randomly sampled to generate
+                # input prompt and target text. Each task may have mandatory arguments, if they are missing
+                # an assertion error will be raised
+                templates_list = task(**sample)
 
-            # TO DO: make example that works for split different from leave one out
-            for (input_text, target_text, gt) in templates_list:
+                # each task gives as output a list: this list contains surely an inference prompt-target (i.e.,
+                # a prompt target which could be used at inference time) and a variable number of support tasks
+                # (i.e. tasks which do not have as target text the prediction of interest for the task)
+                for (input_text, target_text, gt) in templates_list:
 
-                encoded_sequence = self.tokenizer(text=input_text, text_target=target_text, truncation=True)
+                    encoded_sequence = self.tokenizer(text=input_text, text_target=target_text, truncation=True)
 
-                # get word ids from t5 tokenizer fast
-                whole_word_ids = np.array(encoded_sequence.encodings[0].word_ids)
-                special_token_mask = np.array(encoded_sequence.encodings[0].special_tokens_mask).astype(bool)
+                    # get word ids from t5 tokenizer fast
+                    whole_word_ids = np.array(encoded_sequence.encodings[0].word_ids)
+                    special_token_mask = np.array(encoded_sequence.encodings[0].special_tokens_mask).astype(bool)
 
-                # we set -1 to all special tokens (to substitute None, which is the value set by default)
-                whole_word_ids[~special_token_mask] += 1
-                whole_word_ids[special_token_mask] = self.tokenizer.pad_token_id
+                    # we set -1 to all special tokens (to substitute None, which is the value set by default)
+                    whole_word_ids[~special_token_mask] += 1
+                    whole_word_ids[special_token_mask] = self.tokenizer.pad_token_id
 
-                # even if surely there is only one user, we must wrap it into a list for the batched map fn to work
-                encoded_sequence["user_idx"] = [int(re.search(r"\d+", sample["user_id"]).group())]
-                encoded_sequence["whole_word_ids"] = whole_word_ids.tolist()
+                    # even if surely there is only one user, we must wrap it into a list for the batched map fn to work
+                    encoded_sequence["user_idx"] = [int(re.search(r"\d+", sample["user_id"]).group())]
+                    encoded_sequence["whole_word_ids"] = whole_word_ids.tolist()
 
-                if not self.training:
+                    if not self.training:
 
-                    if gt is None:
-                        raise ValueError("In the __call__ method of the template, the `gt` attribute should be "
-                                         "set for templates used in the evaluation phase!")
+                        if gt is None:
+                            raise ValueError("In the __call__ method of the template, the `gt` attribute should be "
+                                             "set for templates used in the evaluation phase!")
 
-                    # it may be the item id or the item rating for example, depending on the task chosen
-                    encoded_sequence["gt"] = gt
+                        # it may be the item id or the item rating for example, depending on the task chosen
+                        encoded_sequence["gt"] = gt
 
-                encoded_sequence_list.append(encoded_sequence)
+                    encoded_sequence_list.append(encoded_sequence)
 
         # from list of dicts to dict of lists
         return list_dict2dict_list(encoded_sequence_list)
