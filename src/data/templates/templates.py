@@ -372,7 +372,7 @@ class DirectSideInfoTask(Task):
         # we use only unique categories
         unique_categories = set(itertools.chain.from_iterable(input_categories_seq))
 
-        input_prompt_inference, target_inference = random.choice(self.inference_templates())
+        input_prompt_inference, target_inference, _ = random.choice(self.inference_templates())
 
         # random select of string separator for titles sequence and the prompt to use
         separator = " , " if random.getrandbits(1) else " ; "
@@ -384,9 +384,9 @@ class DirectSideInfoTask(Task):
         out_list.append(PromptTarget(input_text_valid, target_text_valid, gt=[target_item]))
 
         if self.training:
-            input_text_qa, target_text_qa = self._create_input_target_qa(user_id,
-                                                                         categories_liked_str,
-                                                                         target_item)
+            input_text_qa, target_text_qa, = self._create_input_target_qa(user_id,
+                                                                          categories_liked_str,
+                                                                          target_item)
 
             out_list.append(PromptTarget(input_text_qa, target_text_qa))
 
@@ -394,7 +394,7 @@ class DirectSideInfoTask(Task):
 
     def _create_input_target_qa(self, user_id, input_categories_str, target_item):
         # random choice of qa template
-        input_prompt_support, target_support = random.choice(self.qa_templates())
+        input_prompt_support, target_support, _ = random.choice(self.qa_templates())
 
         bullet_list_wrong_size = 4
         all_possible_candidates = self.all_unique_items[self.all_unique_items != target_item]
