@@ -12,7 +12,7 @@ from src.evaluate.evaluator import RecEvaluator
 from src.evaluate.metrics.metrics import Loss
 from src.model import LaikaModel
 from src.utils import log_wandb
-from src.evaluate.abstract_metric import Metric
+from src.evaluate.abstract_metric import LaikaMetric
 
 
 class RecTrainer:
@@ -23,7 +23,7 @@ class RecTrainer:
                  batch_size: int,
                  train_sampling_fn: Callable[[Dict], Dict],
                  output_dir: str,
-                 monitor_metric: Metric = Loss(),
+                 monitor_metric: LaikaMetric = Loss(),
                  eval_batch_size: Optional[int] = None,
                  should_log: bool = False):
 

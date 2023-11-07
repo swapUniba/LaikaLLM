@@ -2,17 +2,15 @@ import operator
 import os
 from collections import defaultdict
 from math import ceil
-from typing import List, Optional, Iterable
 
 import datasets
-import numpy as np
 import pandas as pd
 import wandb
 from tqdm import tqdm
 
 from src.data.abstract_templates import Task
-from src.evaluate.abstract_metric import Metric, PaddedArr
-from src.evaluate.metrics.metrics import Loss
+from src.evaluate.abstract_metric import LaikaMetric, PaddedArr
+from src.evaluate.abstract_metric import Loss
 from src.model import LaikaModel
 from src.utils import log_wandb
 
@@ -26,8 +24,7 @@ class RecEvaluator:
 
     def evaluate_suite(self,
                        eval_dataset: datasets.Dataset,
-                       tasks_to_evaluate: list[Task],
-                       metric_list: list[Metric],
+                       tasks_to_evaluate: dict[Task, list[LaikaMetric]],
                        output_dir: str,
                        create_latex_table: bool = True):
 
@@ -250,7 +247,7 @@ class RecEvaluator:
         # set bold for template id which gave best result for each metric
         for metric_name in template_res.columns:
 
-            [metric_obj] = Metric.from_string(metric_name)
+            [metric_obj] = LaikaMetric.from_string(metric_name)
 
             # depending on the metric, best result is obtained by maximizing or minimizing
             if metric_obj.operator_comparison == operator.gt:

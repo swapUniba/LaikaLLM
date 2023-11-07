@@ -4,7 +4,7 @@ from datasets import Dataset
 
 from src import SharedParams, MODELS_DIR
 from src.data.abstract_dataset import LaikaDataset
-from src.evaluate.abstract_metric import Metric
+from src.evaluate.abstract_metric import LaikaMetric
 from src.model import ModelParams, LaikaModel
 from src.model.trainer import RecTrainer
 
@@ -49,7 +49,7 @@ def model_main(shared_params: SharedParams, model_params: ModelParams, dataset_o
     output_dir = os.path.join(MODELS_DIR, exp_name)
     os.makedirs(output_dir, exist_ok=True)
 
-    [monitor_metric_obj] = Metric.from_string(monitor_metric)
+    [monitor_metric_obj] = LaikaMetric.from_string(monitor_metric)
     trainer = RecTrainer(
         rec_model=rec_model,
         n_epochs=n_epochs,

@@ -6,7 +6,7 @@ from src import SharedParams, METRICS_DIR
 from src.data.abstract_dataset import LaikaDataset
 from src.data.abstract_templates import Task
 from src.evaluate import EvalParams
-from src.evaluate.abstract_metric import Metric
+from src.evaluate.abstract_metric import LaikaMetric
 from src.evaluate.evaluator import RecEvaluator
 from src.model import LaikaModel
 

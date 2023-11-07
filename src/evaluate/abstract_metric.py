@@ -27,10 +27,10 @@ class PaddedArr(np.ndarray):
         return padded_array.astype(str)
 
 
-class Metric(ABC):
+class LaikaMetric(ABC):
 
     # name - class mapping, used for when metrics should be initialized from strings
-    str_alias_cls: dict[str, type[Metric]] = CaseInsensitiveDict()
+    str_alias_cls: dict[str, type[LaikaMetric]] = CaseInsensitiveDict()
 
     # automatically called on subclass definition, will populate the str_alias_cls dict
     def __init_subclass__(cls, **kwargs):
@@ -72,7 +72,9 @@ class Metric(ABC):
         return np.divide(num, den, out=np.zeros_like(num, dtype=float), where=den != 0)
 
     @classmethod
-    def from_string(cls, *metric_str: str) -> list[Metric]:
+    def from_string(cls, *metric_str: str) -> list[LaikaMetric]:
+
+        # this should be improved: make use of subclasses polymorphism to convert from string to object
 
         instantiated_metrics = []
         for metric in metric_str:

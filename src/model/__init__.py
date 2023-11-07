@@ -5,7 +5,7 @@ from .models import *
 
 from src.model.abstract_model import LaikaModel
 from src.data.abstract_templates import Task
-from src.evaluate.abstract_metric import Metric
+from src.evaluate.abstract_metric import LaikaMetric
 
 
 @dataclass
@@ -54,6 +54,6 @@ class ModelParams:
             Task.task_exists(obj.val_task, template_id=obj.val_task_template_id, raise_error=True)
 
         # check that monitor metric exists
-        Metric.metric_exists(obj.monitor_metric, raise_error=True)
+        LaikaMetric.metric_exists(obj.monitor_metric, raise_error=True)
 
         return obj
