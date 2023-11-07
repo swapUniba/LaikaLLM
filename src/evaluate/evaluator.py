@@ -51,7 +51,7 @@ class RecEvaluator:
             # metrics names are keys, values are lists containing results for each template
             task_result = defaultdict(list)
 
-            template_ids_to_evaluate = task.valid_templates(return_id=True)
+            template_ids_to_evaluate = task.inference_templates(return_id=True)
             for template_id in template_ids_to_evaluate:
 
                 print(f"Evaluating on {task}/{template_id}")

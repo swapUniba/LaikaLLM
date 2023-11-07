@@ -56,7 +56,7 @@ class Task(ABC):
         return list(self.templates_dict.keys()) if return_id else list(self.templates_dict.values())
 
     @abstractmethod
-    def valid_templates(self, return_id: bool = False):
+    def inference_templates(self, return_id: bool = False):
         raise NotImplementedError
 
     def force_template(self, force_template_id: int):

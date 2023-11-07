@@ -132,7 +132,7 @@ class SequentialTask(Task):
         )
     }
 
-    def valid_templates(self, return_id: bool = False):
+    def inference_templates(self, return_id: bool = False):
         return self.all_templates(return_id)
 
     @Task.validate_args("user_id", "input_item_seq", "gt_item")
@@ -229,7 +229,13 @@ class SequentialSideInfoTask(Task):
         )
     }
 
-    def valid_templates(self, return_id: bool = False):
+    compatible_metrics = [RankingMetric]
+
+    @property
+    def is_ranking_task(self) -> bool:
+        return True
+
+    def inference_templates(self, return_id: bool = False):
         return self.all_templates(return_id)[:6]
 
     def qa_templates(self, return_id: bool = False):
@@ -356,7 +362,7 @@ class DirectTask(Task):
         )
     }
 
-    def valid_templates(self, return_id: bool = False):
+    def inference_templates(self, return_id: bool = False):
         return self.all_templates(return_id)
 
     @Task.validate_args("user_id", "input_item_seq", "gt_item")
@@ -442,7 +448,7 @@ class DirectSideInfoTask(Task):
         ),
     }
 
-    def valid_templates(self, return_id: bool = False):
+    def inference_templates(self, return_id: bool = False):
         return self.all_templates(return_id)[:6]
 
     def qa_templates(self, return_id: bool = False):
@@ -470,7 +476,7 @@ class DirectSideInfoTask(Task):
         # we use only unique categories
         unique_categories = set(itertools.chain.from_iterable(input_categories_seq))
 
-        input_prompt_valid, target_valid = random.choice(self.valid_templates())
+        input_prompt_valid, target_valid = random.choice(self.inference_templates())
 
         # random select of string separator for titles sequence and the prompt to use
         separator = " , " if random.getrandbits(1) else " ; "
