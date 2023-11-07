@@ -86,12 +86,14 @@ class RecTrainer:
             sampled_train = train_dataset.map(self.train_sampling_fn,
                                               remove_columns=train_dataset.column_names,
                                               keep_in_memory=True,
+                                              load_from_cache_file=False,
                                               batched=True,
                                               desc="Sampling train set")
 
             preprocessed_train = sampled_train.map(self.rec_model.tokenize,
                                                    remove_columns=sampled_train.column_names,
                                                    keep_in_memory=True,
+                                                   load_from_cache_file=False,
                                                    batched=True,
                                                    desc="Tokenizing train set")
 

@@ -129,6 +129,7 @@ class RecEvaluator:
             self.rec_model.tokenize,
             remove_columns=eval_dataset.column_names,
             keep_in_memory=True,
+            load_from_cache_file=False,
             batched=True,
             desc=f"Tokenizing {split_name} set"
         )
