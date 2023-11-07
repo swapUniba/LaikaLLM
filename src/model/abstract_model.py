@@ -117,6 +117,6 @@ class LaikaModel(ABC):
         model_exists = model_cls_name in cls.str_alias_cls.keys()
 
         if not model_exists and raise_error is True:
-            raise KeyError(f"Metric {model_cls_name} does not exist!")
+            raise KeyError(f"Model {model_cls_name} does not exist!")
 
         return model_exists
