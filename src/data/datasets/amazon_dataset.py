@@ -31,12 +31,10 @@ class AmazonDataset(LaikaDataset):
     def __init__(self,
                  dataset_name: Literal['beauty', 'toys', 'sport'],
                  add_prefix_items_users: bool = False,
-                 integer_ids: bool = False,
                  items_start_from_1001: bool = False):
 
         self.dataset_name = dataset_name
         self.add_prefix = add_prefix_items_users
-        self.integer_ids = integer_ids
         self.items_start_from_1001 = items_start_from_1001
 
         # read mapping between user string id (ABXMSBDSI) and user int idxs (331)
