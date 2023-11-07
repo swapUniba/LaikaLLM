@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-import inspect
 import operator
 from typing import Callable
 
 import numpy as np
-from requests.structures import CaseInsensitiveDict
 
 from src.evaluate.abstract_metric import LaikaMetric
 
