@@ -9,7 +9,7 @@ import wandb
 from tqdm import tqdm
 
 from src.evaluate.evaluator import RecEvaluator
-from src.evaluate.metrics.metrics import Loss
+from src.evaluate.abstract_metric import Loss
 from src.model import LaikaModel
 from src.utils import log_wandb
 from src.evaluate.abstract_metric import LaikaMetric
