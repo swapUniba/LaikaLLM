@@ -28,6 +28,12 @@ class ErrorMetric(LaikaMetric):
 
         valid_values = predictions.notna()
 
+        max_truth = truths.max()
+        min_truth = truths.min()
+
+        predictions[predictions > max_truth] = max_truth
+        predictions[predictions < min_truth] = min_truth
+
         # we ignore predictions which are not a valid number when performing subtraction
         return (predictions[valid_values] - truths[valid_values]).to_numpy()
 
@@ -44,3 +50,28 @@ class MAE(ErrorMetric):
     def __call__(self, per_user_precomputed_matrix: np.ndarray) -> float:
 
         return np.mean(np.abs(per_user_precomputed_matrix)).item()
+
+
+if __name__ == "__main__":
+
+    m = RMSE()
+    m2 = MAE()
+
+    arr1 = np.array([
+        [5, 3, 2, 1],
+        [5, 4, 4, 4],
+        [5, 1, 3, "we"],
+        [5, 5, "we", 2],
+    ])
+
+    arr2 = np.array([
+        [5, 5, 1, 1],
+        [3, 2, 2, 1],
+        [2, 4, 4, 5],
+        [4, 3, 3, 1],
+    ])
+
+    a = m.per_user_precomputed_matrix(arr1, arr2)
+
+    print(m(a))
+    print(m2(a))
