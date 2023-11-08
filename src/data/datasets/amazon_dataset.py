@@ -123,6 +123,29 @@ class AmazonDataset(LaikaDataset):
         self.train_df, self.val_df, self.test_df = self.split_data(data_df)
         print("Done!")
 
+
+        def corrupt_rat(x):
+
+            new_x = []
+            for y in x:
+
+                y = float(y)
+
+                if y == 5:
+                    sign_eps = -1
+                elif y == 1:
+                    sign_eps = +1
+                else:
+                    sign_eps = +1 if random.getrandbits(1) else -1
+
+                new_y = y + sign_eps * random.uniform(0, 0.5)
+
+                new_x.append(f"{new_y:.2f}")
+
+            return new_x
+
+        self.train_df["rating_sequence"] = self.train_df["rating_sequence"].apply(corrupt_rat)
+
     @cached_property
     def all_users(self):
         return pd.unique(self.original_df["user_id"])

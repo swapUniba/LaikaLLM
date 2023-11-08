@@ -67,7 +67,6 @@ class RatingPredictionTask(Task):
         assert len(kwargs["gt_item"]) == 1, "This task was designed for Leave One Out strategy!"
 
         user_id = kwargs["user_id"]
-        rating_history = kwargs["input_rating_seq"]
         [target_item] = kwargs["gt_item"]
         [target_rating] = kwargs["gt_rating"]
         [target_categories] = kwargs["gt_categories"]
@@ -75,18 +74,6 @@ class RatingPredictionTask(Task):
 
         separator = " , " if random.getrandbits(1) else " ; "
         target_categories_str = separator.join(target_categories)
-
-        if self.training:
-            target_rating = float(target_rating)
-
-            if target_rating == 5:
-                sign_eps = -1
-            elif target_rating == 1:
-                sign_eps = +1
-            else:
-                sign_eps = +1 if random.getrandbits(1) else -1
-
-            target_rating += sign_eps * random.uniform(0, 0.5)
 
         if target_brand == "":
             target_brand = "!No brand!"
@@ -98,9 +85,9 @@ class RatingPredictionTask(Task):
                                          item_id=target_item,
                                          item_brand=target_brand,
                                          item_categories=target_categories_str)
-        target_text = target.format(target_rating=f"{target_rating:.2f}")
+        target_text = target.format(target_rating=target_rating)
 
-        return [PromptTarget(input_text, target_text, gt=[f"{target_rating:.2f}"])]
+        return [PromptTarget(input_text, target_text, gt=[target_rating])]
 
 
 class SequentialSideInfoTask(Task):
