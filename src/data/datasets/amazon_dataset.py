@@ -132,7 +132,10 @@ class AmazonDataset(LaikaDataset):
                 y = float(y)
 
                 if y == 5:
-                    sign_eps = -1
+                    new_y = y - random.uniform(0.5, 0.75)
+
+                    new_x.append(f"{new_y:.2f}")
+                    continue
                 elif y == 1:
                     sign_eps = +1
                 else:
