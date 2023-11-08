@@ -231,7 +231,7 @@ class T5Rec(LaikaModel, T5ForConditionalGeneration):
         no_repeat_ngram_size = 0
         early_stopping = True
 
-        gt = batch.pop("gt")
+        gt = np.array(batch.pop("gt"))
 
         inputs_embeds = self.shared(batch["input_ids"])
         if self.config.inject_personalization is True:
