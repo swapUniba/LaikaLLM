@@ -70,6 +70,18 @@ class RatingPredictionTask(Task):
         [target_item] = kwargs["gt_item"]
         [target_rating] = kwargs["gt_rating"]
 
+        if self.training:
+            target_rating = float(target_rating)
+
+            if target_rating == 5:
+                sign_eps = -1
+            elif target_rating == 1:
+                sign_eps = +1
+            else:
+                sign_eps = +1 if random.getrandbits(1) else -1
+
+            target_rating += sign_eps * random.uniform(0.25, 0.5)
+
         # random.choice applied to dict with int key returns a value
         input_prompt, target, _ = random.choice(self.inference_templates())
 
