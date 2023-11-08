@@ -78,9 +78,9 @@ class RatingPredictionTask(Task):
         input_text = input_prompt.format(user_id=user_id,
                                          target_item=target_item,
                                          avg_rating=f"{avg_rating:.1f}")
-        target_text = target.format(target_rating=f"{avg_rating:.1f}")
+        target_text = target.format(target_rating=f"{target_rating:.1f}")
 
-        return [PromptTarget(input_text, target_text, gt=[target_rating])]
+        return [PromptTarget(input_text, target_text, gt=[f"{target_rating:.1f}"])]
 
 
 class SequentialSideInfoTask(Task):
