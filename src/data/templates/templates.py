@@ -13,7 +13,7 @@ class RatingPredictionTask(Task):
         0: PromptTarget(
             input_prompt="rating prediction - {user_id}: \n\n"
                          "Can you predict the rating that the user would give to {target_item} knowing that "
-                         "the average rating given by the user so far is {avg_user_rating}? \n"
+                         "the average rating given by the user so far is {avg_rating}? \n"
                          "The rating to predict should be a float number in range [1, 5]",
             target_text="{target_rating}"
         ),
