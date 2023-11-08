@@ -13,41 +13,39 @@ class RatingPredictionTask(Task):
         0: PromptTarget(
             input_prompt="rating prediction - {user_id}: \n\n"
                          "Can you predict the rating that the user would give to {item_id} knowing that "
-                         "the brand of the item is {item_brand} and the categories are {item_categories}? \n"
+                         "the categories are {item_categories}? \n"
                          "The rating to predict should be a continuous number in range [1, 5]",
             target_text="{target_rating}"
         ),
         1: PromptTarget(
             input_prompt="rating prediction - {user_id}: \n\n"
                          "Predict a float value in range [1, 5] which should be the rating that the user "
-                         "would give to {item_id}. As context, the brand of the item is {item_brand} and "
-                         "its categories are {item_categories}",
+                         "would give to {item_id}. As context, the categories of the item are {item_categories}",
             target_text="{target_rating}"
         ),
         2: PromptTarget(
             input_prompt="rating prediction - {user_id}: \n\n"
                          "How would the user rate in a 1-5 scale the {item_id}? Consider that the categories of "
-                         "the item are {item_categories}, while the brand which made the item is {item_brand}",
+                         "the item are {item_categories}",
             target_text="{target_rating}"
         ),
         3: PromptTarget(
             input_prompt="rating prediction - {user_id}: \n\n"
-                         "Predict the score the user would give to {item_id} (a continuous number in a 1-5 scale). "
-                         "Brand of the item -> {item_brand} \n"
+                         "Predict the score the user would give to {item_id} (a continuous number in a 1-5 scale). \n"
                          "Categories of the item -> {item_categories}",
             target_text="{target_rating}"
         ),
         4: PromptTarget(
             input_prompt="rating prediction - {user_id}: \n\n"
-                         "The {item_id} is made by {item_brand} and belongs to these categories: {item_categories} \n"
+                         "The {item_id} belongs to these categories: {item_categories} \n"
                          "Based on that, predict the score (a continuous value in a 1-5 scale) the user would give "
-                         "to {item_id}",
+                         "to the item",
             target_text="{target_rating}"
         ),
         5: PromptTarget(
             input_prompt="rating prediction - {user_id}: \n\n"
-                         "Please predict the user would give to {item_id} based on the brand which produced"
-                         "the item, which is {item_brand}, and based on its categories, which are {item_categories}. \n"
+                         "Please predict the user would give to {item_id} based on its categories, which are "
+                         "{item_categories}. \n"
                          "The score should be a continuous number in range [1-5]",
             target_text="{target_rating}"
         )
@@ -75,15 +73,11 @@ class RatingPredictionTask(Task):
         separator = " , " if random.getrandbits(1) else " ; "
         target_categories_str = separator.join(target_categories)
 
-        if target_brand == "":
-            target_brand = "!No brand!"
-
         # random.choice applied to dict with int key returns a value
         input_prompt, target, _ = random.choice(self.inference_templates())
 
         input_text = input_prompt.format(user_id=user_id,
                                          item_id=target_item,
-                                         item_brand=target_brand,
                                          item_categories=target_categories_str)
         target_text = target.format(target_rating=target_rating)
 
