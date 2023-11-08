@@ -12,42 +12,43 @@ class RatingPredictionTask(Task):
     templates_dict = {
         0: PromptTarget(
             input_prompt="rating prediction - {user_id}: \n\n"
-                         "Can you predict the rating that the user would give to {target_item} knowing that "
-                         "the average rating given by the user so far is {avg_rating}? \n"
-                         "The rating to predict should be a float number in range [1, 5]",
+                         "Can you predict the rating that the user would give to {item_id} knowing that "
+                         "the brand of the item is {item_brand} and the categories are {item_categories}? \n"
+                         "The rating to predict should be a continuous number in range [1, 5]",
             target_text="{target_rating}"
         ),
         1: PromptTarget(
             input_prompt="rating prediction - {user_id}: \n\n"
                          "Predict a float value in range [1, 5] which should be the rating that the user "
-                         "would give to {target_item}. As context, the average rating given by the user so far is "
-                         "{avg_rating}",
+                         "would give to {item_id}. As context, the brand of the item is {item_brand} and "
+                         "its categories are {item_categories}",
             target_text="{target_rating}"
         ),
         2: PromptTarget(
             input_prompt="rating prediction - {user_id}: \n\n"
-                         "How would the user rate in a 1-5 scale the {target_item}? The average rating score given "
-                         "by the user to previously bought item is {avg_rating}",
+                         "How would the user rate in a 1-5 scale the {item_id}? Consider that the categories of "
+                         "the item are {item_categories}, while the brand which made the item is {item_brand}",
             target_text="{target_rating}"
         ),
         3: PromptTarget(
             input_prompt="rating prediction - {user_id}: \n\n"
-                         "Predict the score the user would give to {target_item} (in a 1-5 scale). This is the "
-                         "average rating representing the rating style of the user: {avg_rating}",
+                         "Predict the score the user would give to {item_id} (a continuous number in a 1-5 scale). "
+                         "Brand of the item -> {item_brand} \n"
+                         "Categories of the item -> {item_categories}",
             target_text="{target_rating}"
         ),
         4: PromptTarget(
             input_prompt="rating prediction - {user_id}: \n\n"
-                         "This is the average rating given by the user -> {avg_rating}\n"
-                         "Based on that, predict the score (a float value in a 1-5 scale) the user would give "
-                         "to {target_item}",
+                         "The {item_id} is made by {item_brand} and belongs to these categories: {item_categories} \n"
+                         "Based on that, predict the score (a continuous value in a 1-5 scale) the user would give "
+                         "to {item_id}",
             target_text="{target_rating}"
         ),
         5: PromptTarget(
             input_prompt="rating prediction - {user_id}: \n\n"
-                         "Please predict the user would give to {target_item} based on its average rating "
-                         "assigned to items in its profile -> {avg_rating} \n"
-                         "The score should be a float value in range [1-5]",
+                         "Please predict the user would give to {item_id} based on the brand which produced"
+                         "the item, which is {item_brand}, and based on its categories, which are {item_categories}. \n"
+                         "The score should be a continuous number in range [1-5]",
             target_text="{target_rating}"
         )
     }
@@ -61,7 +62,7 @@ class RatingPredictionTask(Task):
     def inference_templates(self, return_id: bool = False):
         return self.all_templates(return_id)
 
-    @Task.validate_args("user_id", "input_item_seq", "input_rating_seq", "gt_item", "gt_rating")
+    @Task.validate_args("user_id", "input_item_seq", "input_rating_seq", "gt_item", "gt_rating", "gt_brand")
     def __call__(self, **kwargs):
         assert len(kwargs["gt_item"]) == 1, "This task was designed for Leave One Out strategy!"
 
@@ -69,6 +70,11 @@ class RatingPredictionTask(Task):
         rating_history = kwargs["input_rating_seq"]
         [target_item] = kwargs["gt_item"]
         [target_rating] = kwargs["gt_rating"]
+        [target_categories] = kwargs["gt_categories"]
+        [target_brand] = kwargs["gt_brand"]
+
+        separator = " , " if random.getrandbits(1) else " ; "
+        target_categories_str = separator.join(target_categories)
 
         if self.training:
             target_rating = float(target_rating)
@@ -80,19 +86,21 @@ class RatingPredictionTask(Task):
             else:
                 sign_eps = +1 if random.getrandbits(1) else -1
 
-            target_rating += sign_eps * random.uniform(0.25, 0.5)
+            target_rating += sign_eps * random.uniform(0, 0.5)
+
+        if target_brand == "":
+            target_brand = "!No brand!"
 
         # random.choice applied to dict with int key returns a value
         input_prompt, target, _ = random.choice(self.inference_templates())
 
-        avg_rating = np.mean(rating_history)
-
         input_text = input_prompt.format(user_id=user_id,
-                                         target_item=target_item,
-                                         avg_rating=f"{avg_rating:.1f}")
-        target_text = target.format(target_rating=f"{target_rating:.1f}")
+                                         item_id=target_item,
+                                         item_brand=target_brand,
+                                         item_categories=target_categories_str)
+        target_text = target.format(target_rating=f"{target_rating:.2f}")
 
-        return [PromptTarget(input_text, target_text, gt=[f"{target_rating:.1f}"])]
+        return [PromptTarget(input_text, target_text, gt=[f"{target_rating:.2f}"])]
 
 
 class SequentialSideInfoTask(Task):
