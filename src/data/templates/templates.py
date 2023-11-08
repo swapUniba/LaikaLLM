@@ -13,44 +13,41 @@ class RatingPredictionTask(Task):
         0: PromptTarget(
             input_prompt="rating prediction - {user_id}: \n\n"
                          "Can you predict the rating that the user would give to {target_item} knowing that "
-                         "it gave these ratings to these items? (Predict a number between 1 and 5 included) \n"
-                         "{order_history_w_ratings}",
+                         "the average rating given by the user so far is {avg_user_rating}? \n"
+                         "The rating to predict should be a float number in range [1, 5]",
             target_text="{target_rating}"
         ),
         1: PromptTarget(
             input_prompt="rating prediction - {user_id}: \n\n"
-                         "Predict a value between 1 and 5 which should be the rating that the user "
-                         "would give to {target_item}. As context, this is how the user rated previously bought "
-                         "item: \n"
-                         "{order_history_w_ratings}",
+                         "Predict a float value in range [1, 5] which should be the rating that the user "
+                         "would give to {target_item}. As context, the average rating given by the user so far is "
+                         "{avg_rating}",
             target_text="{target_rating}"
         ),
         2: PromptTarget(
             input_prompt="rating prediction - {user_id}: \n\n"
-                         "How would the user rate in a 1-5 scale {target_item}? The user has bought these items "
-                         "and rated them in this way: \n"
-                         "{order_history_w_ratings}",
+                         "How would the user rate in a 1-5 scale the {target_item}? The average rating score given "
+                         "by the user to previously bought item is {avg_rating}",
             target_text="{target_rating}"
         ),
         3: PromptTarget(
             input_prompt="rating prediction - {user_id}: \n\n"
-                         "Predict the score the user would give to {target_item} (in a 1-5 scale). This is its order "
-                         "history with associated rating that the user previously gave: \n"
-                         "{order_history_w_ratings}",
+                         "Predict the score the user would give to {target_item} (in a 1-5 scale). This is the "
+                         "average rating representing the rating style of the user: {avg_rating}",
             target_text="{target_rating}"
         ),
         4: PromptTarget(
             input_prompt="rating prediction - {user_id}: \n\n"
-                         "This is the order history of the user with the associated rating -> \n"
-                         "{order_history_w_ratings} \n"
-                         "Based on that, predict the score (in a 1-5 scale) the user would give to {target_item}",
+                         "This is the average rating given by the user -> {avg_rating}\n"
+                         "Based on that, predict the score (a float value in a 1-5 scale) the user would give "
+                         "to {target_item}",
             target_text="{target_rating}"
         ),
         5: PromptTarget(
             input_prompt="rating prediction - {user_id}: \n\n"
-                         "Please predict the user would give to {target_item} based on its order history -> \n"
-                         "{order_history_w_ratings} \n"
-                         "The score should be in a 1-5 scale",
+                         "Please predict the user would give to {target_item} based on its average rating "
+                         "assigned to items in its profile -> {avg_rating} \n"
+                         "The score should be a float value in range [1-5]",
             target_text="{target_rating}"
         )
     }
@@ -77,16 +74,12 @@ class RatingPredictionTask(Task):
         # random.choice applied to dict with int key returns a value
         input_prompt, target, _ = random.choice(self.inference_templates())
 
-        # random select of string separator for item ids
-        separator = " , " if random.getrandbits(1) else " ; "
-
-        order_history_w_ratings = separator.join([f"{item_id} - {rating}"
-                                                  for item_id, rating in zip(order_history, rating_history)])
+        avg_rating = np.mean(rating_history)
 
         input_text = input_prompt.format(user_id=user_id,
                                          target_item=target_item,
-                                         order_history_w_ratings=order_history_w_ratings)
-        target_text = target.format(target_rating=target_rating)
+                                         avg_rating=f"{avg_rating:.1f}")
+        target_text = target.format(target_rating=f"{avg_rating:.1f}")
 
         return [PromptTarget(input_text, target_text, gt=[target_rating])]
 
