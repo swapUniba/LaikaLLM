@@ -66,7 +66,6 @@ class RatingPredictionTask(Task):
         assert len(kwargs["gt_item"]) == 1, "This task was designed for Leave One Out strategy!"
 
         user_id = kwargs["user_id"]
-        order_history = kwargs["input_item_seq"]
         rating_history = kwargs["input_rating_seq"]
         [target_item] = kwargs["gt_item"]
         [target_rating] = kwargs["gt_rating"]
