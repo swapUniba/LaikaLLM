@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import random
+from copy import deepcopy
 from typing import List, Literal
 
 import numpy as np
+import pandas as pd
 import torch
 from torch.nn.utils.rnn import pad_sequence
 from torch.optim import AdamW
-from transformers import BartConfig, BartForConditionalGeneration, BartTokenizerFast
+from transformers import BartConfig, BartForConditionalGeneration, BartTokenizerFast, GPT2Config, GPT2LMHeadModel, \
+    GPT2TokenizerFast, OPTForCausalLM, AutoTokenizer, OPTConfig
 
 from src.data.abstract_dataset import LaikaDataset
 from src.data.abstract_templates import Task
@@ -15,7 +18,7 @@ from src.model.abstract_model import LaikaModel
 from src.utils import dict_list2list_dict, list_dict2dict_list
 
 
-class BartRecConfig(BartConfig):
+class GPT2RecConfig(GPT2Config):
     def __init__(self,
                  training_tasks_str: List[str] = None,
                  all_unique_labels: List[str] = None,
@@ -26,8 +29,8 @@ class BartRecConfig(BartConfig):
         self.all_unique_labels = all_unique_labels
 
 
-class BartRec(LaikaModel, BartForConditionalGeneration):
-    config_class = BartRecConfig
+class GPT2Rec(LaikaModel, GPT2LMHeadModel):
+    config_class = GPT2RecConfig
 
     def __init__(self,
                  config,
@@ -35,7 +38,7 @@ class BartRec(LaikaModel, BartForConditionalGeneration):
                  eval_template_id: int = None,
                  train_task_selection_strat: Literal['random', 'all'] = 'all'):
 
-        BartForConditionalGeneration.__init__(self, config)
+        GPT2LMHeadModel.__init__(self, config)
 
         LaikaModel.__init__(
             self,
@@ -46,13 +49,17 @@ class BartRec(LaikaModel, BartForConditionalGeneration):
             train_task_selection_strat=train_task_selection_strat
         )
 
-        self.tokenizer = BartTokenizerFast.from_pretrained(config.name_or_path)
+        self.tokenizer = GPT2TokenizerFast.from_pretrained(config.name_or_path)
+
+        self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
+        self.config.pad_token_id = self.tokenizer.eos_token_id
+        self.tokenizer.padding_side = "left"
 
     @property
     def get_suggested_optimizer(self):
         return AdamW(
             list(self.parameters()),
-            lr=1e-3,
+            lr=5e-5,
             betas=(0.9, 0.999),
             eps=1e-8,
             weight_decay=0.01
@@ -86,23 +93,25 @@ class BartRec(LaikaModel, BartForConditionalGeneration):
                 # give all info that we have about the sample to the task randomly sampled to generate
                 # input prompt and target text. Each task may have mandatory arguments, if they are missing
                 # an assertion error will be raised
-                templates_list = task(**sample)
+                templates_list = task(catalog_items=self.all_unique_labels, **sample)
 
                 # each task gives as output a list: this list contains surely an inference prompt-target (i.e.,
                 # a prompt target which could be used at inference time) and a variable number of support tasks
                 # (i.e. tasks which do not have as target text the prediction of interest for the task)
                 for (input_text, target_text, gt) in templates_list:
 
-                    encoded_sequence = self.tokenizer(text=input_text, text_target=target_text, truncation=True)
+                    input_text_ids = self.tokenizer(f"Input: {input_text} \nTarget: ").input_ids
+                    target_ids = self.tokenizer(target_text).input_ids
 
-                    # get word ids from t5 tokenizer fast
-                    whole_word_ids = np.array(encoded_sequence.encodings[0].word_ids)
-                    special_token_mask = np.array(encoded_sequence.encodings[0].special_tokens_mask).astype(bool)
+                    encoded_sequence: dict = {
+                        "input_prompt_ids": input_text_ids,
+                        "target_prompt_ids": target_ids,
+                        "attention_mask_prompt": [1] * len(input_text_ids),
+                        "input_ids": input_text_ids + target_ids,
+                        "attention_mask": [1] * (len(input_text_ids) + len(target_ids))
+                    }
 
-                    # we set -1 to all special tokens (to substitute None, which is the value set by default)
-                    whole_word_ids[~special_token_mask] += 1
-                    whole_word_ids[special_token_mask] = self.tokenizer.pad_token_id
-                    encoded_sequence["whole_word_ids"] = whole_word_ids.tolist()
+                    encoded_sequence["labels"] = deepcopy(encoded_sequence["input_ids"])
 
                     if not self.training:
 
@@ -121,21 +130,33 @@ class BartRec(LaikaModel, BartForConditionalGeneration):
     def prepare_input(self, batch):
         input_dict = {}
 
-        input_ids = pad_sequence(batch["input_ids"], batch_first=True, padding_value=self.tokenizer.pad_token_id)
-        attention_mask = pad_sequence(batch["attention_mask"],
+        # decoder only model should be padded to the left when performing batch inference,
+        # otherwise you are continuing generating over a pad token which was not observed during training.
+        # Check https://github.com/huggingface/transformers/issues/3021#issuecomment-1454267951
+        input_ids = pad_sequence([a.flip(dims=[0]) for a in batch["input_ids"]],
+                                 batch_first=True,
+                                 padding_value=self.tokenizer.pad_token_id).flip(dims=[1])
+        attention_mask = pad_sequence([a.flip(dims=[0]) for a in batch["attention_mask"]],
                                       batch_first=True,
-                                      padding_value=self.tokenizer.pad_token_id)
-        whole_word_ids = pad_sequence(batch["whole_word_ids"],
-                                      batch_first=True,
-                                      padding_value=self.tokenizer.pad_token_id)
+                                      padding_value=0).flip(dims=[1])
+
+        input_prompt_ids = pad_sequence([a.flip(dims=[0]) for a in batch["input_prompt_ids"]],
+                                        batch_first=True,
+                                        padding_value=self.tokenizer.pad_token_id).flip(dims=[1])
+        attention_mask_prompt = pad_sequence([a.flip(dims=[0]) for a in batch["attention_mask_prompt"]],
+                                             batch_first=True,
+                                             padding_value=0).flip(dims=[1])
 
         input_dict["input_ids"] = input_ids.to(self.device)
         input_dict["attention_mask"] = attention_mask.to(self.device)
-        input_dict["whole_word_ids"] = whole_word_ids.to(self.device)
+
+        input_dict["input_ids_prompt"] = input_prompt_ids.to(self.device)
+        input_dict["attention_mask_prompt"] = attention_mask_prompt.to(self.device)
 
         if "labels" in batch:
-            lm_labels = pad_sequence(batch["labels"], batch_first=True, padding_value=self.tokenizer.pad_token_id)
-            lm_labels[lm_labels == self.tokenizer.pad_token_id] = -100
+            lm_labels = pad_sequence([a.flip(dims=[0]) for a in batch["labels"]],
+                                     batch_first=True,
+                                     padding_value=-100).flip(dims=[1])
 
             input_dict["labels"] = lm_labels.to(self.device)
 
@@ -170,14 +191,14 @@ class BartRec(LaikaModel, BartForConditionalGeneration):
         early_stopping = True
 
         gt = np.array(batch.pop("gt"))
-
-        output = self(input_ids=batch["input_ids"],
-                      attention_mask=batch["attention_mask"],
-                      labels=batch["labels"])
+        #
+        # output = self(input_ids=batch["input_ids"],
+        #               attention_mask=batch["attention_mask"],
+        #               labels=batch["labels"])
 
         beam_outputs = self.generate(
-            input_ids=batch["input_ids"],
-            attention_mask=batch["attention_mask"],
+            input_ids=batch["input_ids_prompt"],
+            attention_mask=batch["attention_mask_prompt"],
             num_return_sequences=num_return_sequences,
             max_new_tokens=max_new_tokens,
             num_beams=num_beams,
@@ -185,12 +206,13 @@ class BartRec(LaikaModel, BartForConditionalGeneration):
             early_stopping=early_stopping
         )
 
-        generated_sents = self.tokenizer.batch_decode(beam_outputs, skip_special_tokens=True)
+        # this works for all because when generating, also pad tokens are generated!
+        beam_outputs_targets = beam_outputs[:, batch["input_ids_prompt"].shape[1]:]
+
+        generated_sents = self.tokenizer.batch_decode(beam_outputs_targets, skip_special_tokens=True)
         mapped_predictions = np.array(generated_sents).reshape((len(gt), num_return_sequences))
 
-        loss = output.loss
-
-        return mapped_predictions, gt, loss
+        return mapped_predictions, gt, torch.tensor(0)
 
     def save(self, output_dir: str):
 
@@ -211,13 +233,13 @@ class BartRec(LaikaModel, BartForConditionalGeneration):
         else:
             Task.eval()
 
-        return BartForConditionalGeneration.train(self, mode)
+        return GPT2LMHeadModel.train(self, mode)
 
     def to(self, device: str):
-        return BartForConditionalGeneration.to(self, device)
+        return GPT2LMHeadModel.to(self, device)
 
     @classmethod
-    def from_cls(cls, model_cls: type[BartRec], dataset_obj: LaikaDataset, **kwargs):
+    def from_cls(cls, model_cls: type[GPT2Rec], dataset_obj: LaikaDataset, **kwargs):
 
         kwargs["all_unique_labels"] = dataset_obj.all_items.tolist()
 
