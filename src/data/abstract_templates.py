@@ -66,7 +66,7 @@ class Task(ABC):
     def inference_templates(self, return_id: bool = False):
         raise NotImplementedError
 
-    def force_template(self, force_template_id: int):
+    def force_template(self, force_template_id: int | str):
 
         # 'self.__class__' so that even if we call multiple times this method on an instantiated task,
         # we always have a pointer to original class templates, otherwise they are deleted if we use simply 'self'
@@ -87,20 +87,6 @@ class Task(ABC):
     @classmethod
     def eval(cls):
         Task.training = False
-
-    @classmethod
-    def from_string(cls, *task_str: str, all_unique_items: np.ndarray[str]):
-
-        instantiated_tasks = []
-        for task in task_str:
-            try:
-                # remember, we are searching a case-insensitive dict, so we don't care about
-                # lowering all keys
-                instantiated_tasks.append(cls.str_alias_cls[task](all_unique_items))
-            except KeyError:
-                raise KeyError(f"{task} task does not exist!") from None
-
-        return instantiated_tasks
 
     @classmethod
     def all_tasks_available(cls, return_str: bool = False):
@@ -125,8 +111,22 @@ class Task(ABC):
 
         return task_exists and template_exists
 
+    @classmethod
+    def from_string(cls, *task_str: str):
+
+        instantiated_tasks = []
+        for task in task_str:
+            try:
+                # remember, we are searching a case-insensitive dict, so we don't care about
+                # lowering all keys
+                instantiated_tasks.append(cls.str_alias_cls[task]())
+            except KeyError:
+                raise KeyError(f"{task} task does not exist!") from None
+
+        return instantiated_tasks
+
     @abstractmethod
-    def __call__(self, *args, **kwargs) -> list[tuple[str, str]]:
+    def __call__(self, *args, **kwargs) -> list[PromptTarget]:
         raise NotImplementedError
 
     def __repr__(self):
