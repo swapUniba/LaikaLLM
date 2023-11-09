@@ -36,8 +36,7 @@ class LaikaModel(ABC):
             raise AttributeError("train_task_selection_strat should be 'all' or 'random'!")
 
         self.all_unique_labels = np.array(all_unique_labels)
-        self.training_tasks = Task.from_string(*training_tasks_str,
-                                               all_unique_items=self.all_unique_labels)
+        self.training_tasks = Task.from_string(*training_tasks_str)
 
         self.eval_task: Optional[Task] = None
         if eval_task_str is not None:
@@ -46,7 +45,7 @@ class LaikaModel(ABC):
         self.train_task_selection_strat = train_task_selection_strat
 
     def set_eval_task(self, eval_task_str: str, template_id: int = None):
-        [self.eval_task] = Task.from_string(eval_task_str, all_unique_items=self.all_unique_labels)
+        [self.eval_task] = Task.from_string(eval_task_str)
 
         if template_id is not None:
             self.eval_task.force_template_id(template_id)

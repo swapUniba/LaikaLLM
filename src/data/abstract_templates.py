@@ -46,12 +46,6 @@ class Task(ABC):
     # class attribute since if the model is in training mode, all tasks should be in training mode
     training: bool = False
 
-    # some task may use randomly other items of the catalog (e.g., create candidate lists)
-    all_unique_items: np.ndarray = np.array([])
-
-    def __init__(self, all_unique_items: np.ndarray[str]):
-        Task.all_unique_items = all_unique_items
-
     # automatically called on subclass definition, will populate the str_alias_cls dict
     def __init_subclass__(cls, **kwargs):
 

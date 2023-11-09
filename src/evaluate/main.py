@@ -33,7 +33,7 @@ def eval_main(shared_params: SharedParams, eval_params: EvalParams, dataset_obj:
     # convert from str to objects
 
     eval_task_dict = {
-        Task.from_string(eval_task_str, all_unique_items=dataset_obj.all_items)[0]: LaikaMetric.from_string(*metric_list_str)
+        Task.from_string(eval_task_str)[0]: LaikaMetric.from_string(*metric_list_str)
         for eval_task_str, metric_list_str in eval_task_dict.items()
     }
 

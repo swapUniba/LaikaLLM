@@ -125,7 +125,7 @@ class T5Rec(LaikaModel, T5ForConditionalGeneration):
                 # give all info that we have about the sample to the task randomly sampled to generate
                 # input prompt and target text. Each task may have mandatory arguments, if they are missing
                 # an assertion error will be raised
-                templates_list = task(**sample)
+                templates_list = task(catalog_items=self.all_unique_labels, **sample)
 
                 # each task gives as output a list: this list contains surely an inference prompt-target (i.e.,
                 # a prompt target which could be used at inference time) and a variable number of support tasks
