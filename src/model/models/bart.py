@@ -133,6 +133,7 @@ class GPT2Rec(LaikaModel, GPT2LMHeadModel):
         # decoder only model should be padded to the left when performing batch inference,
         # otherwise you are continuing generating over a pad token which was not observed during training.
         # Check https://github.com/huggingface/transformers/issues/3021#issuecomment-1454267951
+        # and https://github.com/kzl/decision-transformer/issues/36
         input_ids = pad_sequence([a.flip(dims=[0]) for a in batch["input_ids"]],
                                  batch_first=True,
                                  padding_value=self.tokenizer.pad_token_id).flip(dims=[1])
@@ -147,6 +148,10 @@ class GPT2Rec(LaikaModel, GPT2LMHeadModel):
                                              batch_first=True,
                                              padding_value=0).flip(dims=[1])
 
+        input_ids = torch.hstack((input_ids, torch.full((input_ids.shape[0], 1), fill_value=self.tokenizer.eos_token_id)))
+        attention_mask = torch.hstack(
+            (attention_mask, torch.full((input_ids.shape[0], 1), fill_value=1)))
+
         input_dict["input_ids"] = input_ids.to(self.device)
         input_dict["attention_mask"] = attention_mask.to(self.device)
 
@@ -157,6 +162,9 @@ class GPT2Rec(LaikaModel, GPT2LMHeadModel):
             lm_labels = pad_sequence([a.flip(dims=[0]) for a in batch["labels"]],
                                      batch_first=True,
                                      padding_value=-100).flip(dims=[1])
+
+            lm_labels = torch.hstack(
+                (lm_labels, torch.full((input_ids.shape[0], 1), fill_value=self.tokenizer.eos_token_id)))
 
             input_dict["labels"] = lm_labels.to(self.device)
 
