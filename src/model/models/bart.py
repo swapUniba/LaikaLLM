@@ -100,8 +100,11 @@ class GPT2Rec(LaikaModel, GPT2LMHeadModel):
                 # (i.e. tasks which do not have as target text the prediction of interest for the task)
                 for (input_text, target_text, gt) in templates_list:
 
-                    input_text_ids = self.tokenizer(f"Input: {input_text} \nTarget: ", truncation=True).input_ids
                     target_ids = self.tokenizer(target_text, truncation=True).input_ids
+
+                    input_text_ids = self.tokenizer(f"Input: {input_text} \nTarget: ",
+                                                    truncation=True,
+                                                    max_length=self.tokenizer.model_max_length - len(target_ids) - 1).input_ids
 
                     encoded_sequence: dict = {
                         "input_prompt_ids": input_text_ids,
