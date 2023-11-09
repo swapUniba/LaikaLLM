@@ -86,20 +86,6 @@ class Task(ABC):
 
         return self
 
-    # function decorator needed to declare mandatory arguments of each subclass __call__
-    @staticmethod
-    def validate_args(*mandatory_args: str):
-        def decorator(func):
-            def wrapper(self, **kwargs):
-                for mandatory_arg in mandatory_args:
-                    assert mandatory_arg in kwargs, f"{mandatory_arg} is needed for task {repr(self)}!"
-
-                return func(self, **kwargs)
-
-            return wrapper
-
-        return decorator
-
     @classmethod
     def train(cls):
         Task.training = True

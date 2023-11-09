@@ -60,23 +60,22 @@ class RatingPredictionTask(Task):
     def inference_templates(self, return_id: bool = False):
         return self.all_templates(return_id)
 
-    @Task.validate_args("user_id", "input_item_seq", "input_rating_seq", "gt_item", "gt_rating", "gt_brand")
-    def __call__(self, **kwargs):
-        assert len(kwargs["gt_item"]) == 1, "This task was designed for Leave One Out strategy!"
+    def __call__(self, user_id: str, input_item_seq: list[str], input_rating_seq: list[str],
+                 gt_item: list[str], gt_rating: list[str], **kwargs):
 
-        user_id = kwargs["user_id"]
-        order_history = kwargs["input_item_seq"]
-        rating_history = kwargs["input_rating_seq"]
-        [target_item] = kwargs["gt_item"]
-        [target_rating] = kwargs["gt_rating"]
+        assert len(gt_item) == 1, "This task was designed for Leave One Out strategy!"
 
-        avg_rating = f"{np.mean(rating_history).item():.2f}"
+        [target_item] = gt_item
+        [target_rating] = gt_rating
+
+        avg_rating = f"{np.mean(gt_rating, dtype=float).item():.2f}"
 
         input_prompt, target, _ = random.choice(self.inference_templates())
 
         separator = " , " if random.getrandbits(1) else " ; "
 
-        order_history_w_ratings = [f"{item_id} -> {rating}" for item_id, rating in zip(order_history, rating_history)]
+        order_history_w_ratings = [f"{item_id} -> {rating}"
+                                   for item_id, rating in zip(input_item_seq, input_rating_seq)]
         order_history_w_ratings_str = separator.join(order_history_w_ratings)
 
         input_text = input_prompt.format(user_id=user_id,
@@ -184,14 +183,12 @@ class SequentialSideInfoTask(Task):
     def pair_templates(self, return_id: bool = False):
         return [self.templates_dict[8], self.templates_dict[9]] if not return_id else [8, 9]
 
-    @Task.validate_args("user_id", "input_item_seq", "input_categories_seq", "gt_item")
-    def __call__(self, **kwargs):
-        assert len(kwargs["gt_item"]) == 1, "This task was designed for Leave One Out strategy!"
+    def __call__(self, user_id: str, input_item_seq: list[str], input_categories_seq: list[str],
+                 gt_item: list[str], catalog_items: np.ndarray[str], **kwargs):
 
-        user_id = kwargs["user_id"]
-        order_history = kwargs["input_item_seq"]
-        input_categories_seq = kwargs["input_categories_seq"]
-        [target_item] = kwargs["gt_item"]
+        assert len(gt_item) == 1, "This task was designed for Leave One Out strategy!"
+
+        [target_item] = gt_item
 
         out_list = []
 
@@ -202,12 +199,12 @@ class SequentialSideInfoTask(Task):
 
         # random select of string separator for titles sequence and the prompt to use
         separator = " , " if random.getrandbits(1) else " ; "
-        order_history_str = separator.join(order_history)
+        input_item_str = separator.join(input_item_seq)
         input_categories_str = separator.join(reduced_categories)
 
         # random choice of valid template
         input_text_inference = input_prompt_inference.format(user_id=user_id,
-                                                             order_history=order_history_str,
+                                                             order_history=input_item_str,
                                                              category_history=input_categories_str)
         target_text_inference = target_inference.format(target_item=target_item)
 
@@ -215,12 +212,13 @@ class SequentialSideInfoTask(Task):
 
         if self.training:
             input_text_qa, target_text_qa = self._create_input_target_qa(user_id,
-                                                                         order_history_str,
+                                                                         input_item_str,
                                                                          input_categories_str,
-                                                                         target_item)
+                                                                         target_item,
+                                                                         catalog_items)
 
             input_text_pair, target_text_pair = self._create_input_target_pair(user_id,
-                                                                               order_history,
+                                                                               input_item_seq,
                                                                                input_categories_seq,
                                                                                target_item)
 
@@ -229,12 +227,13 @@ class SequentialSideInfoTask(Task):
 
         return out_list
 
-    def _create_input_target_qa(self, user_id, order_history_str, input_categories_str, target_item):
+    def _create_input_target_qa(self, user_id: str, input_item_str: str, input_categories_str: str,
+                                target_item: str, catalog_items: np.ndarray[str]):
         # random choice of qa template
         input_prompt_support, target_support, _ = random.choice(self.qa_templates())
 
         bullet_list_wrong_size = 4
-        all_possible_candidates = self.all_unique_items[self.all_unique_items != target_item]
+        all_possible_candidates = catalog_items[catalog_items != target_item]
         candidates = np.random.choice(all_possible_candidates, size=bullet_list_wrong_size, replace=False)
 
         candidates = np.append(candidates, target_item)
@@ -244,19 +243,20 @@ class SequentialSideInfoTask(Task):
         bullet_list = (f"{bullet_notation} {{}}\n" * len(candidates)).format(*candidates)
 
         input_text_qa = input_prompt_support.format(user_id=user_id,
-                                                    order_history=order_history_str,
+                                                    order_history=input_item_str,
                                                     category_history=input_categories_str,
                                                     candidate_items=bullet_list)
         target_text_qa = target_support.format(target_item=target_item)
 
         return input_text_qa, target_text_qa
 
-    def _create_input_target_pair(self, user_id, order_history, input_categories, target_item):
+    def _create_input_target_pair(self, user_id: str, input_item_seq: list[str], input_categories_seq: list[str],
+                                  target_item: str):
         # random choice of pair template
         input_prompt_support, target_support, _ = random.choice(self.pair_templates())
 
         # we consider all the order history, including the target item
-        order_history = order_history + [target_item]
+        order_history = input_item_seq + [target_item]
 
         # first "- 1" because we start from 0, second "- 1" because we don't want to pick the last item
         # as first of the pair
@@ -266,7 +266,7 @@ class SequentialSideInfoTask(Task):
         second_of_pair = order_history[first_of_pair_idx + 1]
 
         separator = " , " if random.getrandbits(1) else " ; "
-        first_of_pair_cat = separator.join(input_categories[first_of_pair_idx])
+        first_of_pair_cat = separator.join(input_categories_seq[first_of_pair_idx])
 
         input_text_pair = input_prompt_support.format(user_id=user_id,
                                                       precedent_item_id=first_of_pair,
@@ -351,13 +351,13 @@ class DirectSideInfoTask(Task):
     def qa_templates(self, return_id: bool = False):
         return self.all_templates(return_id)[6:]
 
-    @Task.validate_args("user_id", "input_item_seq", "input_categories_seq", "gt_item", "gt_categories")
-    def __call__(self, **kwargs):
-        user_id = kwargs["user_id"]
-        input_item_seq = kwargs["input_item_seq"]
-        input_categories_seq = kwargs["input_categories_seq"]
-        [target_categories] = kwargs["gt_categories"]
-        [target_item] = kwargs["gt_item"]
+    def __call__(self, user_id: str, input_item_seq: list[str], input_categories_seq: list[str],
+                 gt_item: list[str], gt_categories: list[str], catalog_items: np.ndarray[str], **kwargs):
+
+        assert len(gt_item) == 1, "This task was designed for Leave One Out strategy!"
+
+        [target_categories] = gt_categories
+        [target_item] = gt_item
 
         out_list = []
 
@@ -387,18 +387,20 @@ class DirectSideInfoTask(Task):
         if self.training:
             input_text_qa, target_text_qa, = self._create_input_target_qa(user_id,
                                                                           categories_liked_str,
-                                                                          target_item)
+                                                                          target_item,
+                                                                          catalog_items)
 
             out_list.append(PromptTarget(input_text_qa, target_text_qa))
 
         return out_list
 
-    def _create_input_target_qa(self, user_id, input_categories_str, target_item):
+    def _create_input_target_qa(self, user_id: str, categories_liked: str, target_item: str,
+                                catalog_items: np.ndarray[str]):
         # random choice of qa template
         input_prompt_support, target_support, _ = random.choice(self.qa_templates())
 
         bullet_list_wrong_size = 4
-        all_possible_candidates = self.all_unique_items[self.all_unique_items != target_item]
+        all_possible_candidates = catalog_items[catalog_items != target_item]
         candidates = np.random.choice(all_possible_candidates, size=bullet_list_wrong_size, replace=False)
 
         candidates = np.append(candidates, target_item)
@@ -408,7 +410,7 @@ class DirectSideInfoTask(Task):
         bullet_list = (f"{bullet_notation} {{}}\n" * len(candidates)).format(*candidates)
 
         input_text_qa = input_prompt_support.format(user_id=user_id,
-                                                    unique_categories_liked=input_categories_str,
+                                                    unique_categories_liked=categories_liked,
                                                     candidate_items=bullet_list)
         target_text_qa = target_support.format(target_item=target_item)
 
