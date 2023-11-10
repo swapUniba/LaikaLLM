@@ -2,7 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from .datasets import *
-from .templates import *
+from .tasks import *
 
 from src.data.abstract_dataset import LaikaDataset
 

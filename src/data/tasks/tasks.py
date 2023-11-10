@@ -4,6 +4,7 @@ import random
 import numpy as np
 
 from src.data.abstract_templates import Task, PromptTarget
+from src.evaluate.abstract_metric import Loss
 from src.evaluate.metrics.error_metrics import ErrorMetric
 from src.evaluate.metrics.ranking_metrics import RankingMetric
 
@@ -168,7 +169,7 @@ class SequentialSideInfoTask(Task):
         )
     }
 
-    compatible_metrics = [RankingMetric]
+    compatible_metrics = [RankingMetric, Loss]
 
     @property
     def is_ranking_task(self) -> bool:
@@ -183,7 +184,7 @@ class SequentialSideInfoTask(Task):
     def pair_templates(self, return_id: bool = False):
         return [self.templates_dict[8], self.templates_dict[9]] if not return_id else [8, 9]
 
-    def __call__(self, user_id: str, input_item_seq: list[str], input_categories_seq: list[str],
+    def __call__(self, user_id: str, input_item_seq: list[str], input_categories_seq: list[list[str]],
                  gt_item: list[str], catalog_items: np.ndarray[str], **kwargs):
 
         assert len(gt_item) == 1, "This task was designed for Leave One Out strategy!"
