@@ -4,6 +4,7 @@ import os
 
 from pygit2 import Repository
 
+from src.data.datasets.amazon_dataset import AmazonDataset
 from src.data.main import data_main
 from src.evaluate.main import eval_main
 from src.model.main import model_main
@@ -20,7 +21,7 @@ if __name__ == '__main__':
 
     # will first parse args from yml file, and if same are passed via cmd,
     # those passed via cmd will prevail
-    args = parser.parse_args()
+    args = parser.parse_args(["-c", "params.yml"])
 
     shared_params, data_params, model_params, eval_params = parse_yml_config(args.config)
 
@@ -51,11 +52,14 @@ if __name__ == '__main__':
                     should_log=shared_params.log_wandb):
 
         # at start of each main phase, we re-initialize the state
-        seed_everything(shared_params.random_seed)
-        dataset_obj = data_main(shared_params, data_params)
+        # seed_everything(shared_params.random_seed)
+        # dataset_obj = data_main(shared_params, data_params)
 
         # at start of each main phase, we re-initialize the state
         seed_everything(shared_params.random_seed)
+
+        dataset_obj = AmazonDataset.load("data/processed/prova")
+
         model_obj = model_main(shared_params, model_params, dataset_obj)
 
         # at start of each main phase, we re-initialize the state

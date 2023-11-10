@@ -1,18 +1,17 @@
 from __future__ import annotations
 
+import os.path
 import random
-import re
 from typing import List, Literal
 
 import numpy as np
 import torch
 from torch import nn, Tensor
 from torch.nn.utils.rnn import pad_sequence
-from transformers import T5ForConditionalGeneration, Adafactor, T5TokenizerFast, T5Config
+from transformers import T5ForConditionalGeneration, Adafactor, T5TokenizerFast, AutoConfig
 
 from src.data.abstract_dataset import LaikaDataset
-from src.data.templates.templates import Task
-from src.model.abstract_model import LaikaModel
+from src.model.abstract_model import LaikaModelHF
 from src.utils import dict_list2list_dict, list_dict2dict_list
 
 
@@ -37,55 +36,57 @@ class UserEmbeds(nn.Module):
         return x
 
 
-class T5RecConfig(T5Config):
+class T5Rec(LaikaModelHF):
+    model_class = T5ForConditionalGeneration
+    tokenizer_class = T5TokenizerFast
+
     def __init__(self,
-                 training_tasks_str: List[str] = None,
-                 n_users: int = None,
-                 all_unique_labels: List[str] = None,
+                 name_or_path: str,
+                 training_tasks_str: List[str],
+                 all_unique_labels: List[str],
+                 all_unique_users: List[str] = None,
                  inject_personalization: bool = False,
-                 **kwargs):
-        super().__init__(**kwargs)
-
-        self.training_tasks_str = training_tasks_str
-        self.n_users = n_users
-        self.all_unique_labels = all_unique_labels
-        self.inject_personalization = inject_personalization
-
-
-class T5Rec(LaikaModel, T5ForConditionalGeneration):
-    config_class = T5RecConfig
-
-    def __init__(self,
-                 config,
                  eval_task_str: str = None,
-                 eval_template_id: int = None,
-                 train_task_selection_strat: Literal['random', 'all'] = 'all'):
+                 eval_template_id: int | str = None,
+                 train_task_selection_strat: Literal['random', 'all'] = "all",
+                 **model_config_kwargs):
 
-        T5ForConditionalGeneration.__init__(self, config)
-
-        LaikaModel.__init__(
-            self,
-            training_tasks_str=config.training_tasks_str,
-            all_unique_labels=config.all_unique_labels,
+        super().__init__(
+            name_or_path=name_or_path,
+            training_tasks_str=training_tasks_str,
+            all_unique_labels=all_unique_labels,
             eval_task_str=eval_task_str,
             eval_template_id=eval_template_id,
-            train_task_selection_strat=train_task_selection_strat
+            train_task_selection_strat=train_task_selection_strat,
+            **model_config_kwargs
         )
 
-        self.tokenizer = T5TokenizerFast.from_pretrained(config.name_or_path)
+        self.model.config.inject_personalization = inject_personalization
+        self.model.config.all_unique_users = all_unique_users
 
-        if config.inject_personalization is True:
+        self.user_embeddings = None
+        self.user_mapping = {}
 
-            if config.n_users is None:
-                raise AttributeError("n_users parameter can't be None when "
+        if inject_personalization is True:
+            if all_unique_users is None:
+                raise AttributeError("all_unique_users parameter can't be None when "
                                      "inject_personalization is True!")
 
-            self.user_embeddings = UserEmbeds(config.n_users, self.config.d_model)
+            for user in all_unique_users:
+                self.user_mapping[user] = len(self.user_mapping)
+
+            self.user_embeddings = UserEmbeds(len(all_unique_users), self.model.config.d_model).to(self.model.device)
 
     @property
     def get_suggested_optimizer(self):
+
+        parameters = list(self.model.parameters())
+
+        if self.user_embeddings is not None:
+            parameters += list(self.user_embeddings.parameters())
+
         return Adafactor(
-            list(self.parameters()),
+            parameters,
             lr=1e-3,
             eps=(1e-30, 1e-3),
             clip_threshold=1.0,
@@ -102,7 +103,7 @@ class T5Rec(LaikaModel, T5ForConditionalGeneration):
         if "user_id" not in batch:
             raise AttributeError("This model expects 'user_id' column in the dataset to tokenize!")
 
-        if not self.training and self.eval_task is None:
+        if not self.model.training and self.eval_task is None:
             raise ValueError("Model can't tokenize the eval task since no eval_task is set! "
                              "Pass it when initializing the model or with `set_eval_task()`")
 
@@ -112,7 +113,7 @@ class T5Rec(LaikaModel, T5ForConditionalGeneration):
         encoded_sequence_list = []
         for sample in batch:
 
-            if not self.training:
+            if not self.model.training:
                 tasks = [self.eval_task]
             elif self.train_task_selection_strat == "all":
                 # Create a new shuffled list without modifying the original
@@ -142,11 +143,13 @@ class T5Rec(LaikaModel, T5ForConditionalGeneration):
                     whole_word_ids[~special_token_mask] += 1
                     whole_word_ids[special_token_mask] = self.tokenizer.pad_token_id
 
-                    # even if surely there is only one user, we must wrap it into a list for the batched map fn to work
-                    encoded_sequence["user_idx"] = [int(re.search(r"\d+", sample["user_id"]).group())]
+                    # even if surely there is only one user, we wrap it into a list to be coherent
+                    if self.model.config.inject_personalization is True:
+                        encoded_sequence["user_idx"] = [self.user_mapping[sample["user_id"]]]
+
                     encoded_sequence["whole_word_ids"] = whole_word_ids.tolist()
 
-                    if not self.training:
+                    if not self.model.training:
 
                         if gt is None:
                             raise ValueError("In the __call__ method of the template, the `gt` attribute should be "
@@ -171,16 +174,20 @@ class T5Rec(LaikaModel, T5ForConditionalGeneration):
                                       batch_first=True,
                                       padding_value=self.tokenizer.pad_token_id)
 
-        input_dict["user_idx"] = batch["user_idx"].to(self.device)
-        input_dict["input_ids"] = input_ids.to(self.device)
-        input_dict["attention_mask"] = attention_mask.to(self.device)
-        input_dict["whole_word_ids"] = whole_word_ids.to(self.device)
+        input_dict["input_ids"] = input_ids.to(self.model.device)
+        input_dict["attention_mask"] = attention_mask.to(self.model.device)
+        input_dict["whole_word_ids"] = whole_word_ids.to(self.model.device)
+
+        if "user_idx" in batch:
+            # dim 1 is equal to 1, we don't need it since user_idxs will be passed
+            # through the emb layer of UserEmbeds
+            input_dict["user_idx"] = batch["user_idx"].to(self.model.device).squeeze()
 
         if "labels" in batch:
             lm_labels = pad_sequence(batch["labels"], batch_first=True, padding_value=self.tokenizer.pad_token_id)
             lm_labels[lm_labels == self.tokenizer.pad_token_id] = -100
 
-            input_dict["labels"] = lm_labels.to(self.device)
+            input_dict["labels"] = lm_labels.to(self.model.device)
 
         if "gt" in batch:
             input_dict["gt"] = batch["gt"]
@@ -194,23 +201,22 @@ class T5Rec(LaikaModel, T5ForConditionalGeneration):
         # assert whole_word_embeds.shape[-1] == token_inputs_embeds.shape[-1]
         # inputs_embeds = token_inputs_embeds + whole_word_embeds
 
-        # user idxs start from 1, TO IMPROVE!
-        user_embeds = self.user_embeddings(user_idxs - 1).unsqueeze(dim=1)
-        # whole_word_embeds = self.relu(whole_word_embeds)
+        # unsqueeze to allow sum between token_inputs_embeds and user_embeds
+        user_embeds = self.user_embeddings(user_idxs).unsqueeze(dim=1)
         inputs_embeds = token_inputs_embeds + user_embeds
 
         return inputs_embeds
 
     def train_step(self, batch):
 
-        inputs_embeds = self.shared(batch["input_ids"])
+        inputs_embeds = self.model.shared(batch["input_ids"])
 
-        if self.config.inject_personalization is True:
-            inputs_embeds = self._inject_personalization(inputs_embeds, batch["user_idx"].squeeze())
+        if self.model.config.inject_personalization is True:
+            inputs_embeds = self._inject_personalization(inputs_embeds, batch["user_idx"])
 
-        output = self(inputs_embeds=inputs_embeds,
-                      attention_mask=batch["attention_mask"],
-                      labels=batch["labels"])
+        output = self.model(inputs_embeds=inputs_embeds,
+                            attention_mask=batch["attention_mask"],
+                            labels=batch["labels"])
 
         return output.loss
 
@@ -233,15 +239,15 @@ class T5Rec(LaikaModel, T5ForConditionalGeneration):
 
         gt = np.array(batch.pop("gt"))
 
-        inputs_embeds = self.shared(batch["input_ids"])
-        if self.config.inject_personalization is True:
-            inputs_embeds = self._inject_personalization(inputs_embeds, batch["user_idx"].squeeze())
+        inputs_embeds = self.model.shared(batch["input_ids"])
+        if self.model.config.inject_personalization is True:
+            inputs_embeds = self._inject_personalization(inputs_embeds, batch["user_idx"])
 
-        output = self(inputs_embeds=inputs_embeds,
-                      attention_mask=batch["attention_mask"],
-                      labels=batch["labels"])
+        output = self.model(inputs_embeds=inputs_embeds,
+                            attention_mask=batch["attention_mask"],
+                            labels=batch["labels"])
 
-        beam_outputs = self.generate(
+        beam_outputs = self.model.generate(
             inputs_embeds=inputs_embeds,
             attention_mask=batch["attention_mask"],
             num_return_sequences=num_return_sequences,
@@ -258,34 +264,51 @@ class T5Rec(LaikaModel, T5ForConditionalGeneration):
 
         return mapped_predictions, gt, loss
 
+    def to(self, device: str):
+        if self.user_embeddings is not None:
+            self.user_embeddings.to(device)
+
+        return super().to(device)
+
     def save(self, output_dir: str):
 
-        # save hf model and parameters that we added to the config
-        self.save_pretrained(save_directory=output_dir)
+        super().save(output_dir)
 
-        # also tokenizer is saved
-        self.tokenizer.save_pretrained(save_directory=output_dir)
+        if self.user_embeddings is not None:
+            user_emb_out_pth = os.path.join(output_dir, "user_emb.pth")
+            torch.save(self.user_embeddings.state_dict(), user_emb_out_pth)
 
     @classmethod
-    def load(cls, dir_path: str, **kwargs):
-        return cls.from_pretrained(dir_path, **kwargs)
+    def load(cls: type[T5Rec], dir_path: str, **config_and_laika_kwargs) -> T5Rec:
 
-    def train(self, mode: bool = True):
+        # to avoid duplicate parameter error
+        config_and_laika_kwargs.pop("return_unused_kwargs", None)
 
-        if mode is True:
-            Task.train()
-        else:
-            Task.eval()
+        config, laika_kwargs = AutoConfig.from_pretrained(dir_path,
+                                                          **config_and_laika_kwargs,
+                                                          return_unused_kwargs=True)
 
-        return T5ForConditionalGeneration.train(self, mode)
+        # we can't pass **config, because model instantiation via config should be done
+        # using .from_config() rather than .from_pretrained().
+        # that's why we use config just to load parameters of LaikaModel serialized
+        obj = cls(name_or_path=dir_path,
+                  training_tasks_str=config.training_tasks_str,
+                  all_unique_labels=config.all_unique_labels,
+                  all_unique_users=config.all_unique_users,
+                  inject_personalization=config.inject_personalization,
+                  **laika_kwargs)
 
-    def to(self, device: str):
-        return T5ForConditionalGeneration.to(self, device)
+        if obj.user_embeddings is not None:
+            user_emb_pth = os.path.join(dir_path, "user_emb.pth")
+            obj.user_embeddings.load_state_dict(torch.load(user_emb_pth))
+
+        return obj
 
     @classmethod
     def from_cls(cls, model_cls: type[T5Rec], dataset_obj: LaikaDataset, **kwargs):
 
-        kwargs["all_unique_labels"] = dataset_obj.all_items.tolist()
-        kwargs["n_users"] = len(dataset_obj.all_users)
+        # n users is an additional requirement for t5 model that should
+        # be extracted from dataset
+        kwargs["all_unique_users"] = dataset_obj.all_users.tolist()
 
-        return model_cls.from_pretrained(**kwargs)
+        return super().from_cls(model_cls, dataset_obj, **kwargs)

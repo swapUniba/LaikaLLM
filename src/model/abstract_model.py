@@ -2,14 +2,17 @@ from __future__ import annotations
 
 import inspect
 from abc import abstractmethod, ABC
-from typing import List, Optional, Literal
+from typing import List, Optional, Literal, TypeVar
 
 import numpy as np
 import torch
 from requests.structures import CaseInsensitiveDict
+from transformers import PreTrainedModel, PreTrainedTokenizer, AutoConfig, AutoModel, AutoTokenizer
 
 from src.data.abstract_dataset import LaikaDataset
 from src.data.abstract_templates import Task
+
+T = TypeVar("T", bound="LaikaModel")
 
 
 class LaikaModel(ABC):
@@ -88,7 +91,7 @@ class LaikaModel(ABC):
 
     @classmethod
     @abstractmethod
-    def load(cls, dir_path: str, **kwargs) -> LaikaModel:
+    def load(cls: type[T], dir_path: str, **kwargs) -> T:
         raise NotImplementedError
 
     @abstractmethod
@@ -124,3 +127,86 @@ class LaikaModel(ABC):
             raise KeyError(f"Model {model_cls_name} does not exist!")
 
         return model_exists
+
+
+# this is for pretrained hf model. Maybe in the future an alternative class can be
+# made where we call the init of the hf model rather than 'from_pretrained()'
+class LaikaModelHF(LaikaModel):
+
+    # model class is mandatory, since same model family
+    # exist ModelForCausalLM, ModelForConditionalGeneration, etc.
+    model_class: type[PreTrainedModel] = None
+
+    # if tokenizer class is not specified by the subclass, AutoTokenizer will be used
+    tokenizer_class: type[PreTrainedTokenizer] = AutoTokenizer
+
+    def __init__(self,
+                 name_or_path: str,
+                 training_tasks_str: List[str],
+                 all_unique_labels: List[str],
+                 eval_task_str: str = None,
+                 eval_template_id: int | str = None,
+                 train_task_selection_strat: Literal['random', 'all'] = "all",
+                 **model_config_kwargs):
+
+        super().__init__(training_tasks_str=training_tasks_str,
+                         all_unique_labels=all_unique_labels,
+                         eval_task_str=eval_task_str,
+                         eval_template_id=eval_template_id,
+                         train_task_selection_strat=train_task_selection_strat)
+
+        if self.model_class is None:
+            raise AttributeError("Please set the class attribute 'model_class' when extending LaikaModelHF!")
+
+        self.model = self.model_class.from_pretrained(name_or_path, **model_config_kwargs)
+        self.tokenizer = self.tokenizer_class.from_pretrained(name_or_path)
+
+        # store in model config all parameters needed to re-instantiate the hf model,
+        # so to exploit serialization and de-serialization of hf with from_pretrained()
+        self.model.config.training_tasks_str = training_tasks_str
+        self.model.config.all_unique_labels = all_unique_labels
+
+    def train(self, mode: bool = True):
+
+        if mode is True:
+            Task.train()
+        else:
+            Task.eval()
+
+        self.model.train(mode=mode)
+
+    def save(self, output_dir: str):
+        # save hf model and parameters that we added to the config
+        self.model.save_pretrained(save_directory=output_dir)
+
+        # also tokenizer is saved
+        self.tokenizer.save_pretrained(save_directory=output_dir)
+
+    @classmethod
+    # generic to say that the model returned is of same type of the caller class
+    def load(cls: type[T], dir_path: str, **config_and_laika_kwargs) -> T:
+
+        # to avoid duplicate parameter error
+        config_and_laika_kwargs.pop("return_unused_kwargs", None)
+
+        config, laika_kwargs = AutoConfig.from_pretrained(dir_path,
+                                                          **config_and_laika_kwargs,
+                                                          return_unused_kwargs=True)
+
+        # we can't pass **config, because model instantiation via config should be done
+        # using .from_config() rather than .from_pretrained().
+        # that's why we use config just to load parameters of LaikaModel serialized
+        return cls(name_or_path=dir_path,
+                   training_tasks_str=config.training_tasks_str,
+                   all_unique_labels=config.all_unique_labels,
+                   **laika_kwargs)
+
+    def to(self, device: str):
+        return self.model.to(device)
+
+    @classmethod
+    def from_cls(cls, model_cls: type[LaikaModelHF], dataset_obj: LaikaDataset, **kwargs):
+
+        kwargs["all_unique_labels"] = dataset_obj.all_items.tolist()
+
+        return model_cls(**kwargs)

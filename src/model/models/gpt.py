@@ -8,50 +8,38 @@ import numpy as np
 import torch
 from torch.nn.utils.rnn import pad_sequence
 from torch.optim import AdamW
-from transformers import GPT2Config, GPT2LMHeadModel, GPT2TokenizerFast
+from transformers import GPT2LMHeadModel, GPT2TokenizerFast
 
-from src.data.abstract_dataset import LaikaDataset
-from src.data.abstract_templates import Task
-from src.model.abstract_model import LaikaModel
+from src.model.abstract_model import LaikaModelHF
 from src.utils import dict_list2list_dict, list_dict2dict_list
 
 
-class GPT2RecConfig(GPT2Config):
-    def __init__(self,
-                 training_tasks_str: List[str] = None,
-                 all_unique_labels: List[str] = None,
-                 **kwargs):
-        super().__init__(**kwargs)
-
-        self.training_tasks_str = training_tasks_str
-        self.all_unique_labels = all_unique_labels
-
-
-class GPT2Rec(LaikaModel, GPT2LMHeadModel):
-    config_class = GPT2RecConfig
+class GPT2Rec(LaikaModelHF):
+    model_class = GPT2LMHeadModel
+    tokenizer_class = GPT2TokenizerFast
 
     def __init__(self,
-                 config,
+                 name_or_path: str,
+                 training_tasks_str: List[str],
+                 all_unique_labels: List[str],
                  eval_task_str: str = None,
-                 eval_template_id: int = None,
-                 train_task_selection_strat: Literal['random', 'all'] = 'all'):
+                 eval_template_id: int | str = None,
+                 train_task_selection_strat: Literal['random', 'all'] = "all",
+                 **model_config_kwargs):
 
-        GPT2LMHeadModel.__init__(self, config)
-
-        LaikaModel.__init__(
-            self,
-            training_tasks_str=config.training_tasks_str,
-            all_unique_labels=config.all_unique_labels,
+        super().__init__(
+            name_or_path=name_or_path,
+            training_tasks_str=training_tasks_str,
+            all_unique_labels=all_unique_labels,
             eval_task_str=eval_task_str,
             eval_template_id=eval_template_id,
-            train_task_selection_strat=train_task_selection_strat
+            train_task_selection_strat=train_task_selection_strat,
+            **model_config_kwargs
         )
-
-        self.tokenizer = GPT2TokenizerFast.from_pretrained(config.name_or_path)
 
         # gpt2 has no pad token, eos_token_id is used instead
         self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
-        self.config.pad_token_id = self.tokenizer.eos_token_id
+        self.model.config.pad_token_id = self.tokenizer.eos_token_id
 
         self.input_prefix = "Input: "
         self.target_prefix = "Target: "
@@ -63,7 +51,7 @@ class GPT2Rec(LaikaModel, GPT2LMHeadModel):
     @property
     def get_suggested_optimizer(self):
         return AdamW(
-            list(self.parameters()),
+            list(self.model.parameters()),
             lr=5e-5,
             betas=(0.9, 0.999),
             eps=1e-8,
@@ -75,7 +63,7 @@ class GPT2Rec(LaikaModel, GPT2LMHeadModel):
         if "user_id" not in batch:
             raise AttributeError("This model expects 'user_id' column in the dataset to tokenize!")
 
-        if not self.training and self.eval_task is None:
+        if not self.model.training and self.eval_task is None:
             raise ValueError("Model can't tokenize the eval task since no eval_task is set! "
                              "Pass it when initializing the model or with `set_eval_task()`")
 
@@ -85,7 +73,7 @@ class GPT2Rec(LaikaModel, GPT2LMHeadModel):
         encoded_sequence_list = []
         for sample in batch:
 
-            if not self.training:
+            if not self.model.training:
                 tasks = [self.eval_task]
             elif self.train_task_selection_strat == "all":
                 # Create a new shuffled list without modifying the original
@@ -134,7 +122,7 @@ class GPT2Rec(LaikaModel, GPT2LMHeadModel):
                         "total_labels": deepcopy(total_input_ids)
                     }
 
-                    if not self.training:
+                    if not self.model.training:
                         if gt is None:
                             raise ValueError("In the __call__ method of the template, the `gt` attribute should be "
                                              "set for templates used in the evaluation phase!")
@@ -181,12 +169,12 @@ class GPT2Rec(LaikaModel, GPT2LMHeadModel):
             padding_value=-100
         )
 
-        input_dict["total_input_ids"] = total_input_ids.to(self.device)
-        input_dict["total_attention_mask"] = total_attention_mask.to(self.device)
+        input_dict["total_input_ids"] = total_input_ids.to(self.model.device)
+        input_dict["total_attention_mask"] = total_attention_mask.to(self.model.device)
 
-        input_dict["input_prompt_ids"] = input_prompt_ids.to(self.device)
-        input_dict["input_prompt_attention_mask"] = input_prompt_attention_mask.to(self.device)
-        input_dict["total_labels"] = lm_labels.to(self.device)
+        input_dict["input_prompt_ids"] = input_prompt_ids.to(self.model.device)
+        input_dict["input_prompt_attention_mask"] = input_prompt_attention_mask.to(self.model.device)
+        input_dict["total_labels"] = lm_labels.to(self.model.device)
 
         if "gt" in batch:
             input_dict["gt"] = batch["gt"]
@@ -195,9 +183,9 @@ class GPT2Rec(LaikaModel, GPT2LMHeadModel):
 
     def train_step(self, batch):
 
-        output = self(input_ids=batch["total_input_ids"],
-                      attention_mask=batch["total_attention_mask"],
-                      labels=batch["total_labels"])
+        output = self.model(input_ids=batch["total_input_ids"],
+                            attention_mask=batch["total_attention_mask"],
+                            labels=batch["total_labels"])
 
         return output.loss
 
@@ -229,7 +217,7 @@ class GPT2Rec(LaikaModel, GPT2LMHeadModel):
         left_padded_input_ids, left_padded_attn_mask = self._left_pad(batch["input_prompt_ids"],
                                                                       batch["input_prompt_attention_mask"])
 
-        beam_outputs = self.generate(
+        beam_outputs = self.model.generate(
             input_ids=left_padded_input_ids,
             attention_mask=left_padded_attn_mask,
             num_return_sequences=num_return_sequences,
@@ -260,41 +248,9 @@ class GPT2Rec(LaikaModel, GPT2LMHeadModel):
 
         # For each row, move the actual content to the specified positions
         for i in range(input_prompt_ids.size(0)):
-
             end_index_valid_ids = input_prompt_ids.size(1) - num_padding_tokens[i]
 
             left_padded_input_ids[i, num_padding_tokens[i]:] = input_prompt_ids[i, :end_index_valid_ids]
             left_padded_attn_mask[i, num_padding_tokens[i]:] = 1
 
         return left_padded_input_ids, left_padded_attn_mask
-
-    def save(self, output_dir: str):
-
-        # save hf model and parameters that we added to the config
-        self.save_pretrained(save_directory=output_dir)
-
-        # also tokenizer is saved
-        self.tokenizer.save_pretrained(save_directory=output_dir)
-
-    @classmethod
-    def load(cls, dir_path: str, **kwargs):
-        return cls.from_pretrained(dir_path, **kwargs)
-
-    def train(self, mode: bool = True):
-
-        if mode is True:
-            Task.train()
-        else:
-            Task.eval()
-
-        return GPT2LMHeadModel.train(self, mode)
-
-    def to(self, device: str):
-        return GPT2LMHeadModel.to(self, device)
-
-    @classmethod
-    def from_cls(cls, model_cls: type[GPT2Rec], dataset_obj: LaikaDataset, **kwargs):
-
-        kwargs["all_unique_labels"] = dataset_obj.all_items.tolist()
-
-        return model_cls.from_pretrained(**kwargs)
