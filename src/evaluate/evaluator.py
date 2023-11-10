@@ -103,11 +103,13 @@ class RecEvaluator:
         all_cls_metrics = {metric.__class__ for metric in metric_list}
 
         for cls_metric in all_cls_metrics:
-            if any(not issubclass(cls_metric, cls_compatible) for cls_compatible in task.compatible_metrics):
-                raise ValueError(
-                    f"Task {task} is incompatible with {cls_metric}! It can be only evaluated on the "
-                    f"following metrics: {task.compatible_metrics}"
-                )
+            if any(issubclass(cls_metric, cls_compatible) for cls_compatible in task.compatible_metrics):
+                continue
+
+            raise ValueError(
+                f"Task {task} is incompatible with {cls_metric.__name__}! It can be only evaluated on the "
+                f"following metrics: {[compatible_metric.__name__ for compatible_metric in task.compatible_metrics]}"
+            )
 
         self.rec_model.eval()
 
