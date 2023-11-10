@@ -13,6 +13,7 @@ def model_main(shared_params: SharedParams, model_params: ModelParams, dataset_o
     # shared
     exp_name = shared_params.exp_name
     device = shared_params.device
+    log_wandb = shared_params.log_wandb
 
     # trainer
     n_epochs = model_params.n_epochs
@@ -57,7 +58,8 @@ def model_main(shared_params: SharedParams, model_params: ModelParams, dataset_o
         eval_batch_size=eval_batch_size,
         train_sampling_fn=sampling_fn,
         monitor_metric=monitor_metric_obj,
-        output_dir=output_dir
+        output_dir=output_dir,
+        should_log=log_wandb
     )
 
     best_model = trainer.train(train, validation_dataset=val)
