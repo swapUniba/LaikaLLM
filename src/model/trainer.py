@@ -81,7 +81,7 @@ class RecTrainer:
 
             # at the start of each iteration, we randomly sample the train sequence and tokenize it
             # batched set to True because data can be augmented, either when sampling or when
-            # tokenizing (e.g. a task as multiple support templates)
+            # tokenizing (e.g. a task has multiple support templates)
 
             sampled_train = train_dataset.map(self.train_sampling_fn,
                                               remove_columns=train_dataset.column_names,
