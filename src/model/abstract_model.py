@@ -2,17 +2,15 @@ from __future__ import annotations
 
 import inspect
 from abc import abstractmethod, ABC
-from typing import List, Optional, Literal, TypeVar
+from typing import List, Optional, Literal
 
 import numpy as np
 import torch
 from requests.structures import CaseInsensitiveDict
-from transformers import PreTrainedModel, PreTrainedTokenizer, AutoConfig, AutoModel, AutoTokenizer
+from transformers import PreTrainedModel, PreTrainedTokenizer, AutoConfig, AutoTokenizer
 
 from src.data.abstract_dataset import LaikaDataset
 from src.data.abstract_templates import Task
-
-T = TypeVar("T", bound="LaikaModel")
 
 
 class LaikaModel(ABC):
@@ -55,7 +53,7 @@ class LaikaModel(ABC):
 
     @property
     @abstractmethod
-    def get_suggested_optimizer(self):
+    def get_suggested_optimizer(self) -> torch.optim.Optimizer:
         raise NotImplementedError
 
     @abstractmethod
@@ -72,8 +70,9 @@ class LaikaModel(ABC):
 
     @abstractmethod
     @torch.no_grad()
-    # if labels are in "prepared_batch", also valid loss should be returned
-    def generate_step(self, prepared_batch: dict) -> tuple[torch.FloatTensor, np.ndarray[str]] | np.ndarray[str]:
+    def generate_step(self,
+                      prepared_batch: dict,
+                      return_loss: bool = False) -> tuple[np.ndarray[str], np.ndarray[str], torch.FloatTensor]:
         raise NotImplementedError
 
     @abstractmethod
@@ -83,7 +82,7 @@ class LaikaModel(ABC):
     def eval(self):
         Task.eval()
 
-        return self.train(False)
+        self.train(False)
 
     @abstractmethod
     def save(self, output_dir: str):
@@ -91,7 +90,7 @@ class LaikaModel(ABC):
 
     @classmethod
     @abstractmethod
-    def load(cls: type[T], dir_path: str, **kwargs) -> T:
+    def load(cls, dir_path: str, **kwargs) -> LaikaModel:
         raise NotImplementedError
 
     @abstractmethod
@@ -99,11 +98,11 @@ class LaikaModel(ABC):
         raise NotImplementedError
 
     @classmethod
-    def from_cls(cls, model_cls: type[LaikaModel], dataset_obj: LaikaDataset, **kwargs):
+    def from_cls(cls, model_cls: type[LaikaModel], dataset_obj: LaikaDataset, **kwargs) -> LaikaModel:
         raise NotImplementedError
 
     @classmethod
-    def from_string(cls, model_cls_name: str, dataset_obj: LaikaDataset, **kwargs):
+    def from_string(cls, model_cls_name: str, dataset_obj: LaikaDataset, **kwargs) -> LaikaModel:
 
         try:
             model_cls = cls.str_alias_cls[model_cls_name]
@@ -111,15 +110,15 @@ class LaikaModel(ABC):
             raise KeyError(f"Model {model_cls_name} does not exist!") from None
 
         # it seems a recursive call, but the top level (LaikaModel) is an abstract class,
-        # we are basically calling the from_string of the subclass
+        # model_cls is a concrete class
         return model_cls.from_cls(model_cls, dataset_obj, **kwargs)
 
     @classmethod
-    def all_models_available(cls, return_str: bool = False):
+    def all_models_available(cls, return_str: bool = False) -> list[type[LaikaModel] | str]:
         return list(cls.str_alias_cls.values()) if return_str else list(cls.str_alias_cls.keys())
 
     @classmethod
-    def model_exists(cls, model_cls_name: str, raise_error: bool = True):
+    def model_exists(cls, model_cls_name: str, raise_error: bool = True) -> bool:
 
         model_exists = model_cls_name in cls.str_alias_cls.keys()
 
@@ -132,7 +131,6 @@ class LaikaModel(ABC):
 # this is for pretrained hf model. Maybe in the future an alternative class can be
 # made where we call the init of the hf model rather than 'from_pretrained()'
 class LaikaModelHF(LaikaModel):
-
     # model class is mandatory, since same model family
     # exist ModelForCausalLM, ModelForConditionalGeneration, etc.
     model_class: type[PreTrainedModel] = None
@@ -184,7 +182,7 @@ class LaikaModelHF(LaikaModel):
 
     @classmethod
     # generic to say that the model returned is of same type of the caller class
-    def load(cls: type[T], dir_path: str, **config_and_laika_kwargs) -> T:
+    def load(cls, dir_path: str, **config_and_laika_kwargs) -> LaikaModelHF:
 
         # to avoid duplicate parameter error
         config_and_laika_kwargs.pop("return_unused_kwargs", None)
@@ -205,7 +203,7 @@ class LaikaModelHF(LaikaModel):
         return self.model.to(device)
 
     @classmethod
-    def from_cls(cls, model_cls: type[LaikaModelHF], dataset_obj: LaikaDataset, **kwargs):
+    def from_cls(cls, model_cls: type[LaikaModelHF], dataset_obj: LaikaDataset, **kwargs) -> LaikaModelHF:
 
         kwargs["all_unique_labels"] = dataset_obj.all_items.tolist()
 

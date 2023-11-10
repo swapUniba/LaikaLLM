@@ -56,11 +56,11 @@ class LaikaDataset(ABC):
         raise NotImplementedError
 
     @classmethod
-    def all_datasets_available(cls, return_str: bool = False):
+    def all_datasets_available(cls, return_str: bool = False) -> list[type[LaikaDataset] | str]:
         return list(cls.str_alias_cls.values()) if return_str else list(cls.str_alias_cls.keys())
 
     @classmethod
-    def dataset_exists(cls, dataset_cls_name: str, raise_error: bool = True):
+    def dataset_exists(cls, dataset_cls_name: str, raise_error: bool = True) -> bool:
 
         dataset_exists = dataset_cls_name in cls.str_alias_cls.keys()
 
@@ -77,5 +77,7 @@ class LaikaDataset(ABC):
         except KeyError:
             raise KeyError(f"Dataset {dataset_cls_name} does not exist!") from None
 
-        # wrong warning, subclasses may have parameters in __init__ method
-        return dataset_cls(**dataset_params)
+        # wrong warning, subclasses may have parameters in __init__ method,
+        # and in any case dataset_params can be empty, in that case __init__ will take
+        # no parameter
+        return dataset_cls(**dataset_params)  # type: ignore

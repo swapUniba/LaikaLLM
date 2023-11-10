@@ -5,7 +5,7 @@ from abc import abstractmethod, ABC
 import operator
 
 from requests.structures import CaseInsensitiveDict
-from typing import Collection
+from typing import Collection, Callable
 
 import numpy as np
 
@@ -17,10 +17,10 @@ class PaddedArr(np.ndarray):
 
         # Create a new NumPy array filled with <PAD> token
         # object dtype here since using `str` will use the numpy str type based on <PAD> string
-        # cutting strings greater than <PAD>
+        # cutting strings significantly longer than <PAD>
         padded_array = np.full((len(iterable), max_len), fill_value="<PAD>", dtype=object)
 
-        # Copy the data from the original list into the new array
+        # Copy the data from the original list into the new padded array
         for i, sublist in enumerate(iterable):
             padded_array[i, :len(sublist)] = sublist
 
@@ -45,7 +45,7 @@ class LaikaMetric(ABC):
 
     @property
     @abstractmethod
-    def operator_comparison(self):
+    def operator_comparison(self) -> Callable:
 
         # What is the operator to use if we want to obtain the best result the metric?
         # e.g. loss is "<", hit is ">", mse is "<", etc.
@@ -55,11 +55,11 @@ class LaikaMetric(ABC):
     @staticmethod
     @abstractmethod
     def per_user_precomputed_matrix(predictions: np.ndarray[np.ndarray[str]], truths: np.ndarray[np.ndarray[str]],
-                                    **kwargs):
+                                    **kwargs) -> np.ndarray:
         raise NotImplementedError
 
     @staticmethod
-    def safe_div(num: np.ndarray, den: np.ndarray):
+    def safe_div(num: np.ndarray, den: np.ndarray) -> np.ndarray:
 
         # divide only if denominator is different from 0, otherwise 0
         return np.divide(num, den, out=np.zeros_like(num, dtype=float), where=den != 0)
@@ -96,11 +96,11 @@ class LaikaMetric(ABC):
         return instantiated_metrics
 
     @classmethod
-    def all_metrics_available(cls, return_str: bool = False):
+    def all_metrics_available(cls, return_str: bool = False) -> list[type[LaikaMetric] | str]:
         return list(cls.str_alias_cls.values()) if return_str else list(cls.str_alias_cls.keys())
 
     @classmethod
-    def metric_exists(cls, metric_cls_name: str, raise_error: bool = True):
+    def metric_exists(cls, metric_cls_name: str, raise_error: bool = True) -> bool:
 
         # this should be improved: make use of subclasses polymorphism to convert from string to object
 
@@ -134,7 +134,7 @@ class LaikaMetric(ABC):
 class Loss(LaikaMetric):
 
     @property
-    def operator_comparison(self):
+    def operator_comparison(self) -> Callable:
         # loss metric should be minimized, hence "<"
         return operator.lt
 
