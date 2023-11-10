@@ -4,7 +4,6 @@ import inspect
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
-import numpy as np
 from requests.structures import CaseInsensitiveDict
 
 if TYPE_CHECKING:
