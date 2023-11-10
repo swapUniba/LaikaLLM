@@ -196,7 +196,6 @@ class GPT2Rec(LaikaModel, GPT2LMHeadModel):
         # In theory there could be a complex way of mixing multiple text generated into a single prediction
         # (e.g., avg of 10 rating predictions), but here we simply reduce the num return sequences
         num_return_sequences = 10 if self.eval_task.is_ranking_task else 1
-        max_new_tokens = 50
         num_beams = 30
         no_repeat_ngram_size = 0
         early_stopping = True
@@ -211,7 +210,7 @@ class GPT2Rec(LaikaModel, GPT2LMHeadModel):
             input_ids=batch["input_ids_prompt"],
             attention_mask=batch["attention_mask_prompt"],
             num_return_sequences=num_return_sequences,
-            max_new_tokens=max_new_tokens,
+            max_length=self.tokenizer.model_max_length,
             num_beams=num_beams,
             no_repeat_ngram_size=no_repeat_ngram_size,
             early_stopping=early_stopping
