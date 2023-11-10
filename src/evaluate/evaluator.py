@@ -151,7 +151,7 @@ class RecEvaluator:
         for i, batch in enumerate(pbar_eval, start=1):
 
             prepared_input = self.rec_model.prepare_input(batch)
-            predictions, truths, loss = self.rec_model.generate_step(prepared_input)
+            predictions, truths, loss = self.rec_model.generate_step(prepared_input, return_loss=return_loss)
 
             eval_loss += loss.item()
 

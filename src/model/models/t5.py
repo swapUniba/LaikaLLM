@@ -221,11 +221,14 @@ class T5Rec(LaikaModelHF):
         return output.loss
 
     @torch.no_grad()
-    def generate_step(self, batch):
+    def generate_step(self, batch, return_loss: bool = False):
 
         if self.eval_task is None:
             raise ValueError("Model can't perform generate_step since no eval_task is set! "
                              "Pass it when initializing the model or with `set_eval_task()`")
+
+        if return_loss and "labels" not in batch:
+            raise ValueError("Loss can't be returned if no label is set!")
 
         # if it's not a ranking task (e.g., it is a rating prediction task),
         # we should return one prediction for ground truth element.
@@ -243,9 +246,12 @@ class T5Rec(LaikaModelHF):
         if self.model.config.inject_personalization is True:
             inputs_embeds = self._inject_personalization(inputs_embeds, batch["user_idx"])
 
-        output = self.model(inputs_embeds=inputs_embeds,
-                            attention_mask=batch["attention_mask"],
-                            labels=batch["labels"])
+        loss = torch.tensor(torch.nan)
+        if return_loss is True:
+            output = self.model(inputs_embeds=inputs_embeds,
+                                attention_mask=batch["attention_mask"],
+                                labels=batch["labels"])
+            loss = output.loss
 
         beam_outputs = self.model.generate(
             inputs_embeds=inputs_embeds,
@@ -259,8 +265,6 @@ class T5Rec(LaikaModelHF):
 
         generated_sents = self.tokenizer.batch_decode(beam_outputs, skip_special_tokens=True)
         mapped_predictions = np.array(generated_sents).reshape((len(gt), num_return_sequences))
-
-        loss = output.loss
 
         return mapped_predictions, gt, loss
 
@@ -279,7 +283,7 @@ class T5Rec(LaikaModelHF):
             torch.save(self.user_embeddings.state_dict(), user_emb_out_pth)
 
     @classmethod
-    def load(cls: type[T5Rec], dir_path: str, **config_and_laika_kwargs) -> T5Rec:
+    def load(cls, dir_path: str, **config_and_laika_kwargs) -> T5Rec:
 
         # to avoid duplicate parameter error
         config_and_laika_kwargs.pop("return_unused_kwargs", None)

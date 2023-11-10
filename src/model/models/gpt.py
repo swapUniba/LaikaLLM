@@ -190,11 +190,14 @@ class GPT2Rec(LaikaModelHF):
         return output.loss
 
     @torch.no_grad()
-    def generate_step(self, batch):
+    def generate_step(self, batch, return_loss: bool = False):
 
         if self.eval_task is None:
             raise ValueError("Model can't perform generate_step since no eval_task is set! "
                              "Pass it when initializing the model or with `set_eval_task()`")
+
+        if return_loss and "labels" not in batch:
+            raise ValueError("Loss can't be returned if no label is set!")
 
         # if it's not a ranking task (e.g., it is a rating prediction task),
         # we should return one prediction for ground truth element.
@@ -206,13 +209,16 @@ class GPT2Rec(LaikaModelHF):
         early_stopping = True
 
         gt = np.array(batch.pop("gt"))
-        #
-        # output = self(input_ids=batch["input_ids"],
-        #               attention_mask=batch["attention_mask"],
-        #               labels=batch["labels"])
+
+        loss = torch.tensor(torch.nan)
+        if return_loss is True:
+            output = self.model(inputs_embeds=batch["input_ids"],
+                                attention_mask=batch["attention_mask"],
+                                labels=batch["labels"])
+            loss = output.loss
 
         # for decoder only model, input should be padded to the left when performing batch inference with generate,
-        # otherwise you are continuing generating over a pad token which was not observed during training!
+        # otherwise you are continuing generating over a pad token which was little meaning!
         # Check https://github.com/huggingface/transformers/issues/3021#issuecomment-1454267951
         left_padded_input_ids, left_padded_attn_mask = self._left_pad(batch["input_prompt_ids"],
                                                                       batch["input_prompt_attention_mask"])
@@ -227,14 +233,14 @@ class GPT2Rec(LaikaModelHF):
             early_stopping=early_stopping
         )
 
-        # this works for all rows of tensor because when generating also pad tokens are generated,
-        # so length to "cut" is in common to all rows!
+        # this works for all rows of tensor because, when generating, also pad tokens are generated,
+        # so the index where the target prediction starts is in common to all rows!
         beam_outputs_targets = beam_outputs[:, batch["input_prompt_ids"].shape[1]:]
 
         generated_sents = self.tokenizer.batch_decode(beam_outputs_targets, skip_special_tokens=True)
         mapped_predictions = np.array(generated_sents).reshape((len(gt), num_return_sequences))
 
-        return mapped_predictions, gt, torch.tensor(0)
+        return mapped_predictions, gt, loss
 
     def _left_pad(self, input_prompt_ids: torch.LongTensor, input_prompt_attention_mask: torch.LongTensor):
 
