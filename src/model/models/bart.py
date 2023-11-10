@@ -51,9 +51,16 @@ class GPT2Rec(LaikaModel, GPT2LMHeadModel):
 
         self.tokenizer = GPT2TokenizerFast.from_pretrained(config.name_or_path)
 
+        # gpt2 has no pad token, eos_token_id is used instead
         self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
         self.config.pad_token_id = self.tokenizer.eos_token_id
-        self.tokenizer.padding_side = "left"
+
+        self.input_prefix = "Input: "
+        self.target_prefix = "Target: "
+
+        self.encoded_input_prefix = self.tokenizer(self.input_prefix, return_attention_mask=False).input_ids
+        self.encoded_target_prefix = self.tokenizer(self.target_prefix, return_attention_mask=False).input_ids
+        self.newline_token_id = self.tokenizer("\n", return_attention_mask=False).input_ids
 
     @property
     def get_suggested_optimizer(self):
@@ -100,24 +107,36 @@ class GPT2Rec(LaikaModel, GPT2LMHeadModel):
                 # (i.e. tasks which do not have as target text the prediction of interest for the task)
                 for (input_text, target_text, gt) in templates_list:
 
-                    target_ids = self.tokenizer(target_text, truncation=True).input_ids
+                    # <end of text token> so we enforce the fact that the model should make the prediction
+                    # (represented by the target text) and that's it! No endless generation!
+                    target_ids = self.tokenizer(f"{target_text}<|endoftext|>",
+                                                truncation=True,
+                                                return_attention_mask=False).input_ids
 
-                    input_text_ids = self.tokenizer(f"Input: {input_text} \nTarget: ",
-                                                    truncation=True,
-                                                    max_length=self.tokenizer.model_max_length - len(target_ids) - 1).input_ids
+                    len_reserved_target = len(self.newline_token_id) + len(self.encoded_target_prefix) + len(target_ids)
 
+                    input_text_ids = self.tokenizer(
+                        f"{self.input_prefix}{input_text} ",
+                        truncation=True,
+                        max_length=self.tokenizer.model_max_length - len_reserved_target,
+                        return_attention_mask=False).input_ids
+
+                    # why we add later newline, target_prefix and target? due to POSSIBLE TRUNCATION!
+                    # in this way, the context may be truncated, but the target WILL BE NOT
+                    input_text_ids += self.newline_token_id + self.encoded_target_prefix
+
+                    total_input_ids = input_text_ids + target_ids
                     encoded_sequence: dict = {
                         "input_prompt_ids": input_text_ids,
-                        "target_prompt_ids": target_ids,
-                        "attention_mask_prompt": [1] * len(input_text_ids),
-                        "input_ids": input_text_ids + target_ids,
-                        "attention_mask": [1] * (len(input_text_ids) + len(target_ids))
+                        "input_prompt_attention_mask": [1] * len(input_text_ids),
+                        "total_input_ids": total_input_ids,
+                        "total_attention_mask": [1] * len(total_input_ids),
+
+                        # objective is to reconstruct the input text + target
+                        "total_labels": deepcopy(total_input_ids)
                     }
 
-                    encoded_sequence["labels"] = deepcopy(encoded_sequence["input_ids"])
-
                     if not self.training:
-
                         if gt is None:
                             raise ValueError("In the __call__ method of the template, the `gt` attribute should be "
                                              "set for templates used in the evaluation phase!")
