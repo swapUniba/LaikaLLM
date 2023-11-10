@@ -5,12 +5,10 @@ from copy import deepcopy
 from typing import List, Literal
 
 import numpy as np
-import pandas as pd
 import torch
 from torch.nn.utils.rnn import pad_sequence
 from torch.optim import AdamW
-from transformers import BartConfig, BartForConditionalGeneration, BartTokenizerFast, GPT2Config, GPT2LMHeadModel, \
-    GPT2TokenizerFast, OPTForCausalLM, AutoTokenizer, OPTConfig
+from transformers import GPT2Config, GPT2LMHeadModel, GPT2TokenizerFast
 
 from src.data.abstract_dataset import LaikaDataset
 from src.data.abstract_templates import Task
