@@ -133,43 +133,43 @@ class GPT2Rec(LaikaModel, GPT2LMHeadModel):
     def prepare_input(self, batch):
         input_dict = {}
 
-        # decoder only model should be padded to the left when performing batch inference,
-        # otherwise you are continuing generating over a pad token which was not observed during training.
-        # Check https://github.com/huggingface/transformers/issues/3021#issuecomment-1454267951
-        # and https://github.com/kzl/decision-transformer/issues/36
-        input_ids = pad_sequence([a.flip(dims=[0]) for a in batch["input_ids"]],
-                                 batch_first=True,
-                                 padding_value=self.tokenizer.pad_token_id).flip(dims=[1])
-        attention_mask = pad_sequence([a.flip(dims=[0]) for a in batch["attention_mask"]],
-                                      batch_first=True,
-                                      padding_value=0).flip(dims=[1])
+        total_input_ids = pad_sequence(
+            batch["total_input_ids"],
+            batch_first=True,
+            padding_value=self.tokenizer.pad_token_id
+        )
 
-        input_prompt_ids = pad_sequence([a.flip(dims=[0]) for a in batch["input_prompt_ids"]],
-                                        batch_first=True,
-                                        padding_value=self.tokenizer.pad_token_id).flip(dims=[1])
-        attention_mask_prompt = pad_sequence([a.flip(dims=[0]) for a in batch["attention_mask_prompt"]],
-                                             batch_first=True,
-                                             padding_value=0).flip(dims=[1])
+        total_attention_mask = pad_sequence(
+            batch["total_attention_mask"],
+            batch_first=True,
+            padding_value=0
+        )
 
-        input_ids = torch.hstack((input_ids, torch.full((input_ids.shape[0], 1), fill_value=self.tokenizer.eos_token_id)))
-        attention_mask = torch.hstack(
-            (attention_mask, torch.full((input_ids.shape[0], 1), fill_value=1)))
+        input_prompt_ids = pad_sequence(
+            batch["input_prompt_ids"],
+            batch_first=True,
+            padding_value=self.tokenizer.pad_token_id
+        )
 
-        input_dict["input_ids"] = input_ids.to(self.device)
-        input_dict["attention_mask"] = attention_mask.to(self.device)
+        input_prompt_attention_mask = pad_sequence(
+            batch["input_prompt_attention_mask"],
+            batch_first=True,
+            padding_value=0
+        )
 
-        input_dict["input_ids_prompt"] = input_prompt_ids.to(self.device)
-        input_dict["attention_mask_prompt"] = attention_mask_prompt.to(self.device)
+        # pad value to -100 so that it's ignored when computing cross entropy
+        lm_labels = pad_sequence(
+            batch["total_labels"],
+            batch_first=True,
+            padding_value=-100
+        )
 
-        if "labels" in batch:
-            lm_labels = pad_sequence([a.flip(dims=[0]) for a in batch["labels"]],
-                                     batch_first=True,
-                                     padding_value=-100).flip(dims=[1])
+        input_dict["total_input_ids"] = total_input_ids.to(self.device)
+        input_dict["total_attention_mask"] = total_attention_mask.to(self.device)
 
-            lm_labels = torch.hstack(
-                (lm_labels, torch.full((input_ids.shape[0], 1), fill_value=self.tokenizer.eos_token_id)))
-
-            input_dict["labels"] = lm_labels.to(self.device)
+        input_dict["input_prompt_ids"] = input_prompt_ids.to(self.device)
+        input_dict["input_prompt_attention_mask"] = input_prompt_attention_mask.to(self.device)
+        input_dict["total_labels"] = lm_labels.to(self.device)
 
         if "gt" in batch:
             input_dict["gt"] = batch["gt"]
@@ -178,9 +178,9 @@ class GPT2Rec(LaikaModel, GPT2LMHeadModel):
 
     def train_step(self, batch):
 
-        output = self(input_ids=batch["input_ids"],
-                      attention_mask=batch["attention_mask"],
-                      labels=batch["labels"])
+        output = self(input_ids=batch["total_input_ids"],
+                      attention_mask=batch["total_attention_mask"],
+                      labels=batch["total_labels"])
 
         return output.loss
 
@@ -206,9 +206,15 @@ class GPT2Rec(LaikaModel, GPT2LMHeadModel):
         #               attention_mask=batch["attention_mask"],
         #               labels=batch["labels"])
 
+        # for decoder only model, input should be padded to the left when performing batch inference with generate,
+        # otherwise you are continuing generating over a pad token which was not observed during training!
+        # Check https://github.com/huggingface/transformers/issues/3021#issuecomment-1454267951
+        left_padded_input_ids, left_padded_attn_mask = self._left_pad(batch["input_prompt_ids"],
+                                                                      batch["input_prompt_attention_mask"])
+
         beam_outputs = self.generate(
-            input_ids=batch["input_ids_prompt"],
-            attention_mask=batch["attention_mask_prompt"],
+            input_ids=left_padded_input_ids,
+            attention_mask=left_padded_attn_mask,
             num_return_sequences=num_return_sequences,
             max_length=self.tokenizer.model_max_length,
             num_beams=num_beams,
@@ -216,13 +222,34 @@ class GPT2Rec(LaikaModel, GPT2LMHeadModel):
             early_stopping=early_stopping
         )
 
-        # this works for all because when generating, also pad tokens are generated!
-        beam_outputs_targets = beam_outputs[:, batch["input_ids_prompt"].shape[1]:]
+        # this works for all rows of tensor because when generating also pad tokens are generated,
+        # so length to "cut" is in common to all rows!
+        beam_outputs_targets = beam_outputs[:, batch["input_prompt_ids"].shape[1]:]
 
         generated_sents = self.tokenizer.batch_decode(beam_outputs_targets, skip_special_tokens=True)
         mapped_predictions = np.array(generated_sents).reshape((len(gt), num_return_sequences))
 
         return mapped_predictions, gt, torch.tensor(0)
+
+    def _left_pad(self, input_prompt_ids: torch.LongTensor, input_prompt_attention_mask: torch.LongTensor):
+
+        # calculate the number of padding tokens in each row, which is where
+        # the valid ids start for each row
+        num_padding_tokens = (input_prompt_ids == self.tokenizer.pad_token_id).sum(dim=1)
+
+        # create a new tensor filled with padding tokens (zero tokens for attention mask)
+        left_padded_input_ids = torch.full_like(input_prompt_ids, fill_value=self.tokenizer.pad_token_id)
+        left_padded_attn_mask = torch.zeros_like(input_prompt_attention_mask)
+
+        # For each row, move the actual content to the specified positions
+        for i in range(input_prompt_ids.size(0)):
+
+            end_index_valid_ids = input_prompt_ids.size(1) - num_padding_tokens[i]
+
+            left_padded_input_ids[i, num_padding_tokens[i]:] = input_prompt_ids[i, :end_index_valid_ids]
+            left_padded_attn_mask[i, num_padding_tokens[i]:] = 1
+
+        return left_padded_input_ids, left_padded_attn_mask
 
     def save(self, output_dir: str):
 
