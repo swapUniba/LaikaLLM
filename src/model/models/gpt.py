@@ -8,7 +8,7 @@ import numpy as np
 import torch
 from torch.nn.utils.rnn import pad_sequence
 from torch.optim import AdamW
-from transformers import GPT2LMHeadModel, GPT2TokenizerFast
+from transformers import GPT2LMHeadModel, GPT2TokenizerFast, GenerationConfig
 
 from src.model.abstract_model import LaikaModelHF
 from src.utils import dict_list2list_dict, list_dict2dict_list
@@ -260,3 +260,41 @@ class GPT2Rec(LaikaModelHF):
             left_padded_attn_mask[i, num_padding_tokens[i]:] = 1
 
         return left_padded_input_ids, left_padded_attn_mask
+
+    @torch.no_grad()
+    def inference(self, input_text: str | list[str], format_input: bool = True, only_target: bool = False,
+                  **gen_config):
+
+        if not isinstance(input_text, list):
+            input_text = [input_text]
+
+        generation_config = self.model.generation_config
+        if len(gen_config) != 0:
+            generation_config = GenerationConfig(**gen_config)
+
+        if format_input is True:
+            input_text = [f"{self.input_prefix}{inp} \n{self.target_prefix}" for inp in input_text]
+
+        encoded_inputs = self.tokenizer(input_text,
+                                        truncation=True,
+                                        padding=True,
+                                        padding_side="left",
+                                        return_tensors="pt")
+
+        left_padded_input_ids = encoded_inputs.input_ids.to(self.model.device)
+        left_padded_attn_mask = encoded_inputs.attention_mask.to(self.model.device)
+
+        beam_outputs = self.model.generate(
+            input_ids=left_padded_input_ids,
+            attention_mask=left_padded_attn_mask,
+            generation_config=generation_config
+        )
+
+        if only_target is True:
+            beam_outputs = beam_outputs[:, left_padded_input_ids.shape[1]:]
+
+        generated_sents = self.tokenizer.batch_decode(beam_outputs, skip_special_tokens=True)
+        mapped_predictions = np.array(generated_sents).reshape((len(input_text),
+                                                                generation_config.num_return_sequences))
+
+        return mapped_predictions.tolist()

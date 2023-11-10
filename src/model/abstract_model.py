@@ -76,6 +76,11 @@ class LaikaModel(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    @torch.no_grad()
+    def inference(self, input_text: str | list[str], **kwargs) -> list[str]:
+        raise NotImplementedError
+
+    @abstractmethod
     def train(self, mode: bool = True):
         raise NotImplementedError
 

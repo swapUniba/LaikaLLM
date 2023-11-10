@@ -8,7 +8,7 @@ import numpy as np
 import torch
 from torch import nn, Tensor
 from torch.nn.utils.rnn import pad_sequence
-from transformers import T5ForConditionalGeneration, Adafactor, T5TokenizerFast, AutoConfig
+from transformers import T5ForConditionalGeneration, Adafactor, T5TokenizerFast, AutoConfig, GenerationConfig
 
 from src.data.abstract_dataset import LaikaDataset
 from src.model.abstract_model import LaikaModelHF
@@ -267,6 +267,36 @@ class T5Rec(LaikaModelHF):
         mapped_predictions = np.array(generated_sents).reshape((len(gt), num_return_sequences))
 
         return mapped_predictions, gt, loss
+
+    @torch.no_grad()
+    def inference(self, input_text: str | list[str], **gen_config):
+
+        if not isinstance(input_text, list):
+            input_text = [input_text]
+
+        generation_config = self.model.generation_config
+        if len(gen_config) != 0:
+            generation_config = GenerationConfig(**gen_config)
+
+        encoded_inputs = self.tokenizer(input_text,
+                                        truncation=True,
+                                        padding=True,
+                                        return_tensors="pt")
+
+        input_ids = encoded_inputs.input_ids.to(self.model.device)
+        attn_mask = encoded_inputs.attention_mask.to(self.model.device)
+
+        beam_outputs = self.model.generate(
+            input_ids=input_ids,
+            attention_mask=attn_mask,
+            generation_config=generation_config
+        )
+
+        generated_sents = self.tokenizer.batch_decode(beam_outputs, skip_special_tokens=True)
+        mapped_predictions = np.array(generated_sents).reshape((len(input_text),
+                                                                generation_config.num_return_sequences))
+
+        return mapped_predictions.tolist()
 
     def to(self, device: str):
         if self.user_embeddings is not None:
