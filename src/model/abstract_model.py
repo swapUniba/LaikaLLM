@@ -189,9 +189,7 @@ class LaikaModelHF(LaikaModel):
     # generic to say that the model returned is of same type of the caller class
     def load(cls, dir_path: str, **config_and_laika_kwargs) -> LaikaModelHF:
 
-        # to avoid duplicate parameter error
-        config_and_laika_kwargs.pop("return_unused_kwargs", None)
-
+        # laika kwargs for example are val_template, val_template_id, etc.
         config, laika_kwargs = AutoConfig.from_pretrained(dir_path,
                                                           **config_and_laika_kwargs,
                                                           return_unused_kwargs=True)
@@ -199,10 +197,19 @@ class LaikaModelHF(LaikaModel):
         # we can't pass **config, because model instantiation via config should be done
         # using .from_config() rather than .from_pretrained().
         # that's why we use config just to load parameters of LaikaModel serialized
-        return cls(name_or_path=dir_path,
-                   training_tasks_str=config.training_tasks_str,
-                   all_unique_labels=config.all_unique_labels,
-                   **laika_kwargs)
+        obj = cls(name_or_path=dir_path,
+                  training_tasks_str=config.training_tasks_str,
+                  all_unique_labels=config.all_unique_labels,
+                  **laika_kwargs)
+
+        # regardless of what happens in init, we will substitute the initialized
+        # config with the loaded config, to avoid re-initialization to possible default
+        # values since we passed through __init__ again.
+        # this loaded config already has updated laika kwargs, if they were saved into the config
+        # and new values are passed to this function through *kwargs
+        obj.model.config = config
+
+        return obj
 
     def to(self, device: str):
         return self.model.to(device)

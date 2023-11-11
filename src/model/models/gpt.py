@@ -8,7 +8,7 @@ import numpy as np
 import torch
 from torch.nn.utils.rnn import pad_sequence
 from torch.optim import AdamW
-from transformers import GPT2LMHeadModel, GPT2TokenizerFast, GenerationConfig
+from transformers import GPT2LMHeadModel, GPT2TokenizerFast, GenerationConfig, AutoConfig
 
 from src.model.abstract_model import LaikaModelHF
 from src.utils import dict_list2list_dict, list_dict2dict_list
@@ -25,7 +25,22 @@ class GPT2Rec(LaikaModelHF):
                  eval_task_str: str = None,
                  eval_template_id: int | str = None,
                  train_task_selection_strat: Literal['random', 'all'] = "all",
-                 **model_config_kwargs):
+                 **model_config_and_gen_kwargs):
+
+        # before passing the model config kwargs to super (which will pass them to the model config),
+        # let's first consume the kwargs related to generation config
+        # we set initial default values for relevant gen parameters that were not passed to __init__
+        model_config_and_gen_kwargs["num_return_sequences"] = model_config_and_gen_kwargs.pop("num_return_sequences",
+                                                                                              10)
+        # max length is set using the model dim, we will set after super().__init() call
+        model_config_and_gen_kwargs["max_length"] = model_config_and_gen_kwargs.pop("max_length", None)
+        model_config_and_gen_kwargs["num_beams"] = model_config_and_gen_kwargs.pop("num_beams", 30)
+        model_config_and_gen_kwargs["no_repeat_ngram_size"] = model_config_and_gen_kwargs.pop("no_repeat_ngram_size", 0)
+        model_config_and_gen_kwargs["early_stopping"] = model_config_and_gen_kwargs.pop("early_stopping", True)
+
+        generation_config, model_config_kwargs = GenerationConfig.from_pretrained(
+            name_or_path, return_unused_kwargs=True, **model_config_and_gen_kwargs
+        )
 
         super().__init__(
             name_or_path=name_or_path,
@@ -36,6 +51,8 @@ class GPT2Rec(LaikaModelHF):
             train_task_selection_strat=train_task_selection_strat,
             **model_config_kwargs
         )
+
+        self.model.generation_config.max_length = self.tokenizer.model_max_length
 
         # gpt2 has no pad token, eos_token_id is used instead
         self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
@@ -298,3 +315,15 @@ class GPT2Rec(LaikaModelHF):
                                                                 generation_config.num_return_sequences))
 
         return mapped_predictions.tolist()
+
+    @classmethod
+    def load(cls, dir_path: str, **config_gen_laika_kwargs) -> GPT2Rec:
+
+        gen_config, config_laika_kwargs = GenerationConfig.from_pretrained(dir_path,
+                                                                           **config_gen_laika_kwargs,
+                                                                           return_unused_kwargs=True)
+
+        obj: GPT2Rec = super().load(dir_path, **config_laika_kwargs)  # type: ignore
+        obj.model.generation_config = gen_config
+
+        return obj

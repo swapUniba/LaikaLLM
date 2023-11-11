@@ -49,7 +49,21 @@ class T5Rec(LaikaModelHF):
                  eval_task_str: str = None,
                  eval_template_id: int | str = None,
                  train_task_selection_strat: Literal['random', 'all'] = "all",
-                 **model_config_kwargs):
+                 **model_config_and_gen_kwargs):
+
+        # before passing the model config kwargs to super (which will pass them to the model config),
+        # let's first consume the kwargs related to generation config
+        # we set initial default values for relevant gen parameters that were not passed to __init__
+        model_config_and_gen_kwargs["num_return_sequences"] = model_config_and_gen_kwargs.pop("num_return_sequences",
+                                                                                              10)
+        model_config_and_gen_kwargs["max_new_tokens"] = model_config_and_gen_kwargs.pop("max_new_tokens", 50)
+        model_config_and_gen_kwargs["num_beams"] = model_config_and_gen_kwargs.pop("num_beams", 30)
+        model_config_and_gen_kwargs["no_repeat_ngram_size"] = model_config_and_gen_kwargs.pop("no_repeat_ngram_size", 0)
+        model_config_and_gen_kwargs["early_stopping"] = model_config_and_gen_kwargs.pop("early_stopping", True)
+
+        generation_config, model_config_kwargs = GenerationConfig.from_pretrained(
+            name_or_path, return_unused_kwargs=True, **model_config_and_gen_kwargs
+        )
 
         super().__init__(
             name_or_path=name_or_path,
@@ -61,11 +75,12 @@ class T5Rec(LaikaModelHF):
             **model_config_kwargs
         )
 
+        self.model.generation_config = generation_config
+
         self.model.config.inject_personalization = inject_personalization
         self.model.config.all_unique_users = all_unique_users
 
-        self.user_embeddings = None
-        self.user_mapping = {}
+        self.model.config.user_mapping = {}
 
         if inject_personalization is True:
             if all_unique_users is None:
@@ -73,9 +88,10 @@ class T5Rec(LaikaModelHF):
                                      "inject_personalization is True!")
 
             for user in all_unique_users:
-                self.user_mapping[user] = len(self.user_mapping)
+                self.model.config.user_mapping[user] = len(self.model.config.user_mapping)
 
-            self.user_embeddings = UserEmbeds(len(all_unique_users), self.model.config.d_model).to(self.model.device)
+            self.user_embeddings = UserEmbeds(len(all_unique_users),
+                                              self.model.config.d_model).to(self.model.device)
 
     @property
     def get_suggested_optimizer(self):
@@ -145,7 +161,7 @@ class T5Rec(LaikaModelHF):
 
                     # even if surely there is only one user, we wrap it into a list to be coherent
                     if self.model.config.inject_personalization is True:
-                        encoded_sequence["user_idx"] = [self.user_mapping[sample["user_id"]]]
+                        encoded_sequence["user_idx"] = [self.model.config.user_mapping[sample["user_id"]]]
 
                     encoded_sequence["whole_word_ids"] = whole_word_ids.tolist()
 
@@ -234,11 +250,10 @@ class T5Rec(LaikaModelHF):
         # we should return one prediction for ground truth element.
         # In theory there could be a complex way of mixing multiple text generated into a single prediction
         # (e.g., avg of 10 rating predictions), but here we simply reduce the num return sequences
-        num_return_sequences = 10 if self.eval_task.is_ranking_task() else 1
-        max_new_tokens = 50
-        num_beams = 30
-        no_repeat_ngram_size = 0
-        early_stopping = True
+
+        num_return_sequences = self.model.generation_config.num_return_sequences
+        if not self.eval_task.is_ranking_task():
+            num_return_sequences = 1
 
         gt = np.array(batch.pop("gt"))
 
@@ -256,11 +271,8 @@ class T5Rec(LaikaModelHF):
         beam_outputs = self.model.generate(
             inputs_embeds=inputs_embeds,
             attention_mask=batch["attention_mask"],
-            num_return_sequences=num_return_sequences,
-            max_new_tokens=max_new_tokens,
-            num_beams=num_beams,
-            no_repeat_ngram_size=no_repeat_ngram_size,
-            early_stopping=early_stopping
+            generation_config=self.model.generation_config,
+            num_return_sequences=num_return_sequences
         )
 
         generated_sents = self.tokenizer.batch_decode(beam_outputs, skip_special_tokens=True)
@@ -276,7 +288,8 @@ class T5Rec(LaikaModelHF):
 
         generation_config = self.model.generation_config
         if len(gen_config) != 0:
-            generation_config = GenerationConfig(**gen_config)
+            generation_config = GenerationConfig.from_pretrained(pretrained_model_name=self.model.config.name_or_path,
+                                                                 **gen_config)
 
         encoded_inputs = self.tokenizer(input_text,
                                         truncation=True,
@@ -313,24 +326,26 @@ class T5Rec(LaikaModelHF):
             torch.save(self.user_embeddings.state_dict(), user_emb_out_pth)
 
     @classmethod
-    def load(cls, dir_path: str, **config_and_laika_kwargs) -> T5Rec:
+    def load(cls, dir_path: str, **config_gen_laika_kwargs) -> T5Rec:
 
-        # to avoid duplicate parameter error
-        config_and_laika_kwargs.pop("return_unused_kwargs", None)
+        gen_config, config_laika_kwargs = GenerationConfig.from_pretrained(dir_path,
+                                                                           **config_gen_laika_kwargs,
+                                                                           return_unused_kwargs=True)
 
         config, laika_kwargs = AutoConfig.from_pretrained(dir_path,
-                                                          **config_and_laika_kwargs,
+                                                          **config_laika_kwargs,
                                                           return_unused_kwargs=True)
 
-        # we can't pass **config, because model instantiation via config should be done
-        # using .from_config() rather than .from_pretrained().
-        # that's why we use config just to load parameters of LaikaModel serialized
         obj = cls(name_or_path=dir_path,
                   training_tasks_str=config.training_tasks_str,
                   all_unique_labels=config.all_unique_labels,
                   all_unique_users=config.all_unique_users,
                   inject_personalization=config.inject_personalization,
+
                   **laika_kwargs)
+
+        obj.model.config = config
+        obj.model.generation_config = gen_config
 
         if obj.user_embeddings is not None:
             user_emb_pth = os.path.join(dir_path, "user_emb.pth")
