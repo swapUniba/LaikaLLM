@@ -41,7 +41,7 @@ class AmazonDataset(LaikaDataset):
         self.items_start_from_1001 = items_start_from_1001
 
         # read mapping between user string id (ABXMSBDSI) and user int idxs (331)
-        with open(os.path.join(RAW_DATA_DIR, self.dataset_name, 'datamaps.json'), "r") as f:
+        with open(os.path.join(RAW_DATA_DIR, "AmazonDataset", self.dataset_name, 'datamaps.json'), "r") as f:
             datamaps = json.load(f)
 
         self.user_id2idx = {str(key): str(val) for key, val in datamaps['user2id'].items()}
@@ -62,7 +62,7 @@ class AmazonDataset(LaikaDataset):
         relevant_items_id = set(self.item_id2idx.keys())
         meta_dict = {}
         print("Extracting meta info...", end="")
-        for meta_content in parse(os.path.join(RAW_DATA_DIR, self.dataset_name, 'meta.json.gz')):
+        for meta_content in parse(os.path.join(RAW_DATA_DIR, "AmazonDataset", self.dataset_name, 'meta.json.gz')):
             item_id = meta_content.pop("asin")
             if item_id in relevant_items_id:
                 item_idx = self.item_id2idx[item_id]
@@ -310,7 +310,7 @@ class AmazonDataset(LaikaDataset):
 
         user_items = dict()
 
-        with open(os.path.join(RAW_DATA_DIR, self.dataset_name, "sequential_data.txt")) as f:
+        with open(os.path.join(RAW_DATA_DIR, "AmazonDataset", self.dataset_name, "sequential_data.txt")) as f:
             for user_item_sequence in f:
                 # user_item sequence is in the form {user_id}, {item_id}, {item_id}, ... {item_id}
                 item_sequence = [str(item_idx) for item_idx in user_item_sequence.split()]
@@ -324,7 +324,8 @@ class AmazonDataset(LaikaDataset):
 
     def _read_ratings(self, user_items: dict):
 
-        with open(os.path.join(RAW_DATA_DIR, self.dataset_name, "rating_splits_augmented.pkl"), "rb") as f:
+        with open(os.path.join(RAW_DATA_DIR, "AmazonDataset", self.dataset_name,
+                               "rating_splits_augmented.pkl"), "rb") as f:
             ratings_list = pickle.load(f)
 
         # here we use data from all splits because these splits originally are different
