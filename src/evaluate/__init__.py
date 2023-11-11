@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from .metrics import *
 
 from src.evaluate.abstract_metric import LaikaMetric
-from src.data.abstract_templates import Task
+from src.data.abstract_task import Task
 
 
 @dataclass

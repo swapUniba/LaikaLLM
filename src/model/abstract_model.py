@@ -10,7 +10,7 @@ from requests.structures import CaseInsensitiveDict
 from transformers import PreTrainedModel, PreTrainedTokenizer, AutoConfig, AutoTokenizer
 
 from src.data.abstract_dataset import LaikaDataset
-from src.data.abstract_templates import Task
+from src.data.abstract_task import Task
 
 
 class LaikaModel(ABC):

@@ -3,7 +3,7 @@ import random
 
 import numpy as np
 
-from src.data.abstract_templates import Task, PromptTarget
+from src.data.abstract_task import Task, PromptTarget
 from src.evaluate.metrics.error_metrics import ErrorMetric
 from src.evaluate.metrics.ranking_metrics import RankingMetric
 

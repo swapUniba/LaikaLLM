@@ -8,7 +8,7 @@ import pandas as pd
 import wandb
 from tqdm import tqdm
 
-from src.data.abstract_templates import Task
+from src.data.abstract_task import Task
 from src.evaluate.abstract_metric import LaikaMetric, PaddedArr
 from src.evaluate.abstract_metric import Loss
 from src.model import LaikaModel
