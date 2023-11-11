@@ -4,7 +4,6 @@ import random
 import numpy as np
 
 from src.data.abstract_templates import Task, PromptTarget
-from src.evaluate.abstract_metric import Loss
 from src.evaluate.metrics.error_metrics import ErrorMetric
 from src.evaluate.metrics.ranking_metrics import RankingMetric
 
@@ -52,11 +51,13 @@ class RatingPredictionTask(Task):
         )
     }
 
-    compatible_metrics = [ErrorMetric]
-
-    @property
-    def is_ranking_task(self) -> bool:
+    @classmethod
+    def is_ranking_task(cls) -> bool:
         return False
+
+    @classmethod
+    def compatible_metrics(cls):
+        return [ErrorMetric]
 
     def inference_templates(self, return_id: bool = False):
         return self.all_templates(return_id)
@@ -169,11 +170,13 @@ class SequentialSideInfoTask(Task):
         )
     }
 
-    compatible_metrics = [RankingMetric, Loss]
-
-    @property
-    def is_ranking_task(self) -> bool:
+    @classmethod
+    def is_ranking_task(cls) -> bool:
         return True
+
+    @classmethod
+    def compatible_metrics(cls):
+        return [RankingMetric]
 
     def inference_templates(self, return_id: bool = False):
         return self.all_templates(return_id)[:6]
@@ -251,7 +254,7 @@ class SequentialSideInfoTask(Task):
 
         return input_text_qa, target_text_qa
 
-    def _create_input_target_pair(self, user_id: str, input_item_seq: list[str], input_categories_seq: list[str],
+    def _create_input_target_pair(self, user_id: str, input_item_seq: list[str], input_categories_seq: list[list[str]],
                                   target_item: str):
         # random choice of pair template
         input_prompt_support, target_support, _ = random.choice(self.pair_templates())
@@ -340,11 +343,13 @@ class DirectSideInfoTask(Task):
         ),
     }
 
-    compatible_metrics = [RankingMetric]
+    @classmethod
+    def is_ranking_task(cls) -> bool:
+        return False
 
-    @property
-    def is_ranking_task(self):
-        return True
+    @classmethod
+    def compatible_metrics(cls):
+        return [RankingMetric]
 
     def inference_templates(self, return_id: bool = False):
         return self.all_templates(return_id)[:6]
@@ -352,7 +357,7 @@ class DirectSideInfoTask(Task):
     def qa_templates(self, return_id: bool = False):
         return self.all_templates(return_id)[6:]
 
-    def __call__(self, user_id: str, input_item_seq: list[str], input_categories_seq: list[str],
+    def __call__(self, user_id: str, input_item_seq: list[str], input_categories_seq: list[list[str]],
                  gt_item: list[str], gt_categories: list[str], catalog_items: np.ndarray[str], **kwargs):
 
         assert len(gt_item) == 1, "This task was designed for Leave One Out strategy!"

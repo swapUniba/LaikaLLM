@@ -234,7 +234,7 @@ class T5Rec(LaikaModelHF):
         # we should return one prediction for ground truth element.
         # In theory there could be a complex way of mixing multiple text generated into a single prediction
         # (e.g., avg of 10 rating predictions), but here we simply reduce the num return sequences
-        num_return_sequences = 10 if self.eval_task.is_ranking_task else 1
+        num_return_sequences = 10 if self.eval_task.is_ranking_task() else 1
         max_new_tokens = 50
         num_beams = 30
         no_repeat_ngram_size = 0

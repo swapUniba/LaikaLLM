@@ -36,9 +36,6 @@ class Task(ABC):
     # keys are integers or str, values are PromptTarget objects
     templates_dict: dict[int | str, PromptTarget] = {}
 
-    # all metrics which can be used to evaluate the results of the task
-    compatible_metrics: list[type[LaikaMetric]] = []
-
     # name obj class mapping, used for when task must be initialized from strings
     str_alias_cls: dict[str, type[Task]] = CaseInsensitiveDict()
 
@@ -53,9 +50,15 @@ class Task(ABC):
 
         super().__init_subclass__(**kwargs)
 
-    @property
+    @classmethod
     @abstractmethod
-    def is_ranking_task(self) -> bool:
+    def compatible_metrics(cls) -> list[type[LaikaMetric]]:
+        # all metrics which can be used to evaluate the results of the task
+        raise NotImplementedError
+
+    @classmethod
+    @abstractmethod
+    def is_ranking_task(cls) -> bool:
         raise NotImplementedError
 
     def all_templates(self, return_id: bool = False):
