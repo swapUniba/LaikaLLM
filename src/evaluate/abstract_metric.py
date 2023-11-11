@@ -80,7 +80,7 @@ class LaikaMetric(ABC):
                     if not k.isdigit():
                         raise KeyError
 
-                    instantiated_metric = cls.str_alias_cls[metric_name](k=k)
+                    instantiated_metric = cls.str_alias_cls[metric_name](k=int(k))
 
                 case _:
                     raise KeyError
