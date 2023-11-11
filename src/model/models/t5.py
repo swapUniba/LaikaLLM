@@ -186,10 +186,10 @@ class T5Rec(LaikaModelHF):
         input_ids = pad_sequence(batch["input_ids"], batch_first=True, padding_value=self.tokenizer.pad_token_id)
         attention_mask = pad_sequence(batch["attention_mask"],
                                       batch_first=True,
-                                      padding_value=self.tokenizer.pad_token_id)
+                                      padding_value=0)
         whole_word_ids = pad_sequence(batch["whole_word_ids"],
                                       batch_first=True,
-                                      padding_value=self.tokenizer.pad_token_id)
+                                      padding_value=0)
 
         input_dict["input_ids"] = input_ids.to(self.model.device)
         input_dict["attention_mask"] = attention_mask.to(self.model.device)
@@ -201,9 +201,7 @@ class T5Rec(LaikaModelHF):
             input_dict["user_idx"] = batch["user_idx"].to(self.model.device).squeeze()
 
         if "labels" in batch:
-            lm_labels = pad_sequence(batch["labels"], batch_first=True, padding_value=self.tokenizer.pad_token_id)
-            lm_labels[lm_labels == self.tokenizer.pad_token_id] = -100
-
+            lm_labels = pad_sequence(batch["labels"], batch_first=True, padding_value=-100)
             input_dict["labels"] = lm_labels.to(self.model.device)
 
         if "gt" in batch:
