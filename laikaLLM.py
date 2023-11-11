@@ -50,14 +50,15 @@ if __name__ == '__main__':
     with init_wandb(project="P5-Thesis", name=shared_params.exp_name, config=config_args,
                     should_log=shared_params.log_wandb):
 
-        # at start of each main phase, we re-initialize the state
-        seed_everything(shared_params.random_seed)
-        dataset_obj = data_main(shared_params, data_params)
+        if not shared_params.eval_only:
+            # at start of each main phase, we re-initialize the state
+            seed_everything(shared_params.random_seed)
+            data_main(shared_params, data_params)
+
+            # at start of each main phase, we re-initialize the state
+            seed_everything(shared_params.random_seed)
+            model_main(shared_params, data_params, model_params)
 
         # at start of each main phase, we re-initialize the state
         seed_everything(shared_params.random_seed)
-        model_obj = model_main(shared_params, model_params, dataset_obj)
-
-        # at start of each main phase, we re-initialize the state
-        seed_everything(shared_params.random_seed)
-        eval_main(shared_params, eval_params, dataset_obj, model_obj)
+        eval_main(shared_params, data_params, model_params, eval_params)

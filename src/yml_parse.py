@@ -1,6 +1,6 @@
 import yaml
 
-from src import SharedParams
+from src import GeneralParams
 from src.data import DataParams
 from src.evaluate import EvalParams
 from src.model import ModelParams
@@ -18,7 +18,7 @@ def parse_yml_config(yml_path: str):
     # after popping every section, only general params remain
     general_section = yaml_args
 
-    shared_params = SharedParams.from_parse(general_section)
+    shared_params = GeneralParams.from_parse(general_section)
     data_params = DataParams.from_parse(data_section)
     model_params = ModelParams.from_parse(model_section)
     eval_params = EvalParams.from_parse(eval_section)
