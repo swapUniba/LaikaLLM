@@ -5,11 +5,13 @@ import json
 import os
 import pickle
 import random
+import zipfile
 from collections import Counter
 from functools import cached_property
 from typing import Literal, Dict
 
 import datasets
+import gdown
 import pandas as pd
 from datasets import Dataset
 
@@ -30,6 +32,9 @@ class AmazonDataset(LaikaDataset):
                  dataset_name: Literal['beauty', 'toys', 'sport'],
                  add_prefix_items_users: bool = False,
                  items_start_from_1001: bool = False):
+
+        # this will download and extract raw data zip
+        super().__init__()
 
         self.dataset_name = dataset_name
         self.add_prefix = add_prefix_items_users
@@ -130,6 +135,45 @@ class AmazonDataset(LaikaDataset):
     @cached_property
     def all_items(self):
         return pd.unique(self.original_df["item_sequence"].explode())
+
+    def download_extract_raw_dataset(self):
+
+        url_raw_data = "https://drive.google.com/uc?id=1qGxgmx7G_WB7JE4Cn_bEcZ_o_NAJLE3G"
+        raw_data_folder_out = os.path.join(RAW_DATA_DIR, "AmazonDataset")
+
+        if not os.path.isdir(raw_data_folder_out):
+
+            print("Downloading raw Amazon Dataset...")
+
+            zip_path = gdown.download(url=url_raw_data,
+                                      output=os.path.join(RAW_DATA_DIR, "Amazon_Data.zip"))
+
+            print("Done!")
+
+            # create AmazonDataset folder inside raw
+            os.makedirs(raw_data_folder_out)
+
+            print("Extracting data zip...", end="")
+
+            # process output path of zip file to extract, in order to not have
+            # "AmazonDataset/data/beauty/**" but simply "AmazonDataset/beauty/**"
+            subfolder_to_extract = ["beauty", "sports", "toys"]
+            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+
+                for subfolder in subfolder_to_extract:
+                    dir_to_extract = f"data/{subfolder}/"
+
+                    for path_in_zip in zip_ref.namelist():
+                        if path_in_zip.startswith(dir_to_extract):
+                            zip_ref.getinfo(path_in_zip).filename = "/".join(path_in_zip.split("/")[1:])
+                            zip_ref.extract(member=path_in_zip, path=raw_data_folder_out)
+
+            print("Done!")
+
+            # remove zip once we are done
+            os.remove(zip_path)
+        else:
+            print("Amazon Dataset found, skipping download part")
 
     def split_data(self, exploded_data_df: pd.DataFrame):
 

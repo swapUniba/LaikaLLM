@@ -22,6 +22,11 @@ class LaikaDataset(ABC):
 
         super().__init_subclass__(**kwargs)
 
+    def __init__(self):
+
+        # the common process to all dataset is surely to download and extract raw data
+        self.download_extract_raw_dataset()
+
     @property
     @abstractmethod
     def all_users(self) -> np.ndarray[str]:
@@ -30,6 +35,10 @@ class LaikaDataset(ABC):
     @property
     @abstractmethod
     def all_items(self) -> np.ndarray[str]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def download_extract_raw_dataset(self):
         raise NotImplementedError
 
     @abstractmethod
