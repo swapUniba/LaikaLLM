@@ -200,7 +200,7 @@ class SequentialSideInfoTask(Task):
         # using all categories is maybe too much, let's use only one category for each item in the seq
         reduced_categories = [random.choice(categories) for categories in input_categories_seq]
 
-        input_text_placeholder, target_text_placeholder, _ = random.choice(self.inference_templates())
+        input_text_placeholder, target_text_placeholder = random.choice(self.inference_templates())
 
         # random select of string separator for titles sequence and the prompt to use
         separator = " , " if random.getrandbits(1) else " ; "
@@ -385,7 +385,7 @@ class DirectSideInfoTask(Task):
         # we use only unique categories
         unique_categories = set(itertools.chain.from_iterable(input_categories_seq))
 
-        input_text_placeholder, target_text_placeholder, _ = random.choice(self.inference_templates())
+        input_text_placeholder, target_text_placeholder = random.choice(self.inference_templates())
 
         # random select of string separator for titles sequence and the prompt to use
         separator = " , " if random.getrandbits(1) else " ; "
@@ -399,10 +399,10 @@ class DirectSideInfoTask(Task):
                                    ground_truth_for_eval=[target_item]))
 
         if self.training:
-            input_text_qa, target_text_qa, = self._create_input_target_qa(user_id,
-                                                                          categories_liked_str,
-                                                                          target_item,
-                                                                          catalog_items)
+            input_text_qa, target_text_qa = self._create_input_target_qa(user_id,
+                                                                         categories_liked_str,
+                                                                         target_item,
+                                                                         catalog_items)
 
             out_list.append(TaskOutput(input_text_qa, target_text_qa))
 
