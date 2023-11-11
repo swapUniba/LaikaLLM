@@ -82,6 +82,7 @@ class T5Rec(LaikaModelHF):
 
         self.model.config.user_mapping = {}
 
+        self.user_embeddings = None
         if inject_personalization is True:
             if all_unique_users is None:
                 raise AttributeError("all_unique_users parameter can't be None when "
