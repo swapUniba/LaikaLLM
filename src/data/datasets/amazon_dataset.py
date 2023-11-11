@@ -92,7 +92,7 @@ class AmazonDataset(LaikaDataset):
 
             df_dict["user_id"].extend(user_col_repeated)
             df_dict["item_sequence"].extend(item_col_value)
-            df_dict["rating_sequence"].extend(ratings_col_value)
+            df_dict["rating_sequence"].extend(map(str, ratings_col_value))
 
             for item_idx in item_col_value:
                 desc = meta_dict[item_idx].get("description", "")
