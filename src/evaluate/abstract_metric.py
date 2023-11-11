@@ -65,53 +65,51 @@ class LaikaMetric(ABC):
         return np.divide(num, den, out=np.zeros_like(num, dtype=float), where=den != 0)
 
     @classmethod
-    def from_string(cls, *metric_str: str) -> list[LaikaMetric]:
+    def from_string(cls, metric_str: str) -> LaikaMetric:
 
         # this should be improved: make use of subclasses polymorphism to convert from string to object
+        try:
+            metric_info = metric_str.split("@")
 
-        instantiated_metrics = []
-        for metric in metric_str:
+            match metric_info:
 
-            try:
-                metric_info = metric.split("@")
+                case [metric_name]:
+                    instantiated_metric = cls.str_alias_cls[metric_name]()
 
-                if len(metric_info) == 1:
-
-                    [metric_name] = metric_info
-
-                    instantiated_metrics.append(cls.str_alias_cls[metric_name]())
-                elif len(metric_info) == 2:
-                    [metric_name, k] = metric_info
-
+                case [metric_name, k]:
                     if not k.isdigit():
                         raise KeyError
 
-                    # wrong warning, ErrorMetrics don't have k, but this is expected behaviour,
-                    # if the user sets for example mae@5 obviously it doesn't make sense and an error is raised
-                    instantiated_metrics.append(cls.str_alias_cls[metric_name](k=int(k)))
+                    instantiated_metric = cls.str_alias_cls[metric_name](k=k)
 
-            except KeyError:
-                raise KeyError(f"{metric} metric does not exist!") from None
+                case _:
+                    raise KeyError
 
-        return instantiated_metrics
+        except KeyError:
+            raise KeyError(f"{metric_str} metric does not exist!") from None
+
+        return instantiated_metric
 
     @classmethod
     def all_metrics_available(cls, return_str: bool = False) -> list[type[LaikaMetric] | str]:
         return list(cls.str_alias_cls.values()) if return_str else list(cls.str_alias_cls.keys())
 
     @classmethod
-    def metric_exists(cls, metric_cls_name: str, raise_error: bool = True) -> bool:
+    def metric_exists(cls, metric_cls_name: str, return_bool: bool = True) -> bool | type[LaikaMetric]:
 
         # this should be improved: make use of subclasses polymorphism to convert from string to object
 
         # regardless if there is the cutoff value k or not, we are only interested in the metric name
         # which is the part before the optional '@' symbol
-        metric_exists = metric_cls_name.split("@")[0] in cls.str_alias_cls.keys()
+        metric_cls_name = metric_cls_name.split("@")[0]
 
-        if not metric_exists and raise_error is True:
-            raise KeyError(f"Metric {metric_cls_name} does not exist!")
+        try:
+            metric_cls = cls.str_alias_cls[metric_cls_name]
+        except KeyError:
+            raise KeyError(f"Metric {metric_cls_name} does not exist!") from None
 
-        return metric_exists
+        # if we arrive at the return clause, metric_cls exists that's why we return True directly
+        return metric_cls if not return_bool else True
 
     @abstractmethod
     def __call__(self, precomputed_matrix: np.ndarray) -> float:

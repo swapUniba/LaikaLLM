@@ -75,37 +75,25 @@ class Task(ABC):
         return list(cls.str_alias_cls.values()) if return_str else list(cls.str_alias_cls.keys())
 
     @classmethod
-    def task_exists(cls, task_cls_name: str, template_id: int | str = None, raise_error: bool = True):
+    def task_exists(cls, task_cls_name: str, template_id: int | str = None,
+                    return_bool: bool = True) -> bool | type[Task]:
 
-        # if no template id specified, then it should not count towards the result,
-        # hence set to True (True is neutral element of AND operation)
-        template_exists = True
-        task_exists = task_cls_name in cls.str_alias_cls.keys()
+        try:
+            task_cls = cls.str_alias_cls[task_cls_name]
+        except KeyError:
+            raise KeyError(f"Task {task_cls_name} does not exist!") from None
 
-        if task_exists and template_id is not None:
-            template_exists = template_id in cls.str_alias_cls[task_cls_name].templates_dict.keys()
+        if template_id is not None and template_id not in task_cls.templates_dict.keys():
+            raise KeyError(f"Template {template_id} for task {task_cls_name} does not exist!") from None
 
-            if not template_exists and raise_error is True:
-                raise KeyError(f"Template {template_id} for task {task_cls_name} does not exist!")
-
-        if not task_exists and raise_error is True:
-            raise KeyError(f"Task {task_cls_name} does not exist!")
-
-        return task_exists and template_exists
+        return task_cls if not return_bool else True
 
     @classmethod
-    def from_string(cls, *task_str: str):
+    def from_string(cls, task_str: str):
 
-        instantiated_tasks = []
-        for task in task_str:
-            try:
-                # remember, we are searching a case-insensitive dict, so we don't care about
-                # lowering all keys
-                instantiated_tasks.append(cls.str_alias_cls[task]())
-            except KeyError:
-                raise KeyError(f"{task} task does not exist!") from None
+        task_cls = cls.task_exists(task_cls_name=task_str, return_bool=False)
 
-        return instantiated_tasks
+        return task_cls()
 
     @abstractmethod
     def __call__(self, *args, **kwargs) -> list[TaskOutput]:

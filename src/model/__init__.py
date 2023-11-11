@@ -43,17 +43,17 @@ class ModelParams:
         obj = cls(model_cls_name=model_name, model_kwargs=model_kwargs, **model_section)
 
         # check that model exists
-        LaikaModel.model_exists(obj.model_cls_name, raise_error=True)
+        LaikaModel.model_exists(obj.model_cls_name)
 
         # check that each train task exist
         for task_name in obj.train_tasks:
-            Task.task_exists(task_name, raise_error=True)
+            Task.task_exists(task_name)
 
         # check that valid task and template exist
         if obj.val_task is not None:
-            Task.task_exists(obj.val_task, template_id=obj.val_task_template_id, raise_error=True)
+            Task.task_exists(obj.val_task, template_id=obj.val_task_template_id)
 
         # check that monitor metric exists
-        LaikaMetric.metric_exists(obj.monitor_metric, raise_error=True)
+        LaikaMetric.metric_exists(obj.monitor_metric)
 
         return obj

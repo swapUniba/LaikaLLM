@@ -50,7 +50,7 @@ def model_main(shared_params: SharedParams, model_params: ModelParams, dataset_o
     output_dir = os.path.join(MODELS_DIR, exp_name)
     os.makedirs(output_dir, exist_ok=True)
 
-    [monitor_metric_obj] = LaikaMetric.from_string(monitor_metric)
+    monitor_metric_obj = LaikaMetric.from_string(monitor_metric)
     trainer = RecTrainer(
         rec_model=rec_model,
         n_epochs=n_epochs,

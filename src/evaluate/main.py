@@ -31,9 +31,8 @@ def eval_main(shared_params: SharedParams, eval_params: EvalParams, dataset_obj:
     rec_model.to(device)
 
     # convert from str to objects
-
     eval_task_dict = {
-        Task.from_string(eval_task_str)[0]: LaikaMetric.from_string(*metric_list_str)
+        Task.from_string(eval_task_str): [LaikaMetric.from_string(metric_str) for metric_str in metric_list_str]
         for eval_task_str, metric_list_str in eval_task_dict.items()
     }
 

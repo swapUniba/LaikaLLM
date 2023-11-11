@@ -37,7 +37,7 @@ class LaikaModel(ABC):
             raise AttributeError("train_task_selection_strat should be 'all' or 'random'!")
 
         self.all_unique_labels = np.array(all_unique_labels)
-        self.training_tasks = Task.from_string(*training_tasks_str)
+        self.training_tasks = [Task.from_string(training_task_str) for training_task_str in training_tasks_str]
 
         self.eval_task: Optional[Task] = None
         if eval_task_str is not None:
@@ -46,7 +46,7 @@ class LaikaModel(ABC):
         self.train_task_selection_strat = train_task_selection_strat
 
     def set_eval_task(self, eval_task_str: str, template_id: int = None):
-        [self.eval_task] = Task.from_string(eval_task_str)
+        self.eval_task = Task.from_string(eval_task_str)
 
         if template_id is not None:
             self.eval_task.force_template_id(template_id)
@@ -109,10 +109,7 @@ class LaikaModel(ABC):
     @classmethod
     def from_string(cls, model_cls_name: str, dataset_obj: LaikaDataset, **kwargs) -> LaikaModel:
 
-        try:
-            model_cls = cls.str_alias_cls[model_cls_name]
-        except KeyError:
-            raise KeyError(f"Model {model_cls_name} does not exist!") from None
+        model_cls = cls.model_exists(model_cls_name, return_bool=False)
 
         # it seems a recursive call, but the top level (LaikaModel) is an abstract class,
         # model_cls is a concrete class
@@ -123,14 +120,15 @@ class LaikaModel(ABC):
         return list(cls.str_alias_cls.values()) if return_str else list(cls.str_alias_cls.keys())
 
     @classmethod
-    def model_exists(cls, model_cls_name: str, raise_error: bool = True) -> bool:
+    def model_exists(cls, model_cls_name: str, return_bool: bool = True) -> bool | type[LaikaModel]:
 
-        model_exists = model_cls_name in cls.str_alias_cls.keys()
+        try:
+            model_cls = cls.str_alias_cls[model_cls_name]
+        except KeyError:
+            raise KeyError(f"Dataset {model_cls_name} does not exist!") from None
 
-        if not model_exists and raise_error is True:
-            raise KeyError(f"Model {model_cls_name} does not exist!")
-
-        return model_exists
+        # if we arrive at the return clause, model_cls exists that's why we return True directly
+        return model_cls if not return_bool else True
 
 
 # this is for pretrained hf model. Maybe in the future an alternative class can be

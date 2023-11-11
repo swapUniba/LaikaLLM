@@ -289,7 +289,7 @@ class RecEvaluator:
         # set bold for template id which gave best result for each metric
         for metric_name in template_res.columns:
 
-            [metric_obj] = LaikaMetric.from_string(metric_name)
+            metric_obj = LaikaMetric.from_string(metric_name)
 
             # depending on the metric, best result is obtained by maximizing or minimizing
             if metric_obj.operator_comparison == operator.gt:

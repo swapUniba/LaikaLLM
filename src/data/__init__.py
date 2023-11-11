@@ -23,6 +23,6 @@ class DataParams:
         obj = cls(dataset_name, dataset_params)
 
         # check that string params are valid
-        LaikaDataset.dataset_exists(dataset_cls_name=obj.dataset_cls_name, raise_error=True)
+        LaikaDataset.dataset_exists(dataset_cls_name=obj.dataset_cls_name)
 
         return obj
