@@ -70,7 +70,7 @@ class RatingPredictionTask(Task):
         [target_item] = gt_item
         [target_rating] = gt_rating
 
-        avg_rating = f"{np.mean(gt_rating, dtype=float).item():.2f}"
+        avg_rating = f"{np.mean(input_rating_seq, dtype=float).item():.2f}"
 
         input_prompt, target, _ = random.choice(self.inference_templates())
 
