@@ -45,15 +45,16 @@ class RecTrainer:
         train_task_list = rec_model.training_tasks
 
         # Log all train templates used
-        dataframe_dict = {"task_type": [], "template_id": [], "input_prompt": [], "target_text": []}
+        dataframe_dict = {"task_type": [], "template_id": [],
+                          "input_text_placeholder": [], "target_text_placeholder": []}
         for task in train_task_list:
             for template_id in task.all_templates(return_id=True):
-                input_prompt, target_text, _ = task.templates_dict[template_id]
+                input_text_placeholder, target_text_placeholder = task.templates_dict[template_id]
 
                 dataframe_dict["task_type"].append(str(task))
                 dataframe_dict["template_id"].append(template_id)
-                dataframe_dict["input_prompt"].append(input_prompt)
-                dataframe_dict["target_text"].append(target_text)
+                dataframe_dict["input_text_placeholder"].append(input_text_placeholder)
+                dataframe_dict["target_text_placeholder"].append(target_text_placeholder)
 
         log_wandb({"train/task_templates": wandb.Table(dataframe=pd.DataFrame(dataframe_dict))}, should_log)
 

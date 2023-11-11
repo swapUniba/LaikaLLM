@@ -31,17 +31,18 @@ class RecEvaluator:
         split_name = eval_dataset.split if eval_dataset.split is not None else "eval"
 
         # Log all eval templates used
-        dataframe_dict = {"task_type": [], "template_id": [], "input_prompt": [], "target_text": []}
+        dataframe_dict = {"task_type": [], "template_id": [],
+                          "input_text_placeholder": [], "target_text_placeholder": []}
         for task in tasks_to_evaluate.keys():
 
             # we evaluate only on valid templates, that's why we iterate over only those
             for template_id in task.inference_templates(return_id=True):
-                input_prompt, target_text, _ = task.templates_dict[template_id]
+                input_text_placeholder, target_text_placeholder = task.templates_dict[template_id]
 
                 dataframe_dict["task_type"].append(str(task))
                 dataframe_dict["template_id"].append(template_id)
-                dataframe_dict["input_prompt"].append(input_prompt)
-                dataframe_dict["target_text"].append(target_text)
+                dataframe_dict["input_text_placeholder"].append(input_text_placeholder)
+                dataframe_dict["target_text_placeholder"].append(target_text_placeholder)
 
         log_wandb({f"{split_name}/task_templates": wandb.Table(dataframe=pd.DataFrame(dataframe_dict))},
                   self.should_log)

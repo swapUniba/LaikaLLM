@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import inspect
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from requests.structures import CaseInsensitiveDict
@@ -10,31 +11,10 @@ if TYPE_CHECKING:
     from src.evaluate.abstract_metric import LaikaMetric
 
 
-class PromptTarget:
-
-    def __init__(self, input_prompt: str, target_text: str, gt: list[str] = None):
-        self.input_prompt = input_prompt
-        self.target_text = target_text
-        self.gt = gt
-
-    # iter just so that this class can be unpacked,
-    # e.g. input_prompt, target_text, gt = PromptTarget(...)
-    def __iter__(self):
-        return iter((self.input_prompt, self.target_text, self.gt))
-
-    def __str__(self):
-        string = " Input ".center(50, "#") + "\n"
-        string += self.input_prompt + "\n"
-        string += " Target ".center(50, "#") + "\n"
-        string += self.target_text
-
-        return string
-
-
 class Task(ABC):
 
-    # keys are integers or str, values are PromptTarget objects
-    templates_dict: dict[int | str, PromptTarget] = {}
+    # keys are integers or str, values are Template objects
+    templates_dict: dict[int | str, Template] = {}
 
     # name obj class mapping, used for when task must be initialized from strings
     str_alias_cls: dict[str, type[Task]] = CaseInsensitiveDict()
@@ -128,7 +108,7 @@ class Task(ABC):
         return instantiated_tasks
 
     @abstractmethod
-    def __call__(self, *args, **kwargs) -> list[PromptTarget]:
+    def __call__(self, *args, **kwargs) -> list[TaskOutput]:
         raise NotImplementedError
 
     def __repr__(self):
@@ -139,3 +119,26 @@ class Task(ABC):
 
     def __hash__(self):
         return hash(str(self))
+
+
+@dataclass
+class TaskOutput:
+    input_text: str
+    target_text: str
+    ground_truth_for_eval: list[str] = None
+
+    # iter just so that this class can be unpacked,
+    # e.g. input_prompt, target_text, gt = TaskOutput(...)
+    def __iter__(self):
+        return iter((self.input_text, self.target_text, self.ground_truth_for_eval))
+
+
+@dataclass
+class Template:
+    input_text_placeholder: str
+    target_text_placeholder: str
+
+    # iter just so that this class can be unpacked,
+    # e.g. input_prompt, target_text = Template(...)
+    def __iter__(self):
+        return iter((self.input_text_placeholder, self.target_text_placeholder))
