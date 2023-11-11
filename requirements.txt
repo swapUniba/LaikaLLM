@@ -1,7 +1,11 @@
 --extra-index-url https://download.pytorch.org/whl/cu117
 torch==2.0.1+cu117
 torchvision==0.15.2+cu117
-transformers[torch]
+
+# important that it's ~=4.33 version due to dict hash bug in transformers >= 4.34
+# when instantiating GenerationConfig from pretrained for some models
+# see https://github.com/huggingface/transformers/issues/26950
+transformers[torch]~=4.33.1
 torchmetrics
 scikit-learn
 wandb
