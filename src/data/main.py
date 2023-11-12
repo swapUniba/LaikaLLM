@@ -1,11 +1,11 @@
 import os.path
 
-from src import SharedParams, PROCESSED_DATA_DIR
+from src import GeneralParams, PROCESSED_DATA_DIR
 from src.data import DataParams
 from src.data.abstract_dataset import LaikaDataset
 
 
-def data_main(shared_params: SharedParams, data_section_config: DataParams):
+def data_main(shared_params: GeneralParams, data_section_config: DataParams):
 
     dataset_cls_name = data_section_config.dataset_cls_name
     dataset_params = data_section_config.dataset_params

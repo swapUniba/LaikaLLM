@@ -11,8 +11,6 @@ import wandb
 import yaml
 from cytoolz import merge_with
 
-from src import SharedParams
-
 
 def seed_everything(seed: int):
     """

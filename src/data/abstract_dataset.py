@@ -22,6 +22,11 @@ class LaikaDataset(ABC):
 
         super().__init_subclass__(**kwargs)
 
+    def __init__(self):
+
+        # the common process to all dataset is surely to download and extract raw data
+        self.download_extract_raw_dataset()
+
     @property
     @abstractmethod
     def all_users(self) -> np.ndarray[str]:
@@ -30,6 +35,10 @@ class LaikaDataset(ABC):
     @property
     @abstractmethod
     def all_items(self) -> np.ndarray[str]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def download_extract_raw_dataset(self):
         raise NotImplementedError
 
     @abstractmethod
@@ -56,26 +65,26 @@ class LaikaDataset(ABC):
         raise NotImplementedError
 
     @classmethod
-    def all_datasets_available(cls, return_str: bool = False):
+    def all_datasets_available(cls, return_str: bool = False) -> list[type[LaikaDataset] | str]:
         return list(cls.str_alias_cls.values()) if return_str else list(cls.str_alias_cls.keys())
 
     @classmethod
-    def dataset_exists(cls, dataset_cls_name: str, raise_error: bool = True):
-
-        dataset_exists = dataset_cls_name in cls.str_alias_cls.keys()
-
-        if not dataset_exists and raise_error is True:
-            raise KeyError(f"Dataset {dataset_cls_name} does not exist!")
-
-        return dataset_exists
-
-    @classmethod
-    def from_string(cls, dataset_cls_name: str, **dataset_params):
+    def dataset_exists(cls, dataset_cls_name: str, return_bool: bool = True) -> bool | type[LaikaDataset]:
 
         try:
             dataset_cls = cls.str_alias_cls[dataset_cls_name]
         except KeyError:
             raise KeyError(f"Dataset {dataset_cls_name} does not exist!") from None
 
-        # wrong warning, subclasses may have parameters in __init__ method
-        return dataset_cls(**dataset_params)
+        # if we arrive at the return clause, dataset_cls exists that's why we return True directly
+        return dataset_cls if not return_bool else True
+
+    @classmethod
+    def from_string(cls, dataset_cls_name: str, **dataset_params):
+
+        dataset_cls = cls.dataset_exists(dataset_cls_name, return_bool=False)
+
+        # wrong warning, subclasses may have parameters in __init__ method,
+        # and in any case dataset_params can be empty, in that case __init__ will take
+        # no parameter
+        return dataset_cls(**dataset_params)  # type: ignore

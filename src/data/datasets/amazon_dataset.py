@@ -5,11 +5,13 @@ import json
 import os
 import pickle
 import random
+import zipfile
 from collections import Counter
 from functools import cached_property
 from typing import Literal, Dict
 
 import datasets
+import gdown
 import pandas as pd
 from datasets import Dataset
 
@@ -31,12 +33,15 @@ class AmazonDataset(LaikaDataset):
                  add_prefix_items_users: bool = False,
                  items_start_from_1001: bool = False):
 
+        # this will download and extract raw data zip
+        super().__init__()
+
         self.dataset_name = dataset_name
         self.add_prefix = add_prefix_items_users
         self.items_start_from_1001 = items_start_from_1001
 
         # read mapping between user string id (ABXMSBDSI) and user int idxs (331)
-        with open(os.path.join(RAW_DATA_DIR, self.dataset_name, 'datamaps.json'), "r") as f:
+        with open(os.path.join(RAW_DATA_DIR, "AmazonDataset", self.dataset_name, 'datamaps.json'), "r") as f:
             datamaps = json.load(f)
 
         self.user_id2idx = {str(key): str(val) for key, val in datamaps['user2id'].items()}
@@ -57,7 +62,7 @@ class AmazonDataset(LaikaDataset):
         relevant_items_id = set(self.item_id2idx.keys())
         meta_dict = {}
         print("Extracting meta info...", end="")
-        for meta_content in parse(os.path.join(RAW_DATA_DIR, self.dataset_name, 'meta.json.gz')):
+        for meta_content in parse(os.path.join(RAW_DATA_DIR, "AmazonDataset", self.dataset_name, 'meta.json.gz')):
             item_id = meta_content.pop("asin")
             if item_id in relevant_items_id:
                 item_idx = self.item_id2idx[item_id]
@@ -87,7 +92,7 @@ class AmazonDataset(LaikaDataset):
 
             df_dict["user_id"].extend(user_col_repeated)
             df_dict["item_sequence"].extend(item_col_value)
-            df_dict["rating_sequence"].extend(ratings_col_value)
+            df_dict["rating_sequence"].extend(map(str, ratings_col_value))
 
             for item_idx in item_col_value:
                 desc = meta_dict[item_idx].get("description", "")
@@ -130,6 +135,45 @@ class AmazonDataset(LaikaDataset):
     @cached_property
     def all_items(self):
         return pd.unique(self.original_df["item_sequence"].explode())
+
+    def download_extract_raw_dataset(self):
+
+        url_raw_data = "https://drive.google.com/uc?id=1qGxgmx7G_WB7JE4Cn_bEcZ_o_NAJLE3G"
+        raw_data_folder_out = os.path.join(RAW_DATA_DIR, "AmazonDataset")
+
+        if not os.path.isdir(raw_data_folder_out):
+
+            print("Downloading raw Amazon Dataset...")
+
+            zip_path = gdown.download(url=url_raw_data,
+                                      output=os.path.join(RAW_DATA_DIR, "Amazon_Data.zip"))
+
+            print("Done!")
+
+            # create AmazonDataset folder inside raw
+            os.makedirs(raw_data_folder_out)
+
+            print("Extracting data zip...", end="")
+
+            # process output path of zip file to extract, in order to not have
+            # "AmazonDataset/data/beauty/**" but simply "AmazonDataset/beauty/**"
+            subfolder_to_extract = ["beauty", "sports", "toys"]
+            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+
+                for subfolder in subfolder_to_extract:
+                    dir_to_extract = f"data/{subfolder}/"
+
+                    for path_in_zip in zip_ref.namelist():
+                        if path_in_zip.startswith(dir_to_extract):
+                            zip_ref.getinfo(path_in_zip).filename = "/".join(path_in_zip.split("/")[1:])
+                            zip_ref.extract(member=path_in_zip, path=raw_data_folder_out)
+
+            print("Done!")
+
+            # remove zip once we are done
+            os.remove(zip_path)
+        else:
+            print("Amazon Dataset found, skipping download part")
 
     def split_data(self, exploded_data_df: pd.DataFrame):
 
@@ -266,7 +310,7 @@ class AmazonDataset(LaikaDataset):
 
         user_items = dict()
 
-        with open(os.path.join(RAW_DATA_DIR, self.dataset_name, "sequential_data.txt")) as f:
+        with open(os.path.join(RAW_DATA_DIR, "AmazonDataset", self.dataset_name, "sequential_data.txt")) as f:
             for user_item_sequence in f:
                 # user_item sequence is in the form {user_id}, {item_id}, {item_id}, ... {item_id}
                 item_sequence = [str(item_idx) for item_idx in user_item_sequence.split()]
@@ -280,7 +324,8 @@ class AmazonDataset(LaikaDataset):
 
     def _read_ratings(self, user_items: dict):
 
-        with open(os.path.join(RAW_DATA_DIR, self.dataset_name, "rating_splits_augmented.pkl"), "rb") as f:
+        with open(os.path.join(RAW_DATA_DIR, "AmazonDataset", self.dataset_name,
+                               "rating_splits_augmented.pkl"), "rb") as f:
             ratings_list = pickle.load(f)
 
         # here we use data from all splits because these splits originally are different

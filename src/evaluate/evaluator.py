@@ -8,7 +8,7 @@ import pandas as pd
 import wandb
 from tqdm import tqdm
 
-from src.data.abstract_templates import Task
+from src.data.abstract_task import Task
 from src.evaluate.abstract_metric import LaikaMetric, PaddedArr
 from src.evaluate.abstract_metric import Loss
 from src.model import LaikaModel
@@ -31,17 +31,18 @@ class RecEvaluator:
         split_name = eval_dataset.split if eval_dataset.split is not None else "eval"
 
         # Log all eval templates used
-        dataframe_dict = {"task_type": [], "template_id": [], "input_prompt": [], "target_text": []}
+        dataframe_dict = {"task_type": [], "template_id": [],
+                          "input_text_placeholder": [], "target_text_placeholder": []}
         for task in tasks_to_evaluate.keys():
 
             # we evaluate only on valid templates, that's why we iterate over only those
             for template_id in task.inference_templates(return_id=True):
-                input_prompt, target_text, _ = task.templates_dict[template_id]
+                input_text_placeholder, target_text_placeholder = task.templates_dict[template_id]
 
                 dataframe_dict["task_type"].append(str(task))
                 dataframe_dict["template_id"].append(template_id)
-                dataframe_dict["input_prompt"].append(input_prompt)
-                dataframe_dict["target_text"].append(target_text)
+                dataframe_dict["input_text_placeholder"].append(input_text_placeholder)
+                dataframe_dict["target_text_placeholder"].append(target_text_placeholder)
 
         log_wandb({f"{split_name}/task_templates": wandb.Table(dataframe=pd.DataFrame(dataframe_dict))},
                   self.should_log)
@@ -103,11 +104,16 @@ class RecEvaluator:
         all_cls_metrics = {metric.__class__ for metric in metric_list}
 
         for cls_metric in all_cls_metrics:
-            if any(not issubclass(cls_metric, cls_compatible) for cls_compatible in task.compatible_metrics):
-                raise ValueError(
-                    f"Task {task} is incompatible with {cls_metric}! It can be only evaluated on the "
-                    f"following metrics: {task.compatible_metrics}"
-                )
+
+            # if metric is compatible or is Loss, we pass directly to the next metric to check
+            if any(issubclass(cls_metric, cls_compatible) or cls_metric == Loss
+                   for cls_compatible in task.compatible_metrics()):
+                continue
+
+            raise ValueError(
+                f"Task {task} is incompatible with {cls_metric.__name__}! It can be only evaluated on the "
+                f"following metrics: {[compatible_metric.__name__ for compatible_metric in task.compatible_metrics()]}"
+            )
 
         self.rec_model.eval()
 
@@ -151,7 +157,7 @@ class RecEvaluator:
         for i, batch in enumerate(pbar_eval, start=1):
 
             prepared_input = self.rec_model.prepare_input(batch)
-            predictions, truths, loss = self.rec_model.generate_step(prepared_input)
+            predictions, truths, loss = self.rec_model.generate_step(prepared_input, return_loss=return_loss)
 
             eval_loss += loss.item()
 
@@ -283,7 +289,7 @@ class RecEvaluator:
         # set bold for template id which gave best result for each metric
         for metric_name in template_res.columns:
 
-            [metric_obj] = LaikaMetric.from_string(metric_name)
+            metric_obj = LaikaMetric.from_string(metric_name)
 
             # depending on the metric, best result is obtained by maximizing or minimizing
             if metric_obj.operator_comparison == operator.gt:

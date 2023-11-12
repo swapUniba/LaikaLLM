@@ -2,24 +2,39 @@ import os
 
 from datasets import Dataset
 
-from src import SharedParams, METRICS_DIR
+from src import GeneralParams, METRICS_DIR, PROCESSED_DATA_DIR, MODELS_DIR
+from src.data import DataParams
 from src.data.abstract_dataset import LaikaDataset
-from src.data.abstract_templates import Task
+from src.data.abstract_task import Task
 from src.evaluate import EvalParams
 from src.evaluate.abstract_metric import LaikaMetric
 from src.evaluate.evaluator import RecEvaluator
-from src.model import LaikaModel
+from src.model import LaikaModel, ModelParams
 
 
-def eval_main(shared_params: SharedParams, eval_params: EvalParams, dataset_obj: LaikaDataset, rec_model: LaikaModel):
+def eval_main(shared_params: GeneralParams, data_params: DataParams, model_params: ModelParams, eval_params: EvalParams):
 
+    # shared params
     exp_name = shared_params.exp_name
     device = shared_params.device
     should_log = shared_params.log_wandb
 
+    # eval params
     eval_batch_size = eval_params.eval_batch_size
     eval_task_dict = eval_params.eval_tasks
     create_latex_table = eval_params.create_latex_table
+
+    # load dataset created in data phase
+    dataset_cls = LaikaDataset.dataset_exists(data_params.dataset_cls_name, return_bool=False)
+
+    dataset_path = os.path.join(PROCESSED_DATA_DIR, exp_name)
+    dataset_obj = dataset_cls.load(dataset_path)
+
+    # load model created in model phase
+    model_cls = LaikaModel.model_exists(model_params.model_cls_name, return_bool=False)
+
+    model_path = os.path.join(MODELS_DIR, shared_params.exp_name)
+    rec_model = model_cls.load(model_path, **model_params.model_kwargs)
 
     ds_dict = dataset_obj.get_hf_datasets()
     test_set = ds_dict["test"]
@@ -31,9 +46,8 @@ def eval_main(shared_params: SharedParams, eval_params: EvalParams, dataset_obj:
     rec_model.to(device)
 
     # convert from str to objects
-
     eval_task_dict = {
-        Task.from_string(eval_task_str)[0]: LaikaMetric.from_string(*metric_list_str)
+        Task.from_string(eval_task_str): [LaikaMetric.from_string(metric_str) for metric_str in metric_list_str]
         for eval_task_str, metric_list_str in eval_task_dict.items()
     }
 

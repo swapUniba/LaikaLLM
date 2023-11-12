@@ -2,30 +2,38 @@ import os
 
 from datasets import Dataset
 
-from src import SharedParams, MODELS_DIR
+from src import GeneralParams, MODELS_DIR, PROCESSED_DATA_DIR
+from src.data import DataParams
 from src.data.abstract_dataset import LaikaDataset
 from src.evaluate.abstract_metric import LaikaMetric
 from src.model import ModelParams, LaikaModel
 from src.model.trainer import RecTrainer
 
 
-def model_main(shared_params: SharedParams, model_params: ModelParams, dataset_obj: LaikaDataset):
-    # shared
+def model_main(shared_params: GeneralParams, data_params: DataParams, model_params: ModelParams):
+    # shared params
     exp_name = shared_params.exp_name
     device = shared_params.device
+    log_wandb = shared_params.log_wandb
 
-    # trainer
+    # trainer params
     n_epochs = model_params.n_epochs
     train_batch_size = model_params.train_batch_size
     eval_batch_size = model_params.eval_batch_size
     monitor_metric = model_params.monitor_metric
 
-    # model
+    # model params
     model_cls_name = model_params.model_cls_name
     model_kwargs = model_params.model_kwargs
     train_tasks = model_params.train_tasks
     val_task = model_params.val_task
     val_task_template_id = model_params.val_task_template_id
+
+    # load dataset created in data phase
+    dataset_cls = LaikaDataset.dataset_exists(data_params.dataset_cls_name, return_bool=False)
+
+    dataset_path = os.path.join(PROCESSED_DATA_DIR, shared_params.exp_name)
+    dataset_obj = dataset_cls.load(dataset_path)
 
     ds_dict = dataset_obj.get_hf_datasets()
     sampling_fn = dataset_obj.sample_train_sequence
@@ -49,7 +57,7 @@ def model_main(shared_params: SharedParams, model_params: ModelParams, dataset_o
     output_dir = os.path.join(MODELS_DIR, exp_name)
     os.makedirs(output_dir, exist_ok=True)
 
-    [monitor_metric_obj] = LaikaMetric.from_string(monitor_metric)
+    monitor_metric_obj = LaikaMetric.from_string(monitor_metric)
     trainer = RecTrainer(
         rec_model=rec_model,
         n_epochs=n_epochs,
@@ -57,9 +65,8 @@ def model_main(shared_params: SharedParams, model_params: ModelParams, dataset_o
         eval_batch_size=eval_batch_size,
         train_sampling_fn=sampling_fn,
         monitor_metric=monitor_metric_obj,
-        output_dir=output_dir
+        output_dir=output_dir,
+        should_log=log_wandb
     )
 
-    best_model = trainer.train(train, validation_dataset=val)
-
-    return best_model
+    trainer.train(train, validation_dataset=val)

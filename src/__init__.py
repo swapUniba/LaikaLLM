@@ -14,11 +14,12 @@ METRICS_DIR = os.path.join(REPORTS_DIR, "metrics")
 
 
 @dataclass
-class SharedParams:
+class GeneralParams:
     exp_name: str
     device: str = "cuda:0"
     random_seed: int = 42
     log_wandb: bool = False
+    eval_only: bool = False
 
     @classmethod
     def from_parse(cls, general_section):

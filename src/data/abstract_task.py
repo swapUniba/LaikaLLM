@@ -2,43 +2,19 @@ from __future__ import annotations
 
 import inspect
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-import numpy as np
 from requests.structures import CaseInsensitiveDict
 
 if TYPE_CHECKING:
     from src.evaluate.abstract_metric import LaikaMetric
 
 
-class PromptTarget:
-
-    def __init__(self, input_prompt: str, target_text: str, gt: list[str] = None):
-        self.input_prompt = input_prompt
-        self.target_text = target_text
-        self.gt = gt
-
-    # iter just so that this class can be unpacked,
-    # e.g. input_prompt, target_text, gt = PromptTarget(...)
-    def __iter__(self):
-        return iter((self.input_prompt, self.target_text, self.gt))
-
-    def __str__(self):
-        string = " Input ".center(50, "#") + "\n"
-        string += self.input_prompt + "\n"
-        string += " Target ".center(50, "#") + "\n"
-        string += self.target_text
-
-        return string
-
-
 class Task(ABC):
 
-    # keys are integers or str, values are PromptTarget objects
-    templates_dict: dict[int | str, PromptTarget] = {}
-
-    # all metrics which can be used to evaluate the results of the task
-    compatible_metrics: list[type[LaikaMetric]] = []
+    # keys are integers or str, values are Template objects
+    templates_dict: dict[int | str, Template] = {}
 
     # name obj class mapping, used for when task must be initialized from strings
     str_alias_cls: dict[str, type[Task]] = CaseInsensitiveDict()
@@ -54,9 +30,15 @@ class Task(ABC):
 
         super().__init_subclass__(**kwargs)
 
-    @property
+    @classmethod
     @abstractmethod
-    def is_ranking_task(self) -> bool:
+    def compatible_metrics(cls) -> list[type[LaikaMetric]]:
+        # all metrics which can be used to evaluate the results of the task
+        raise NotImplementedError
+
+    @classmethod
+    @abstractmethod
+    def is_ranking_task(cls) -> bool:
         raise NotImplementedError
 
     def all_templates(self, return_id: bool = False):
@@ -93,40 +75,28 @@ class Task(ABC):
         return list(cls.str_alias_cls.values()) if return_str else list(cls.str_alias_cls.keys())
 
     @classmethod
-    def task_exists(cls, task_cls_name: str, template_id: int | str = None, raise_error: bool = True):
+    def task_exists(cls, task_cls_name: str, template_id: int | str = None,
+                    return_bool: bool = True) -> bool | type[Task]:
 
-        # if no template id specified, then it should not count towards the result,
-        # hence set to True (True is neutral element of AND operation)
-        template_exists = True
-        task_exists = task_cls_name in cls.str_alias_cls.keys()
+        try:
+            task_cls = cls.str_alias_cls[task_cls_name]
+        except KeyError:
+            raise KeyError(f"Task {task_cls_name} does not exist!") from None
 
-        if task_exists and template_id is not None:
-            template_exists = template_id in cls.str_alias_cls[task_cls_name].templates_dict.keys()
+        if template_id is not None and template_id not in task_cls.templates_dict.keys():
+            raise KeyError(f"Template {template_id} for task {task_cls_name} does not exist!") from None
 
-            if not template_exists and raise_error is True:
-                raise KeyError(f"Template {template_id} for task {task_cls_name} does not exist!")
-
-        if not task_exists and raise_error is True:
-            raise KeyError(f"Task {task_cls_name} does not exist!")
-
-        return task_exists and template_exists
+        return task_cls if not return_bool else True
 
     @classmethod
-    def from_string(cls, *task_str: str):
+    def from_string(cls, task_str: str):
 
-        instantiated_tasks = []
-        for task in task_str:
-            try:
-                # remember, we are searching a case-insensitive dict, so we don't care about
-                # lowering all keys
-                instantiated_tasks.append(cls.str_alias_cls[task]())
-            except KeyError:
-                raise KeyError(f"{task} task does not exist!") from None
+        task_cls = cls.task_exists(task_cls_name=task_str, return_bool=False)
 
-        return instantiated_tasks
+        return task_cls()
 
     @abstractmethod
-    def __call__(self, *args, **kwargs) -> list[PromptTarget]:
+    def __call__(self, *args, **kwargs) -> list[TaskOutput]:
         raise NotImplementedError
 
     def __repr__(self):
@@ -137,3 +107,26 @@ class Task(ABC):
 
     def __hash__(self):
         return hash(str(self))
+
+
+@dataclass
+class TaskOutput:
+    input_text: str
+    target_text: str
+    ground_truth_for_eval: list[str] = None
+
+    # iter just so that this class can be unpacked,
+    # e.g. input_prompt, target_text, gt = TaskOutput(...)
+    def __iter__(self):
+        return iter((self.input_text, self.target_text, self.ground_truth_for_eval))
+
+
+@dataclass
+class Template:
+    input_text_placeholder: str
+    target_text_placeholder: str
+
+    # iter just so that this class can be unpacked,
+    # e.g. input_prompt, target_text = Template(...)
+    def __iter__(self):
+        return iter((self.input_text_placeholder, self.target_text_placeholder))
