@@ -49,7 +49,7 @@ class LaikaModel(ABC):
         self.eval_task = Task.from_string(eval_task_str)
 
         if template_id is not None:
-            self.eval_task.force_template_id(template_id)
+            self.eval_task.force_template(template_id)
 
     @property
     @abstractmethod
