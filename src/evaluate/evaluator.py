@@ -297,9 +297,8 @@ class RecEvaluator:
                 best_metric_idx = template_res[metric_name].idxmin()
 
             template_res.loc[:, metric_name] = template_res[metric_name].map(lambda x: "%.4f" % x)
-
-            template_res.loc[best_metric_idx, metric_name] = r"\textbf{" + template_res.loc[
-                best_metric_idx, metric_name] + "}"
+            template_res.at[best_metric_idx, metric_name] = \
+                r"\textbf{" + template_res.loc[best_metric_idx, metric_name] + "}"
 
         # fill cell values row by row
         for index, row in template_res.iterrows():
