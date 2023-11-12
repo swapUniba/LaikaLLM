@@ -18,7 +18,7 @@ def parse_yml_config(yml_path: str):
     # after popping every section, only general params remain
     general_section = yaml_args
 
-    shared_params = GeneralParams.from_parse(general_section)
+    general_params = GeneralParams.from_parse(general_section)
     data_params = DataParams.from_parse(data_section)
     model_params = ModelParams.from_parse(model_section)
     eval_params = EvalParams.from_parse(eval_section)
@@ -31,4 +31,4 @@ def parse_yml_config(yml_path: str):
     if eval_params.eval_batch_size is None:
         eval_params.eval_batch_size = model_params.eval_batch_size
 
-    return shared_params, data_params, model_params, eval_params
+    return general_params, data_params, model_params, eval_params

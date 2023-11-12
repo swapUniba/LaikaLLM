@@ -10,11 +10,11 @@ from src.model import ModelParams, LaikaModel
 from src.model.trainer import RecTrainer
 
 
-def model_main(shared_params: GeneralParams, data_params: DataParams, model_params: ModelParams):
+def model_main(general_params: GeneralParams, data_params: DataParams, model_params: ModelParams):
     # shared params
-    exp_name = shared_params.exp_name
-    device = shared_params.device
-    log_wandb = shared_params.log_wandb
+    exp_name = general_params.exp_name
+    device = general_params.device
+    log_wandb = general_params.log_wandb
 
     # trainer params
     n_epochs = model_params.n_epochs
@@ -32,7 +32,7 @@ def model_main(shared_params: GeneralParams, data_params: DataParams, model_para
     # load dataset created in data phase
     dataset_cls = LaikaDataset.dataset_exists(data_params.dataset_cls_name, return_bool=False)
 
-    dataset_path = os.path.join(PROCESSED_DATA_DIR, shared_params.exp_name)
+    dataset_path = os.path.join(PROCESSED_DATA_DIR, general_params.exp_name)
     dataset_obj = dataset_cls.load(dataset_path)
 
     ds_dict = dataset_obj.get_hf_datasets()

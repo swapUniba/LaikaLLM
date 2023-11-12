@@ -22,9 +22,9 @@ if __name__ == '__main__':
     # those passed via cmd will prevail
     args = parser.parse_args(["-c", "params.yml"])
 
-    shared_params, data_params, model_params, eval_params = parse_yml_config(args.config)
+    general_params, data_params, model_params, eval_params = parse_yml_config(args.config)
 
-    if shared_params.log_wandb:
+    if general_params.log_wandb:
 
         if 'WANDB_API_KEY' not in os.environ:
             raise ValueError('Cannot log run to wandb if environment variable "WANDB_API_KEY" is not present\n'
@@ -38,7 +38,7 @@ if __name__ == '__main__':
     # apart from the params read from yml file, log env variables needed for reproducibility and
     # also the current active branch in which experiment is being performed
     config_args = {
-        "shared_params": dataclasses.asdict(shared_params),
+        "general_params": dataclasses.asdict(general_params),
         "data_params": dataclasses.asdict(data_params),
         "model_params": dataclasses.asdict(model_params),
         "eval_params": dataclasses.asdict(eval_params),
@@ -47,18 +47,18 @@ if __name__ == '__main__':
         "git_branch": Repository('.').head.shorthand
     }
 
-    with init_wandb(project="P5-Thesis", name=shared_params.exp_name, config=config_args,
-                    should_log=shared_params.log_wandb):
+    with init_wandb(project="P5-Thesis", name=general_params.exp_name, config=config_args,
+                    should_log=general_params.log_wandb):
 
-        if not shared_params.eval_only:
+        if not general_params.eval_only:
             # at start of each main phase, we re-initialize the state
-            seed_everything(shared_params.random_seed)
-            data_main(shared_params, data_params)
+            seed_everything(general_params.random_seed)
+            data_main(general_params, data_params)
 
             # at start of each main phase, we re-initialize the state
-            seed_everything(shared_params.random_seed)
-            model_main(shared_params, data_params, model_params)
+            seed_everything(general_params.random_seed)
+            model_main(general_params, data_params, model_params)
 
         # at start of each main phase, we re-initialize the state
-        seed_everything(shared_params.random_seed)
-        eval_main(shared_params, data_params, model_params, eval_params)
+        seed_everything(general_params.random_seed)
+        eval_main(general_params, data_params, model_params, eval_params)

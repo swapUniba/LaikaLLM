@@ -12,12 +12,12 @@ from src.evaluate.evaluator import RecEvaluator
 from src.model import LaikaModel, ModelParams
 
 
-def eval_main(shared_params: GeneralParams, data_params: DataParams, model_params: ModelParams, eval_params: EvalParams):
+def eval_main(general_params: GeneralParams, data_params: DataParams, model_params: ModelParams, eval_params: EvalParams):
 
     # shared params
-    exp_name = shared_params.exp_name
-    device = shared_params.device
-    should_log = shared_params.log_wandb
+    exp_name = general_params.exp_name
+    device = general_params.device
+    should_log = general_params.log_wandb
 
     # eval params
     eval_batch_size = eval_params.eval_batch_size
@@ -33,7 +33,7 @@ def eval_main(shared_params: GeneralParams, data_params: DataParams, model_param
     # load model created in model phase
     model_cls = LaikaModel.model_exists(model_params.model_cls_name, return_bool=False)
 
-    model_path = os.path.join(MODELS_DIR, shared_params.exp_name)
+    model_path = os.path.join(MODELS_DIR, general_params.exp_name)
     rec_model = model_cls.load(model_path, **model_params.model_kwargs)
 
     ds_dict = dataset_obj.get_hf_datasets()
