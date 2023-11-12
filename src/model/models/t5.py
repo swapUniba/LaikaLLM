@@ -355,7 +355,7 @@ class T5Rec(LaikaModelHF):
     @classmethod
     def from_cls(cls, model_cls: type[T5Rec], dataset_obj: LaikaDataset, **kwargs):
 
-        # n users is an additional requirement for t5 model that should
+        # all_unique_users is an additional requirement for t5 model that should
         # be extracted from dataset
         kwargs["all_unique_users"] = dataset_obj.all_users.tolist()
 
