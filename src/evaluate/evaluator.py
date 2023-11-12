@@ -8,7 +8,7 @@ import pandas as pd
 import wandb
 from tqdm import tqdm
 
-from src.data.abstract_task import Task
+from src.data.abstract_task import LaikaTask
 from src.evaluate.abstract_metric import LaikaMetric, PaddedArr
 from src.evaluate.abstract_metric import Loss
 from src.model import LaikaModel
@@ -24,7 +24,7 @@ class RecEvaluator:
 
     def evaluate_suite(self,
                        eval_dataset: datasets.Dataset,
-                       tasks_to_evaluate: dict[Task, list[LaikaMetric]],
+                       tasks_to_evaluate: dict[LaikaTask, list[LaikaMetric]],
                        output_dir: str,
                        create_latex_table: bool = True):
 
@@ -112,7 +112,7 @@ class RecEvaluator:
 
     def evaluate_task(self, eval_dataset: datasets.Dataset,
                       metric_list: list[LaikaMetric],
-                      task: Task,
+                      task: LaikaTask,
                       template_id: int = None):
 
         all_cls_metrics = {metric.__class__ for metric in metric_list}

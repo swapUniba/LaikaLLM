@@ -10,7 +10,7 @@ from requests.structures import CaseInsensitiveDict
 from transformers import PreTrainedModel, PreTrainedTokenizer, AutoConfig, AutoTokenizer
 
 from src.data.abstract_dataset import LaikaDataset
-from src.data.abstract_task import Task
+from src.data.abstract_task import LaikaTask
 
 
 class LaikaModel(ABC):
@@ -37,16 +37,16 @@ class LaikaModel(ABC):
             raise AttributeError("train_task_selection_strat should be 'all' or 'random'!")
 
         self.all_unique_labels = np.array(all_unique_labels)
-        self.training_tasks = [Task.from_string(training_task_str) for training_task_str in training_tasks_str]
+        self.training_tasks = [LaikaTask.from_string(training_task_str) for training_task_str in training_tasks_str]
 
-        self.eval_task: Optional[Task] = None
+        self.eval_task: Optional[LaikaTask] = None
         if eval_task_str is not None:
             self.set_eval_task(eval_task_str, eval_template_id)
 
         self.train_task_selection_strat = train_task_selection_strat
 
     def set_eval_task(self, eval_task_str: str, template_id: int = None):
-        self.eval_task = Task.from_string(eval_task_str)
+        self.eval_task = LaikaTask.from_string(eval_task_str)
 
         if template_id is not None:
             self.eval_task.force_template(template_id)
@@ -85,7 +85,7 @@ class LaikaModel(ABC):
         raise NotImplementedError
 
     def eval(self):
-        Task.eval()
+        LaikaTask.eval()
 
         self.train(False)
 
@@ -170,9 +170,9 @@ class LaikaModelHF(LaikaModel):
     def train(self, mode: bool = True):
 
         if mode is True:
-            Task.train()
+            LaikaTask.train()
         else:
-            Task.eval()
+            LaikaTask.eval()
 
         self.model.train(mode=mode)
 

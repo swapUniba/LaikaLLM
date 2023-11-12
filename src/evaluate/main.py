@@ -5,7 +5,7 @@ from datasets import Dataset
 from src import GeneralParams, METRICS_DIR, PROCESSED_DATA_DIR, MODELS_DIR
 from src.data import DataParams
 from src.data.abstract_dataset import LaikaDataset
-from src.data.abstract_task import Task
+from src.data.abstract_task import LaikaTask
 from src.evaluate import EvalParams
 from src.evaluate.abstract_metric import LaikaMetric
 from src.evaluate.evaluator import RecEvaluator
@@ -47,7 +47,7 @@ def eval_main(general_params: GeneralParams, data_params: DataParams, model_para
 
     # convert from str to objects
     eval_task_dict = {
-        Task.from_string(eval_task_str): [LaikaMetric.from_string(metric_str) for metric_str in metric_list_str]
+        LaikaTask.from_string(eval_task_str): [LaikaMetric.from_string(metric_str) for metric_str in metric_list_str]
         for eval_task_str, metric_list_str in eval_task_dict.items()
     }
 

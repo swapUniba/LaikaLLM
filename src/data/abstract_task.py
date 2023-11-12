@@ -11,13 +11,13 @@ if TYPE_CHECKING:
     from src.evaluate.abstract_metric import LaikaMetric
 
 
-class Task(ABC):
+class LaikaTask(ABC):
 
     # keys are integers or str, values are Template objects
     templates_dict: dict[int | str, Template] = {}
 
     # name obj class mapping, used for when task must be initialized from strings
-    str_alias_cls: dict[str, type[Task]] = CaseInsensitiveDict()
+    str_alias_cls: dict[str, type[LaikaTask]] = CaseInsensitiveDict()
 
     # class attribute since if the model is in training mode, all tasks should be in training mode
     training: bool = False
@@ -64,11 +64,11 @@ class Task(ABC):
 
     @classmethod
     def train(cls):
-        Task.training = True
+        LaikaTask.training = True
 
     @classmethod
     def eval(cls):
-        Task.training = False
+        LaikaTask.training = False
 
     @classmethod
     def all_tasks_available(cls, return_str: bool = False):
@@ -76,12 +76,12 @@ class Task(ABC):
 
     @classmethod
     def task_exists(cls, task_cls_name: str, template_id: int | str = None,
-                    return_bool: bool = True) -> bool | type[Task]:
+                    return_bool: bool = True) -> bool | type[LaikaTask]:
 
         try:
             task_cls = cls.str_alias_cls[task_cls_name]
         except KeyError:
-            raise KeyError(f"Task {task_cls_name} does not exist!") from None
+            raise KeyError(f"LaikaTask {task_cls_name} does not exist!") from None
 
         if template_id is not None and template_id not in task_cls.templates_dict.keys():
             raise KeyError(f"Template {template_id} for task {task_cls_name} does not exist!") from None

@@ -3,12 +3,12 @@ import random
 
 import numpy as np
 
-from src.data.abstract_task import Task, Template, TaskOutput
+from src.data.abstract_task import LaikaTask, Template, TaskOutput
 from src.evaluate.metrics.error_metrics import ErrorMetric
 from src.evaluate.metrics.ranking_metrics import RankingMetric
 
 
-class RatingPredictionTask(Task):
+class RatingPredictionTask(LaikaTask):
     templates_dict = {
         0: Template(
             input_text_placeholder="rating prediction - {user_id}: \n\n"
@@ -89,7 +89,7 @@ class RatingPredictionTask(Task):
         return [TaskOutput(input_text, target_text, ground_truth_for_eval=[target_rating])]
 
 
-class SequentialSideInfoTask(Task):
+class SequentialSideInfoTask(LaikaTask):
     templates_dict = {
         0: Template(
             input_text_placeholder="sequential recommendation - {user_id}: \n\n"
@@ -281,7 +281,7 @@ class SequentialSideInfoTask(Task):
         return input_text_pair, target_text_pair
 
 
-class DirectSideInfoTask(Task):
+class DirectSideInfoTask(LaikaTask):
     templates_dict = {
         0: Template(
             input_text_placeholder="direct recommendation - {user_id}: \n\n"

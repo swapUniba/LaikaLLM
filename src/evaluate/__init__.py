@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from .metrics import *
 
 from src.evaluate.abstract_metric import LaikaMetric
-from src.data.abstract_task import Task
+from src.data.abstract_task import LaikaTask
 
 
 @dataclass
@@ -24,7 +24,7 @@ class EvalParams:
 
         # check that each eval task exists
         for task_name in obj.eval_tasks.keys():
-            Task.task_exists(task_name)
+            LaikaTask.task_exists(task_name)
 
         # check that each metric exists
         for metric_name in itertools.chain.from_iterable(obj.eval_tasks.values()):

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from .models import *
 
 from src.model.abstract_model import LaikaModel
-from src.data.abstract_task import Task
+from src.data.abstract_task import LaikaTask
 from src.evaluate.abstract_metric import LaikaMetric
 
 
@@ -47,11 +47,11 @@ class ModelParams:
 
         # check that each train task exist
         for task_name in obj.train_tasks:
-            Task.task_exists(task_name)
+            LaikaTask.task_exists(task_name)
 
         # check that valid task and template exist
         if obj.val_task is not None:
-            Task.task_exists(obj.val_task, template_id=obj.val_task_template_id)
+            LaikaTask.task_exists(obj.val_task, template_id=obj.val_task_template_id)
 
         # check that monitor metric exists
         LaikaMetric.metric_exists(obj.monitor_metric)
