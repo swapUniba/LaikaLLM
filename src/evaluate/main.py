@@ -14,7 +14,7 @@ from src.model import LaikaModel, ModelParams
 
 def eval_main(general_params: GeneralParams, data_params: DataParams, model_params: ModelParams, eval_params: EvalParams):
 
-    # shared params
+    # general params
     exp_name = general_params.exp_name
     device = general_params.device
     should_log = general_params.log_wandb

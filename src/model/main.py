@@ -11,7 +11,8 @@ from src.model.trainer import RecTrainer
 
 
 def model_main(general_params: GeneralParams, data_params: DataParams, model_params: ModelParams):
-    # shared params
+
+    # general params
     exp_name = general_params.exp_name
     device = general_params.device
     log_wandb = general_params.log_wandb

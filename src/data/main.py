@@ -7,6 +7,7 @@ from src.data.abstract_dataset import LaikaDataset
 
 def data_main(general_params: GeneralParams, data_section_config: DataParams):
 
+    # data params
     dataset_cls_name = data_section_config.dataset_cls_name
     dataset_params = data_section_config.dataset_params
 
