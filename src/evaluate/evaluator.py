@@ -73,10 +73,10 @@ class RecEvaluator:
             task_result_df_mean_max = task_result_df.agg({metric_name: ["mean", "max"]
                                                           for metric_name in task_result})
 
-            log_wandb({f"{split_name}/{task}/{metric}/mean": task_result_df_mean_max[metric]["mean"]
+            log_wandb({f"{split_name}/{task}/{metric} - Mean": task_result_df_mean_max[metric]["mean"]
                        for metric in task_result}, self.should_log)
 
-            log_wandb({f"{split_name}/{task}/{metric}/max": task_result_df_mean_max[metric]["max"]
+            log_wandb({f"{split_name}/{task}/{metric} - Max": task_result_df_mean_max[metric]["max"]
                        for metric in task_result}, self.should_log)
 
             print(f"Mean and max result for task {task}:")
