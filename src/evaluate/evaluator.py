@@ -145,8 +145,7 @@ class RecEvaluator:
         total_n_batch = ceil(preprocessed_eval.num_rows / self.eval_batch_size)
 
         pbar_eval = tqdm(preprocessed_eval.iter(batch_size=self.eval_batch_size),
-                         total=total_n_batch,
-                         dynamic_ncols=True)
+                         total=total_n_batch)
 
         eval_loss = 0
         total_preds = []
