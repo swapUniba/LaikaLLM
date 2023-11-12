@@ -72,7 +72,7 @@ class LaikaTask(ABC):
 
     @classmethod
     def all_tasks_available(cls, return_str: bool = False):
-        return list(cls.str_alias_cls.values()) if return_str else list(cls.str_alias_cls.keys())
+        return list(cls.str_alias_cls.keys()) if return_str else list(cls.str_alias_cls.values())
 
     @classmethod
     def task_exists(cls, task_cls_name: str, template_id: int | str = None,

@@ -66,7 +66,7 @@ class LaikaDataset(ABC):
 
     @classmethod
     def all_datasets_available(cls, return_str: bool = False) -> list[type[LaikaDataset] | str]:
-        return list(cls.str_alias_cls.values()) if return_str else list(cls.str_alias_cls.keys())
+        return list(cls.str_alias_cls.keys()) if return_str else list(cls.str_alias_cls.values())
 
     @classmethod
     def dataset_exists(cls, dataset_cls_name: str, return_bool: bool = True) -> bool | type[LaikaDataset]:

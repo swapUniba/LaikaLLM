@@ -117,7 +117,7 @@ class LaikaModel(ABC):
 
     @classmethod
     def all_models_available(cls, return_str: bool = False) -> list[type[LaikaModel] | str]:
-        return list(cls.str_alias_cls.values()) if return_str else list(cls.str_alias_cls.keys())
+        return list(cls.str_alias_cls.keys()) if return_str else list(cls.str_alias_cls.values())
 
     @classmethod
     def model_exists(cls, model_cls_name: str, return_bool: bool = True) -> bool | type[LaikaModel]:
