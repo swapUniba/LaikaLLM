@@ -24,6 +24,9 @@ class PaddedArr(np.ndarray):
         for i, sublist in enumerate(iterable):
             padded_array[i, :len(sublist)] = sublist
 
+            assert not (padded_array[i, :len(sublist)] == "<PAD>").any(), \
+                "<PAD> is the pad token and can't be used as element of array!"
+
         return padded_array.astype(str)
 
 
@@ -92,7 +95,7 @@ class LaikaMetric(ABC):
 
     @classmethod
     def all_metrics_available(cls, return_str: bool = False) -> list[type[LaikaMetric] | str]:
-        return list(cls.str_alias_cls.values()) if return_str else list(cls.str_alias_cls.keys())
+        return list(cls.str_alias_cls.keys()) if return_str else list(cls.str_alias_cls.values())
 
     @classmethod
     def metric_exists(cls, metric_cls_name: str, return_bool: bool = True) -> bool | type[LaikaMetric]:
@@ -116,7 +119,7 @@ class LaikaMetric(ABC):
         raise NotImplementedError
 
     def __eq__(self, other):
-        if isinstance(other, self.__class__):
+        if type(self) == type(other) and self.k == other.k:
             return True
         return False
 
