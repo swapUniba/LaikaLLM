@@ -220,10 +220,9 @@ class GPT2Rec(LaikaModelHF):
         # we should return one prediction for ground truth element.
         # In theory there could be a complex way of mixing multiple text generated into a single prediction
         # (e.g., avg of 10 rating predictions), but here we simply reduce the num return sequences
-        num_return_sequences = 10 if self.eval_task.is_ranking_task() else 1
-        num_beams = 30
-        no_repeat_ngram_size = 0
-        early_stopping = True
+        num_return_sequences = self.model.generation_config.num_return_sequences
+        if not self.eval_task.is_ranking_task():
+            num_return_sequences = 1
 
         gt = np.array(batch.pop("gt"))
 
@@ -244,10 +243,7 @@ class GPT2Rec(LaikaModelHF):
             input_ids=left_padded_input_ids,
             attention_mask=left_padded_attn_mask,
             num_return_sequences=num_return_sequences,
-            max_length=self.tokenizer.model_max_length,
-            num_beams=num_beams,
-            no_repeat_ngram_size=no_repeat_ngram_size,
-            early_stopping=early_stopping
+            generation_config=self.model.generation_config
         )
 
         # this works for all rows of tensor because, when generating, also pad tokens are generated,
