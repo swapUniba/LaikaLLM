@@ -28,12 +28,14 @@ class RecEvaluator:
                        output_dir: str,
                        create_latex_table: bool = True):
 
+        print(f"# Starting evaluation on {', '.join(str(task) for task in tasks_to_evaluate)}\n")
+
         split_name = eval_dataset.split if eval_dataset.split is not None else "eval"
 
         # Log all eval templates used
         dataframe_dict = {"task_type": [], "template_id": [],
                           "input_text_placeholder": [], "target_text_placeholder": []}
-        for task in tasks_to_evaluate.keys():
+        for task in tasks_to_evaluate:
 
             # we evaluate only on valid templates, that's why we iterate over only those
             for template_id in task.inference_templates(return_id=True):
@@ -47,7 +49,7 @@ class RecEvaluator:
         log_wandb({f"{split_name}/task_templates": wandb.Table(dataframe=pd.DataFrame(dataframe_dict))},
                   self.should_log)
 
-        for task, metric_list in tasks_to_evaluate.items():
+        for i, (task, metric_list) in enumerate(tasks_to_evaluate.items(), start=1):
 
             # metrics names are keys, values are lists containing results for each template
             task_result = defaultdict(list)
@@ -55,7 +57,7 @@ class RecEvaluator:
             template_ids_to_evaluate = task.inference_templates(return_id=True)
             for template_id in template_ids_to_evaluate:
 
-                print(f"Evaluating on {task}/{template_id}")
+                print(f"# Evaluating on {task} - Template {template_id}")
 
                 res_dict = self.evaluate_task(eval_dataset, metric_list=metric_list,
                                               task=task,
@@ -67,6 +69,9 @@ class RecEvaluator:
                     task_result[metric_name].append(metric_val)
 
                 log_wandb(dict_to_log, self.should_log)
+
+                # simple newline for better separation between template evaluations
+                print()
 
             task_result_df = pd.DataFrame(task_result, index=template_ids_to_evaluate)
 
@@ -81,6 +86,7 @@ class RecEvaluator:
 
             print(f"Mean and max result for task {task}:")
             print(task_result_df_mean_max)
+            print()
 
             # locally we save a single df for each task containing result for each template ids + mean and max
             task_result_df = pd.concat((task_result_df, task_result_df_mean_max))
@@ -90,11 +96,19 @@ class RecEvaluator:
             os.makedirs(output_dir, exist_ok=True)
             task_result_df.to_csv(os.path.join(output_dir, f"{task}.csv"))
 
+            print(f"# CSV Results saved into {os.path.join(output_dir, f'{task}.csv')}!")
+
             if create_latex_table is True:
                 latex_table = self._create_latex_table(task_result_df, task_name=str(task))
 
                 with open(os.path.join(output_dir, f"{task}_latex.tex"), "w") as f:
                     f.write(latex_table)
+
+                print(f"# Latex Results saved into {os.path.join(output_dir, f'{task}_latex.tex')}!")
+
+            if i != len(tasks_to_evaluate):
+                # at the end of the whole eval process we don't print separator
+                print("-" * 80)
 
     def evaluate_task(self, eval_dataset: datasets.Dataset,
                       metric_list: list[LaikaMetric],

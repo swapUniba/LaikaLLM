@@ -17,7 +17,7 @@ from datasets import Dataset
 
 from src import RAW_DATA_DIR
 from src.data.abstract_dataset import LaikaDataset
-from src.utils import dict_list2list_dict, list_dict2dict_list
+from src.utils import dict_list2list_dict, list_dict2dict_list, PrintWithSpin
 
 
 def parse(path):
@@ -49,28 +49,25 @@ class AmazonDataset(LaikaDataset):
         self.user_idx2id = {str(key): str(val) for key, val in datamaps['id2user'].items()}
         self.item_idx2id = {str(key): str(val) for key, val in datamaps['id2item'].items()}
 
-        print("Reading sequential data...", end="")
-        user_items, _ = self._read_sequential()
-        print("Done!")
+        with PrintWithSpin("Reading sequential data"):
+            user_items, _ = self._read_sequential()
 
-        print("Reading ratings data...", end="")
-        user_items = self._read_ratings(user_items)
-        print("Done!")
+        with PrintWithSpin("Reading ratings data"):
+            user_items = self._read_ratings(user_items)
 
         # here we save meta information (the "content") about items.
         # We only save info about items which appear in the user profiles
         relevant_items_id = set(self.item_id2idx.keys())
         meta_dict = {}
-        print("Extracting meta info...", end="")
-        for meta_content in parse(os.path.join(RAW_DATA_DIR, "AmazonDataset", self.dataset_name, 'meta.json.gz')):
-            item_id = meta_content.pop("asin")
-            if item_id in relevant_items_id:
-                item_idx = self.item_id2idx[item_id]
+        with PrintWithSpin("Extracting side-information"):
+            for meta_content in parse(os.path.join(RAW_DATA_DIR, "AmazonDataset", self.dataset_name, 'meta.json.gz')):
+                item_id = meta_content.pop("asin")
+                if item_id in relevant_items_id:
+                    item_idx = self.item_id2idx[item_id]
 
-                # categories are list of lists for no reason
-                meta_content["categories"] = meta_content["categories"][0]
-                meta_dict[item_idx] = meta_content
-        print("Done!")
+                    # categories are list of lists for no reason
+                    meta_content["categories"] = meta_content["categories"][0]
+                    meta_dict[item_idx] = meta_content
 
         df_dict = {
             "user_id": [],
@@ -84,34 +81,32 @@ class AmazonDataset(LaikaDataset):
             "brand_sequence": []
         }
 
-        print("Creating tabular data...", end="")
-        for user_idx, item_list_idxs in user_items.items():
+        with PrintWithSpin("Creating tabular data"):
+            for user_idx, item_list_idxs in user_items.items():
 
-            user_col_repeated = [user_idx for _ in range(len(item_list_idxs))]
-            [item_col_value, ratings_col_value] = list(zip(*item_list_idxs))
+                user_col_repeated = [user_idx for _ in range(len(item_list_idxs))]
+                [item_col_value, ratings_col_value] = list(zip(*item_list_idxs))
 
-            df_dict["user_id"].extend(user_col_repeated)
-            df_dict["item_sequence"].extend(item_col_value)
-            df_dict["rating_sequence"].extend(map(str, ratings_col_value))
+                df_dict["user_id"].extend(user_col_repeated)
+                df_dict["item_sequence"].extend(item_col_value)
+                df_dict["rating_sequence"].extend(map(str, ratings_col_value))
 
-            for item_idx in item_col_value:
-                desc = meta_dict[item_idx].get("description", "")
-                item_categories = meta_dict[item_idx].get("categories", [])
-                title = meta_dict[item_idx].get("title", "")
-                price = meta_dict[item_idx].get("price", "")
-                imurl = meta_dict[item_idx].get("imUrl", "")
-                brand = meta_dict[item_idx].get("brand", "")
+                for item_idx in item_col_value:
+                    desc = meta_dict[item_idx].get("description", "")
+                    item_categories = meta_dict[item_idx].get("categories", [])
+                    title = meta_dict[item_idx].get("title", "")
+                    price = meta_dict[item_idx].get("price", "")
+                    imurl = meta_dict[item_idx].get("imUrl", "")
+                    brand = meta_dict[item_idx].get("brand", "")
 
-                df_dict["description_sequence"].append(str(desc))
-                df_dict["categories_sequence"].append(item_categories)
-                df_dict["title_sequence"].append(str(title))
-                df_dict["price_sequence"].append(str(price))
-                df_dict["imurl_sequence"].append(str(imurl))
-                df_dict["brand_sequence"].append(str(brand))
+                    df_dict["description_sequence"].append(str(desc))
+                    df_dict["categories_sequence"].append(item_categories)
+                    df_dict["title_sequence"].append(str(title))
+                    df_dict["price_sequence"].append(str(price))
+                    df_dict["imurl_sequence"].append(str(imurl))
+                    df_dict["brand_sequence"].append(str(brand))
 
-        data_df = pd.DataFrame.from_dict(df_dict)
-
-        print("Done!")
+            data_df = pd.DataFrame.from_dict(df_dict)
 
         # start indexing from 1001 for better tokenization sentencepiece
         if self.items_start_from_1001:
@@ -124,9 +119,8 @@ class AmazonDataset(LaikaDataset):
 
         self.original_df = data_df
 
-        print("Splitting data with Leave One Out protocol...", end="")
-        self.train_df, self.val_df, self.test_df = self.split_data(data_df)
-        print("Done!")
+        with PrintWithSpin("Splitting data with Leave One Out protocol"):
+            self.train_df, self.val_df, self.test_df = self.split_data(data_df)
 
     @cached_property
     def all_users(self):
@@ -143,7 +137,7 @@ class AmazonDataset(LaikaDataset):
 
         if not os.path.isdir(raw_data_folder_out):
 
-            print("Downloading raw Amazon Dataset...")
+            print("# Downloading raw Amazon Dataset:")
 
             zip_path = gdown.download(url=url_raw_data,
                                       output=os.path.join(RAW_DATA_DIR, "Amazon_Data.zip"))
@@ -153,27 +147,25 @@ class AmazonDataset(LaikaDataset):
             # create AmazonDataset folder inside raw
             os.makedirs(raw_data_folder_out)
 
-            print("Extracting data zip...", end="")
+            with PrintWithSpin("Extracting datasets from zip"):
 
-            # process output path of zip file to extract, in order to not have
-            # "AmazonDataset/data/beauty/**" but simply "AmazonDataset/beauty/**"
-            subfolder_to_extract = ["beauty", "sports", "toys"]
-            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                # process output path of zip file to extract, in order to not have
+                # "AmazonDataset/data/beauty/**" but simply "AmazonDataset/beauty/**"
+                subfolder_to_extract = ["beauty", "sports", "toys"]
+                with zipfile.ZipFile(zip_path, 'r') as zip_ref:
 
-                for subfolder in subfolder_to_extract:
-                    dir_to_extract = f"data/{subfolder}/"
+                    for subfolder in subfolder_to_extract:
+                        dir_to_extract = f"data/{subfolder}/"
 
-                    for path_in_zip in zip_ref.namelist():
-                        if path_in_zip.startswith(dir_to_extract):
-                            zip_ref.getinfo(path_in_zip).filename = "/".join(path_in_zip.split("/")[1:])
-                            zip_ref.extract(member=path_in_zip, path=raw_data_folder_out)
-
-            print("Done!")
+                        for path_in_zip in zip_ref.namelist():
+                            if path_in_zip.startswith(dir_to_extract):
+                                zip_ref.getinfo(path_in_zip).filename = "/".join(path_in_zip.split("/")[1:])
+                                zip_ref.extract(member=path_in_zip, path=raw_data_folder_out)
 
             # remove zip once we are done
             os.remove(zip_path)
         else:
-            print("Amazon Dataset found, skipping download part")
+            print("# Amazon Dataset found, skipping download and extraction part")
 
     def split_data(self, exploded_data_df: pd.DataFrame):
 

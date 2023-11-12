@@ -16,3 +16,4 @@ pygit2
 pyyaml
 cytoolz
 gdown
+yaspin

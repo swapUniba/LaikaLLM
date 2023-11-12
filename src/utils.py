@@ -1,4 +1,3 @@
-import argparse
 import os
 import random
 from contextlib import contextmanager
@@ -10,6 +9,8 @@ import torch.backends.cudnn
 import wandb
 import yaml
 from cytoolz import merge_with
+from yaspin import yaspin
+from yaspin.spinners import Spinners
 
 
 def seed_everything(seed: int):
@@ -32,7 +33,6 @@ def seed_everything(seed: int):
     torch.backends.cudnn.benchmark = False
     os.environ["PYTHONHASHSEED"] = str(seed)
     os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":16:8"
-    print(f"Random seed set as {seed}")
 
     return seed
 
@@ -62,38 +62,39 @@ def dict_list2list_dict(dict_of_lists: Dict[str, list]) -> List[dict]:
     return [dict(zip(dict_of_lists, vals)) for vals in zip(*dict_of_lists.values())]
 
 
-class LoadFromYaml(argparse.Action):
+class IndentedDumper(yaml.Dumper):
 
-    def __init__(self, nargs='?', **kw):
-        super().__init__(nargs=nargs, **kw)
+    # this dumper indents also sequences other than mappings
+    def increase_indent(self, flow=False, *args, **kwargs):
+        return super().increase_indent(flow=flow, indentless=False)
 
-    def _update_namespace(self, namespace, param_section_dict: dict):
-        for param_name, param_val in param_section_dict.items():
-            # set arguments in the target namespace if they exist, otherwise raise error
-            if hasattr(namespace, param_name) is True:
-                setattr(namespace, param_name, param_val)
-            else:
-                raise argparse.ArgumentError(self, f"Unrecognized argument read from yaml config -> {param_name}")
 
-    def __call__(self, parser, namespace, values, option_string=None):
-        with open(values, "r") as f:
-            yaml_args = yaml.safe_load(f)
+class PrintWithSpin:
 
-        data_section = yaml_args.pop("data", None)
-        model_section = yaml_args.pop("model", None)
-        eval_section = yaml_args.pop("eval", None)
+    def __init__(self, text: str):
+        self.text = f"# {text}:"
+        self.yaspin_obj = None
 
-        # after popping every section, only general params remain
-        general_section = yaml_args
+    def __enter__(self):
 
-        if general_section is not None:
-            self._update_namespace(namespace, general_section)
+        self.yaspin_obj = yaspin(Spinners.sand, text=self.text, side="right").__enter__()
 
-        if data_section is not None:
-            self._update_namespace(namespace, data_section)
+    def __exit__(self, exc_type, exc_value, traceback):
 
-        if model_section is not None:
-            self._update_namespace(namespace, model_section)
+        self.yaspin_obj.ok("✔ Done!")
 
-        if eval_section is not None:
-            self._update_namespace(namespace, eval_section)
+
+def format_time(seconds):
+    # Convert seconds to minutes and seconds
+    minutes, seconds = divmod(seconds, 60)
+
+    # Convert minutes to hours and minutes
+    hours, minutes = divmod(minutes, 60)
+
+    # Format the time as a string
+    if hours > 0:
+        return f"{int(hours)} hours, {int(minutes)} minutes, {int(seconds)} seconds"
+    elif minutes > 0:
+        return f"{int(minutes)} minutes, {int(seconds)} seconds"
+    else:
+        return f"{int(seconds)} seconds"

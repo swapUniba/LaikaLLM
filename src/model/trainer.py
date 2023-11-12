@@ -1,3 +1,4 @@
+import sys
 import time
 from math import ceil
 from typing import Optional, Callable, Dict
@@ -11,7 +12,7 @@ from tqdm import tqdm
 from src.evaluate.evaluator import RecEvaluator
 from src.evaluate.abstract_metric import Loss
 from src.model import LaikaModel
-from src.utils import log_wandb
+from src.utils import log_wandb, format_time
 from src.evaluate.abstract_metric import LaikaMetric
 
 
@@ -59,6 +60,8 @@ class RecTrainer:
         log_wandb({"train/task_templates": wandb.Table(dataframe=pd.DataFrame(dataframe_dict))}, should_log)
 
     def train(self, train_dataset: datasets.Dataset, validation_dataset: datasets.Dataset = None):
+
+        print(f"# Start training for {self.n_epochs} epochs\n")
 
         # init variables for saving best model thanks to validation set (if present)
         best_epoch = None
@@ -128,7 +131,7 @@ class RecTrainer:
                 # tqdm update integer percentage (1%, 2%) when float percentage is over .5 threshold (1.501 -> 2%)
                 # so we print infos in the same way
                 if round(100 * (i / total_n_batch)) > progress:
-                    pbar.set_description(f"Epoch {current_epoch}, Loss -> {(train_loss / i):.6f}")
+                    pbar.set_description(f"Epoch {current_epoch}/{self.n_epochs}, Loss -> {(train_loss / i):.6f}")
                     progress += 1
                     log_wandb({
                         "train/loss": train_loss / i
@@ -144,6 +147,8 @@ class RecTrainer:
             }
 
             if validation_dataset is not None:
+
+                print(f"- Start validation for Epoch {current_epoch}", file=sys.stderr)
 
                 self.rec_model.eval()
 
@@ -168,7 +173,8 @@ class RecTrainer:
                     best_val_monitor_result = monitor_val
                     self.rec_model.save(self.output_dir)
 
-                    print(f"Validation {self.monitor_metric} improved, model saved into {self.output_dir}!")
+                    print(f"Validation {self.monitor_metric} improved, model saved into {self.output_dir}!",
+                          file=sys.stderr)
 
                 # prefix "val" for val result dict
                 val_to_log = {f"val/{metric_name}": metric_val for metric_name, metric_val in val_result.items()}
@@ -183,15 +189,22 @@ class RecTrainer:
             # log to wandb at each epoch
             log_wandb(dict_to_log, self.should_log)
 
-        elapsed_time = (time.time() - start) / 60
+            # simple newline to better separate different epochs
+            print(file=sys.stderr)  # stderr to avoid overlap with tqdm
 
-        dict_to_log = {"train/elapsed_time": elapsed_time}
+        elapsed_time = time.time() - start
 
-        print(" Train completed! Check models saved into 'models' dir ".center(100, "*"))
-        print(f"Time -> {elapsed_time}")
+        elapsed_minutes, _ = divmod(elapsed_time, 60)
+        dict_to_log = {"train/elapsed_time (min)": int(elapsed_minutes)}
+
+        print(f"# Train completed! Model is saved into {self.output_dir}")
+
+        # format time to [hours,] [minutes,] seconds. Hours and minutes
+        # are optional depending on the elapsed time
+        print(f"# Elapsed time: {format_time(elapsed_time)}")
 
         if best_epoch is not None:
-            print(f"Best epoch -> {best_epoch}")
+            print(f"# Best epoch: {best_epoch}")
             dict_to_log["train/best_epoch"] = best_epoch
 
         log_wandb(dict_to_log, self.should_log)
