@@ -182,6 +182,8 @@ of this repository and for making available a
 [Amazon Dataset](https://huggingface.co/datasets/amazon_us_reviews) which in this project I've used as starting point 
 for further manipulation.
 
+* Yes, the cute logo is A.I. generated. So thank you DALL-E 3! 
+
 Project Organization
 ------------
     ├── 📁 data                          <- Directory containing all data generated/used
