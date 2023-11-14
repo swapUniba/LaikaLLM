@@ -48,7 +48,7 @@ eval:
       - rmse
 ```
 
-The whole pipeline is then simply started with `python laikaLLM.py -c config.yml`!
+The whole pipeline can then be executed by simply invoking `python laikaLLM.py -c config.yml`!
 
 ## Motivation
 
@@ -62,19 +62,20 @@ of developing *accountable* experiment pipelines
 
 *LaikaLLM* requires **Python 3.10** or later, and all packages needed are listed in 
 [`requirements.txt`](requirements.txt)
-- Torch with cuda *11.7* has been set as requirement for reproducibility purposes, but feel free to change the cuda
+- Torch with cuda **11.7** has been set as requirement for reproducibility purposes, but feel free to change the cuda
   version with the most appropriate for your use case!
 
 To install **LaikaLLM**:
-- Clone this repository:
+1. Clone this repository:
   
   `git clone https://github.com/Silleellie/LaikaLLM.git`
 
-- Install the requirements:
+2. Install the requirements:
   
   `pip install -r requirements.txt`
 
-- Start experimenting! Use LaikaLLM via Python API or via `.yaml` config!
+3. Start experimenting!
+  - Use LaikaLLM via *Python API* or via `.yaml` config!
 
 
 ## Usage
@@ -95,9 +96,9 @@ In this simple experiment, we will:
 2. Train the **distilgpt2** model on the SequentialSideInfoTask
 3. Evaluate results using `hit@10` and `hit@5`
 
-## Yaml config
+### Yaml config
 
-- `params.yml:`
+- Define your custom `params.yml:`
   ```yaml
   exp_name: simple_exp
   device: cuda:0
@@ -127,7 +128,7 @@ In this simple experiment, we will:
 - After defining the above `params.yml`, simply execute the experiment with `python laikaLLM.py -c params.yml`
   - The model trained and the evaluation results will be saved into `models` and `reports/metrics`
 
-## Python API
+### Python API
 
 ```python
 from src.data.datasets.amazon_dataset import AmazonDataset
