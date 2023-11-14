@@ -57,6 +57,7 @@ class GPT2Rec(LaikaModelHF):
         # gpt2 has no pad token, eos_token_id is used instead
         self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
         self.model.config.pad_token_id = self.tokenizer.eos_token_id
+        self.model.generation_config.pad_token_id = self.tokenizer.eos_token_id
 
         self.input_prefix = "Input: "
         self.target_prefix = "Target: "
