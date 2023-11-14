@@ -189,7 +189,7 @@ class AmazonDataset(LaikaDataset):
         input_val_set = groupby_obj.nth[:-2].rename(columns={
             "item_sequence": "input_item_seq",
             "rating_sequence": "input_rating_seq",
-            "description_sequence": "input_desc_seq",
+            "description_sequence": "input_description_seq",
             "categories_sequence": "input_categories_seq",
             "title_sequence": "input_title_seq",
             "price_sequence": "input_price_seq",
@@ -201,7 +201,7 @@ class AmazonDataset(LaikaDataset):
         gt_val_set = groupby_obj.nth[-2].rename(columns={
             "item_sequence": "gt_item",
             "rating_sequence": "gt_rating",
-            "description_sequence": "gt_desc_seq",
+            "description_sequence": "gt_description",
             "categories_sequence": "gt_categories",
             "title_sequence": "gt_title",
             "price_sequence": "gt_price",
@@ -219,7 +219,7 @@ class AmazonDataset(LaikaDataset):
         input_test_set = groupby_obj.nth[:-1].rename(columns={
             "item_sequence": "input_item_seq",
             "rating_sequence": "input_rating_seq",
-            "description_sequence": "input_desc_seq",
+            "description_sequence": "input_description_seq",
             "categories_sequence": "input_categories_seq",
             "title_sequence": "input_title_seq",
             "price_sequence": "input_price_seq",
@@ -230,7 +230,7 @@ class AmazonDataset(LaikaDataset):
         gt_test_set = groupby_obj.nth[-1].rename(columns={
             "item_sequence": "gt_item",
             "rating_sequence": "gt_rating",
-            "description_sequence": "gt_desc_seq",
+            "description_sequence": "gt_description",
             "categories_sequence": "gt_categories",
             "title_sequence": "gt_title",
             "price_sequence": "gt_price",
