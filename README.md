@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://github.com/Silleellie/LaikaLLM/assets/26851363/a43ed66b-f420-40e3-b261-9cfa690648fa" alt="drawing" width="50%"/>
+</p>
+
 # LaikaLLM
 
 LaikaLLM is a software, for researchers, that helps in setting up a repeatable, reproducible, 
