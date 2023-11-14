@@ -5,7 +5,7 @@ from typing import Callable
 
 import numpy as np
 
-from src.evaluate.abstract_metric import LaikaMetric
+from src.evaluate.abstract_metric import LaikaMetric, PaddedArr
 
 
 class RankingMetric(LaikaMetric):
@@ -14,16 +14,15 @@ class RankingMetric(LaikaMetric):
     def operator_comparison(self):
         return operator.gt
 
-    @staticmethod
-    def per_user_precomputed_matrix(predictions: np.ndarray[np.ndarray[str]], truths: np.ndarray[np.ndarray[str]],
-                                    k: int = None):
+    def per_user_precomputed_matrix(self, predictions: np.ndarray[np.ndarray[str]], truths: PaddedArr):
 
         # If K is none a new dimension is added! Important to be sure k is not None
-        if k is not None:
-            predictions = predictions[:, :k]
+        if self.k is not None:
+            predictions = predictions[:, :self.k]
 
-        result = (predictions[:, np.newaxis, :] == truths[:, :, np.newaxis]) & \
-                 (predictions[:, np.newaxis, :] != "<PAD>")
+        # no need to check if preds are != <PAD> to avoid that <PAD> tokens in pred and truth match,
+        # since predictions are surely not padded
+        result = predictions[:, np.newaxis, :] == truths[:, :, np.newaxis]
 
         rel_matrix = result.any(axis=1)
 

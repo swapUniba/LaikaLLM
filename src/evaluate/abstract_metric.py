@@ -55,10 +55,8 @@ class LaikaMetric(ABC):
         # By default is ">"
         raise NotImplementedError
 
-    @staticmethod
     @abstractmethod
-    def per_user_precomputed_matrix(predictions: np.ndarray[np.ndarray[str]], truths: np.ndarray[np.ndarray[str]],
-                                    **kwargs) -> np.ndarray:
+    def per_user_precomputed_matrix(self, predictions: np.ndarray[np.ndarray[str]], truths: PaddedArr) -> np.ndarray:
         raise NotImplementedError
 
     @staticmethod
@@ -139,9 +137,7 @@ class Loss(LaikaMetric):
         # loss metric should be minimized, hence "<"
         return operator.lt
 
-    @staticmethod
-    def per_user_precomputed_matrix(predictions: np.ndarray[np.ndarray[str]], truths: np.ndarray[np.ndarray[str]],
-                                    **kwargs):
+    def per_user_precomputed_matrix(self, predictions: np.ndarray[np.ndarray[str]], truths: PaddedArr):
         raise NotImplementedError("This should not be called, it is simply defined to make use of polymorphism")
 
     def __call__(self, *args, **kwargs):

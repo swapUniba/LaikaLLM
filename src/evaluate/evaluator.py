@@ -4,6 +4,7 @@ from collections import defaultdict
 from math import ceil
 
 import datasets
+import numpy as np
 import pandas as pd
 import wandb
 from tqdm import tqdm
@@ -207,24 +208,20 @@ class RecEvaluator:
         return res_eval_dict
 
     @staticmethod
-    def _compute_metrics(preds: list[str], truths: list[str], metric_list: list[LaikaMetric]):
+    def _compute_metrics(preds: list[np.ndarray[str]], truths: list[np.ndarray[str]], metric_list: list[LaikaMetric]):
 
         # this works regardless of metric type, k is always None for error metrics. This works
         # on the assumption that a metric type is the immediate parent of the specific metric,
         # e.g. class Hit(RankingMetric) -> RankingMetric is the metric type
 
-        # Pad array if necessary
-        padded_preds = PaddedArr(preds)
+        # Pad truth array if necessary
+        # (predictions can't be padded otherwise metric computation will be wrong, thus
+        # they should be in constant number for each user)
         padded_truths = PaddedArr(truths)
 
-        # used to save some computational resources, we will compute binary relevance binary for
-        # predictions cut to max_k (i.e. predictions[:, :max_k]). If there is at least one None,
-        # sadly it means that we can't save any resource
-        max_k = None
-        all_ks = [metric.k for metric in metric_list]
-        if None not in all_ks:
-            # if no metric has k set, default is None
-            max_k = max(all_ks, default=None)
+        # convert preds to array and check that there is no <PAD> token
+        preds = np.array(preds)
+        assert not (preds == "<PAD>").any(), "<PAD> is the pad token and can't be used as element of array!"
 
         # we are separating metrics depending on their class
         type2metric_dict: dict[type[LaikaMetric], list[LaikaMetric]] = defaultdict(list)
@@ -239,10 +236,18 @@ class RecEvaluator:
         # Build rel binary matrix by cutting predictions to the max k desired
         # Save resources by not computing relevance for predictions outside the k range,
         # which are not used by any metric passed in input
-        cls_precomputed_matrix = {
-            metric_type: metric_type.per_user_precomputed_matrix(padded_preds, padded_truths, k=max_k)
-            for metric_type in type2metric_dict.keys()
-        }
+
+        cls_precomputed_matrix = {}
+        for metric_type in type2metric_dict:
+
+            # find the metric with the max k: we will compute the precomputed matrix
+            # using that metric.
+            # Used to save some computational resources, since we will compute metrics
+            # by first cutting predictions to max k. If there is at least one None,
+            # sadly it means that we can't save any resource
+            max_k_metric = max(type2metric_dict[metric_type], key=lambda x: x.k if x.k is not None else np.inf)
+
+            cls_precomputed_matrix[metric_type] = max_k_metric.per_user_precomputed_matrix(preds, padded_truths)
 
         all_metric_results = {}
         for metric in metric_list:
@@ -251,7 +256,7 @@ class RecEvaluator:
             precomputed_matrix = cls_precomputed_matrix[metric_type]
 
             # when computing the specific metric result, we consider its k value which wil surely be <= max_k
-            # obviously if k is None, all predictions will be used
+            # obviously if k is None, all predictions will be used (because no cut has happened)
             if metric.k is not None:
                 precomputed_matrix = precomputed_matrix[:, :metric.k]
 

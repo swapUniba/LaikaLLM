@@ -3,7 +3,7 @@ import operator
 import numpy as np
 import pandas as pd
 
-from src.evaluate.abstract_metric import LaikaMetric
+from src.evaluate.abstract_metric import LaikaMetric, PaddedArr
 
 
 class ErrorMetric(LaikaMetric):
@@ -15,27 +15,26 @@ class ErrorMetric(LaikaMetric):
     def operator_comparison(self):
         return operator.lt
 
-    @staticmethod
-    def per_user_precomputed_matrix(predictions: np.ndarray[np.ndarray[str]], truths: np.ndarray[np.ndarray[str]],
-                                    **kwargs):
-        # k is not used
+    def per_user_precomputed_matrix(self, predictions: np.ndarray[np.ndarray[str]], truths: PaddedArr):
 
-        if predictions.shape != truths.shape:
-            raise ValueError("When computing Error metrics, predictions and truths should have the same shape!")
+        if (predictions.shape != truths.shape) or (truths == "<PAD>").any():
+            raise ValueError("When computing Error metrics, predictions and truths should be in 1:1 relationship and "
+                             "thus have same shape!")
 
-        predictions = pd.to_numeric(pd.Series(predictions.flatten()), errors="coerce")
-        truths = pd.to_numeric(pd.Series(truths.flatten()), errors="raise")
+        predictions = pd.to_numeric(predictions.flatten(), errors="coerce")
+        truths = pd.to_numeric(truths.flatten(), errors="coerce")
 
-        valid_values = predictions.notna()
+        valid_preds = predictions[~np.isnan(predictions)]
+        valid_truths = truths[~np.isnan(truths)]
 
-        max_truth = truths.max()
-        min_truth = truths.min()
+        max_truth = valid_truths.max()
+        min_truth = valid_truths.min()
 
-        predictions[predictions > max_truth] = max_truth
-        predictions[predictions < min_truth] = min_truth
+        valid_preds[valid_preds > max_truth] = max_truth
+        valid_preds[valid_preds < min_truth] = min_truth
 
-        # we ignore predictions which are not a valid number when performing subtraction
-        return (predictions[valid_values] - truths[valid_values]).to_numpy()
+        # perform subtraction ignoring <PAD> tokens
+        return valid_preds - valid_truths
 
 
 class RMSE(ErrorMetric):
@@ -50,28 +49,3 @@ class MAE(ErrorMetric):
     def __call__(self, per_user_precomputed_matrix: np.ndarray) -> float:
 
         return np.mean(np.abs(per_user_precomputed_matrix)).item()
-
-
-if __name__ == "__main__":
-
-    m = RMSE()
-    m2 = MAE()
-
-    arr1 = np.array([
-        [5, 3, 2, 1],
-        [5, 4, 4, 4],
-        [5, 1, 3, "we"],
-        [5, 5, "we", 2],
-    ])
-
-    arr2 = np.array([
-        [5, 5, 1, 1],
-        [3, 2, 2, 1],
-        [2, 4, 4, 5],
-        [4, 3, 3, 1],
-    ])
-
-    a = m.per_user_precomputed_matrix(arr1, arr2)
-
-    print(m(a))
-    print(m2(a))
