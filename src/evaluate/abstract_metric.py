@@ -12,8 +12,9 @@ import numpy as np
 
 class PaddedArr(np.ndarray):
     def __new__(cls, iterable: Collection[Collection[str]], *args, **kwargs):
+
         # Find the maximum length of the sublists
-        max_len = max(len(sublist) for sublist in iterable)
+        max_len = max((len(sublist) for sublist in iterable), default=0)
 
         # Create a new NumPy array filled with <PAD> token
         # object dtype here since using `str` will use the numpy str type based on <PAD> string
@@ -131,6 +132,9 @@ class LaikaMetric(ABC):
 
 
 class Loss(LaikaMetric):
+
+    def __init__(self):
+        super().__init__(k=None)
 
     @property
     def operator_comparison(self) -> Callable:
