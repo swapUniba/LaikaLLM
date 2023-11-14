@@ -168,7 +168,7 @@ class RecEvaluator:
                          total=total_n_batch)
 
         eval_loss = 0
-        total_preds = []
+        total_preds: list[np.ndarray[str]] = []
         total_truths = []
 
         # progress will go from 0 to 100. Init to -1 so at 0 we perform the first print

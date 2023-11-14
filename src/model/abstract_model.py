@@ -70,9 +70,9 @@ class LaikaModel(ABC):
 
     @abstractmethod
     @torch.no_grad()
-    def generate_step(self,
-                      prepared_batch: dict,
-                      return_loss: bool = False) -> tuple[np.ndarray[str], np.ndarray[str], torch.FloatTensor]:
+    def generate_step(self, prepared_batch: dict, return_loss: bool = False) -> tuple[np.ndarray[np.ndarray[str]],
+                                                                                      np.ndarray[np.ndarray[str]],
+                                                                                      torch.FloatTensor]:
         raise NotImplementedError
 
     @abstractmethod

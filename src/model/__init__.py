@@ -14,7 +14,7 @@ class ModelParams:
     # model params
     model_cls_name: str
     model_kwargs: dict
-    train_tasks: tuple[str]
+    train_tasks: tuple[str, ...]
     val_task: str = None
     val_task_template_id: int | str = None
 
