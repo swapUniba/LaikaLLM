@@ -99,6 +99,11 @@ class LaikaTask(ABC):
     def __call__(self, *args, **kwargs) -> list[TaskOutput]:
         raise NotImplementedError
 
+    def __eq__(self, other):
+        if type(self) == type(other) and self.templates_dict == other.templates_dict:
+            return True
+        return False
+
     def __repr__(self):
         return self.__class__.__name__
 
