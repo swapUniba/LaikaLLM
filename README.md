@@ -71,13 +71,13 @@ of developing *accountable* experiment pipelines
 
 To install **LaikaLLM**:
 1. Clone this repository:
-  
-  `git clone https://github.com/Silleellie/LaikaLLM.git`
-
+  ```
+  git clone https://github.com/Silleellie/LaikaLLM.git
+  ```
 2. Install the requirements:
-  
-  `pip install -r requirements.txt`
-
+  ```
+  pip install -r requirements.txt
+  ```
 3. Start experimenting!
   - Use LaikaLLM via *Python API* or via `.yaml` config!
 
@@ -94,7 +94,8 @@ Both use cases follow the **data-model-evaluate** logic, in *code* and *project*
 usage of LaikaLLM
 
 In the documentation there are *extensive* examples for both use cases, what follows is a small example of the same
-experiment using the `.yaml` config and the *Python API*
+experiment using the `.yaml` config and the *Python API*.
+
 In this simple experiment, we will:
 1. Use the `toys` Amazon Dataset and add 'item' and 'user' prefixes to each item and user ids 
 2. Train the **distilgpt2** model on the SequentialSideInfoTask
@@ -182,7 +183,7 @@ of this repository and for making available a
 [Amazon Dataset](https://huggingface.co/datasets/amazon_us_reviews) which in this project I've used as starting point 
 for further manipulation.
 
-* Yes, the cute logo is A.I. generated. So thank you DALL-E 3! 
+> Yes, the cute logo is A.I. generated. So thank you DALL-E 3! 
 
 Project Organization
 ------------
