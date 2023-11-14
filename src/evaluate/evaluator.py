@@ -50,6 +50,7 @@ class RecEvaluator:
         log_wandb({f"{split_name}/task_templates": wandb.Table(dataframe=pd.DataFrame(dataframe_dict))},
                   self.should_log)
 
+        all_result = {}
         for i, (task, metric_list) in enumerate(tasks_to_evaluate.items(), start=1):
 
             # metrics names are keys, values are lists containing results for each template
@@ -93,6 +94,8 @@ class RecEvaluator:
             task_result_df = pd.concat((task_result_df, task_result_df_mean_max))
             task_result_df.index.name = "Template ID"
 
+            all_result[str(task)] = task_result_df
+
             # e.g. reports/metrics/eval_exp/SequentialSideInfo.csv
             os.makedirs(output_dir, exist_ok=True)
             task_result_df.to_csv(os.path.join(output_dir, f"{task}.csv"))
@@ -110,6 +113,8 @@ class RecEvaluator:
             if i != len(tasks_to_evaluate):
                 # at the end of the whole eval process we don't print separator
                 print("-" * 80)
+
+        return all_result
 
     def evaluate_task(self, eval_dataset: datasets.Dataset,
                       metric_list: list[LaikaMetric],
