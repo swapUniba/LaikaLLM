@@ -80,7 +80,7 @@ if __name__ == '__main__':
 
     pretty_print_configuration(config_args)
 
-    with init_wandb(project="P5-Thesis", name=general_params.exp_name, config=config_args,
+    with init_wandb(project=general_params.wandb_project, name=general_params.exp_name, config=config_args,
                     should_log=general_params.log_wandb):
 
         if not general_params.eval_only:

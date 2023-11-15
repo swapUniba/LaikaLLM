@@ -1,3 +1,9 @@
+---
+hide:
+  - navigation
+  - toc
+---
+
 <p align="center">
   <img src="https://github.com/Silleellie/LaikaLLM/assets/26851363/a43ed66b-f420-40e3-b261-9cfa690648fa" alt="drawing" width="50%"/>
 </p>
@@ -8,6 +14,7 @@ LaikaLLM is a software, for researchers, that helps in setting up a repeatable, 
 replicable protocol for **training** and **evaluating** <ins>multitask</ins> LLM for recommendation!
 
 *Features*:
+
 - Two different model family implemented at the moment of writing (***T5*** and ***GPT2***)
 - Fully vectorized *Ranking* (`NDCG`, `MAP`, `HitRate`, ...) and *Error* (`RMSE`, `MAE`) metrics
 - Fully integrated with **WandB** monitoring service
@@ -61,119 +68,6 @@ find **pre-made** and **well-built** software designed *specifically* for LLM.
 
 With *LaikaLLM* the idea is to fill that gap, or at least "start the conversation" about the importance
 of developing *accountable* experiment pipelines
-
-## Installation
-
-*LaikaLLM* requires **Python 3.10** or later, and all packages needed are listed in 
-[`requirements.txt`](requirements.txt)
-- Torch with cuda **11.7** has been set as requirement for reproducibility purposes, but feel free to change the cuda
-  version with the most appropriate for your use case!
-
-To install **LaikaLLM**:
-1. Clone this repository:
-  ```
-  git clone https://github.com/Silleellie/LaikaLLM.git
-  ```
-2. Install the requirements:
-  ```
-  pip install -r requirements.txt
-  ```
-3. Start experimenting!
-  - Use LaikaLLM via *Python API* or via `.yaml` config!
-
-
-## Usage
-
-*Note:* when using LaikaLLM, the working directory should be set to the root of the repository!
-
-*LaikaLLM* can be used in two different ways:
-- `.yaml` config
-- *Python API*
-
-Both use cases follow the **data-model-evaluate** logic, in *code* and *project* structure, but also in the effective
-usage of LaikaLLM
-
-In the documentation there are *extensive* examples for both use cases, what follows is a small example of the same
-experiment using the `.yaml` config and the *Python API*.
-
-In this simple experiment, we will:
-1. Use the `toys` Amazon Dataset and add 'item' and 'user' prefixes to each item and user ids 
-2. Train the **distilgpt2** model on the SequentialSideInfoTask
-3. Evaluate results using `hit@10` and `hit@5`
-
-### Yaml config
-
-- Define your custom `params.yml:`
-  ```yaml
-  exp_name: simple_exp
-  device: cuda:0
-  random_seed: 42
-  log_wandb: true
-  
-  data:
-    AmazonDataset:
-      dataset_name: toys
-      add_prefix_items_users: true
-  
-  model:
-    GPT2Rec:
-      name_or_path: "distilgpt2"
-    n_epochs: 10
-    train_batch_size: 8
-    train_tasks:
-      - SequentialSideInfoTask
-  
-  eval:
-    eval_batch_size: 4
-    eval_tasks:
-      SequentialSideInfoTask:
-        - hit@10
-        - hit@5
-  ```
-- After defining the above `params.yml`, simply execute the experiment with `python laikaLLM.py -c params.yml`
-  - The model trained and the evaluation results will be saved into `models` and `reports/metrics`
-
-### Python API
-
-```python
-from src.data.datasets.amazon_dataset import AmazonDataset
-from src.data.tasks.tasks import SequentialSideInfoTask
-from src.evaluate.evaluator import RecEvaluator
-from src.evaluate.metrics.ranking_metrics import Hit
-from src.model.models.gpt import GPT2Rec
-from src.model.trainer import RecTrainer
-
-if __name__ == "__main__":
-    
-    # data phase
-    ds = AmazonDataset("toys", add_prefix_items_users=True)
-    
-    ds_splits = ds.get_hf_datasets()
-    
-    train_split = ds_splits["train"]
-    val_split = ds_splits["validation"]
-    test_split = ds_splits["test"]
-    
-    # model phase
-    model = GPT2Rec("distilgpt2",
-                    training_tasks_str=["SequentialSideInfoTask"],
-                    all_unique_labels=list(ds.all_items))
-    
-    trainer = RecTrainer(model,
-                         n_epochs=10,
-                         batch_size=8,
-                         train_sampling_fn=ds.sample_train_sequence,
-                         output_dir="models/simple_experiment")
-    
-    trainer.train(train_split)
-    
-    # eval phase
-    evaluator = RecEvaluator(model, eval_batch_size=4)
-    
-    evaluator.evaluate_suite(test_split,
-                             tasks_to_evaluate={SequentialSideInfoTask(): [Hit(k=10), Hit(k=5)]},
-                             output_dir="reports/metrics/simple_experiment")
-```
 
 ## Credits
 

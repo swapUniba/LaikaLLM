@@ -30,7 +30,7 @@ class AmazonDataset(LaikaDataset):
 
     def __init__(self,
                  dataset_name: Literal['beauty', 'toys', 'sport'],
-                 add_prefix_items_users: bool = False,
+                 add_prefix_items_users: bool = True,
                  items_start_from_1001: bool = False):
 
         # this will download and extract raw data zip
