@@ -1,5 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
+from typing import Literal
 
 from .models import *
 
@@ -15,6 +16,7 @@ class ModelParams:
     model_cls_name: str
     model_kwargs: dict
     train_tasks: tuple[str, ...]
+    train_task_selection_strat: Literal['all', 'random'] = "all"
     val_task: str = None
     val_task_template_id: int | str = None
 
