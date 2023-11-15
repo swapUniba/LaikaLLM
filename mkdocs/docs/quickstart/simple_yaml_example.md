@@ -1,9 +1,9 @@
 # Simple Yaml example
 
 In this simple experiment, we will:
-1. Use the `toys` [Amazon Dataset](../yaml_usage/data_section.md#amazondataset) and add `item_` and `user_` 
+1. Use the `toys` [Amazon Dataset](../yaml_usage/available_implementations/available_datasets.md#amazondataset) and add `item_` and `user_` 
    prefixes to each item and user ids
-2. Train the [GPT2Rec](../yaml_usage/model_section.md#gpt2rec) using the `distilgpt2` checkpoint on the 
+2. Train the [GPT2Rec](../yaml_usage/available_implementations/available_models.md#gpt2rec) using the `distilgpt2` checkpoint on the 
    `SequentialSideInfoTask`
 3. Evaluate results using `hit@10` and `hit@5` metrics
 

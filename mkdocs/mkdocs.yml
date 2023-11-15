@@ -48,15 +48,15 @@ nav:
   - Yaml usage:
       - Introduction: yaml_usage/introduction.md
       - Yaml Sections:
-          General parameters: yaml_usage/yaml_sections/general_parameters.md
-          Data section: yaml_usage/yaml_sections/data_section.md
-          Model section: yaml_usage/yaml_sections/model_section.md
-          Eval section: yaml_usage/yaml_sections/eval_section.md
+          - General parameters: yaml_usage/yaml_sections/general_parameters.md
+          - Data section: yaml_usage/yaml_sections/data_section.md
+          - Model section: yaml_usage/yaml_sections/model_section.md
+          - Eval section: yaml_usage/yaml_sections/eval_section.md
       - Available implementations:
-          Datasets: yaml_usage/available_implementations/available_datasets.md
-          Tasks: yaml_usage/available_implementations/available_tasks.md
-          Models: yaml_usage/available_implementations/available_models.md
-          Metrics: yaml_usage/available_implementations/available_metrics.md
+          - Datasets: yaml_usage/available_implementations/available_datasets.md
+          - Tasks: yaml_usage/available_implementations/available_tasks.md
+          - Models: yaml_usage/available_implementations/available_models.md
+          - Metrics: yaml_usage/available_implementations/available_metrics.md
 
   - Python API usage: python_api_usage/wip.md
 
