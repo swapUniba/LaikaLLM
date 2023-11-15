@@ -2,6 +2,8 @@
   <img src="https://github.com/Silleellie/LaikaLLM/assets/26851363/a43ed66b-f420-40e3-b261-9cfa690648fa" alt="drawing" width="50%"/>
 </p>
 
+![example workflow](https://github.com/github/docs/actions/workflows/deploy_docs.yml/badge.svg)
+
 # LaikaLLM
 
 LaikaLLM is a software, for researchers, that helps in setting up a repeatable, reproducible, 
