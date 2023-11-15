@@ -2,7 +2,9 @@
   <img src="https://github.com/Silleellie/LaikaLLM/assets/26851363/a43ed66b-f420-40e3-b261-9cfa690648fa" alt="drawing" width="50%"/>
 </p>
 
-![example workflow](https://github.com/github/docs/actions/workflows/deploy_docs.yml/badge.svg)
+[![Build Documentation](https://github.com/Silleellie/LaikaLLM/actions/workflows/deploy_docs.yml/badge.svg)](https://silleellie.github.io/LaikaLLM/)
+[![Hugging Face](https://tinyurl.com/2p9ft7xf)](https://huggingface.co/)
+[![Pytorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org/)
 
 # LaikaLLM
 
