@@ -27,6 +27,7 @@ def model_main(general_params: GeneralParams, data_params: DataParams, model_par
     model_cls_name = model_params.model_cls_name
     model_kwargs = model_params.model_kwargs
     train_tasks = model_params.train_tasks
+    train_task_selection_strat = model_params.train_task_selection_strat
     val_task = model_params.val_task
     val_task_template_id = model_params.val_task_template_id
 
@@ -50,8 +51,12 @@ def model_main(general_params: GeneralParams, data_params: DataParams, model_par
     # not passed directly via yaml configuration (e.g., dataset_obj), others are passed via yaml configuration and
     # are forwarded to the model. The peculiarity is that via **model_kwargs, even new parameters not initially
     # considered are forwarded
-    rec_model = LaikaModel.from_string(model_cls_name, training_tasks_str=train_tasks, dataset_obj=dataset_obj,
-                                       eval_task_str=val_task, eval_template_id=val_task_template_id,
+    rec_model = LaikaModel.from_string(model_cls_name,
+                                       training_tasks_str=train_tasks,
+                                       train_task_selection_strat=train_task_selection_strat,
+                                       dataset_obj=dataset_obj,
+                                       eval_task_str=val_task,
+                                       eval_template_id=val_task_template_id,
                                        **model_kwargs)
     rec_model.to(device)
 

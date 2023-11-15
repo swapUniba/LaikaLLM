@@ -1,0 +1,91 @@
+site_name: LaikaLLM
+repo_url: https://github.com/Silleellie/LaikaLLM
+repo_name: silleellie/LaikaLLM
+edit_uri: mkdocs/docs
+theme:
+  name: material
+  icon:
+    repo: fontawesome/brands/github
+  logo: assets/logo_only_face.png
+  favicon: assets/logo_only_face_favicon.png
+  palette:
+
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: black
+      accent: deep orange
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: orange
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to light mode
+
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - toc.integrate
+    - navigation.footer
+    - content.code.copy
+    - search.suggest
+    - search.highlight
+    - content.code.annotate
+
+
+nav:
+  - Home: index.md
+  - Quickstart:
+      - Installation: quickstart/installation.md
+      - Simple Yaml example: quickstart/simple_yaml_example.md
+      - Simple Python example: quickstart/simple_python_example.md
+  - Yaml usage:
+      - Introduction: yaml_usage/introduction.md
+      - Yaml Sections:
+          General parameters: yaml_usage/yaml_sections/general_parameters.md
+          Data section: yaml_usage/yaml_sections/data_section.md
+          Model section: yaml_usage/yaml_sections/model_section.md
+          Eval section: yaml_usage/yaml_sections/eval_section.md
+      - Available implementations:
+          Datasets: yaml_usage/available_implementations/available_datasets.md
+          Tasks: yaml_usage/available_implementations/available_tasks.md
+          Models: yaml_usage/available_implementations/available_models.md
+          Metrics: yaml_usage/available_implementations/available_metrics.md
+
+  - Python API usage: python_api_usage/wip.md
+
+
+
+markdown_extensions:
+  - pymdownx.betterem
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - attr_list
+  - md_in_html
+  - pymdownx.superfences
+  - mdx_math
+  - tables
+
+
+# for latex formula
+extra_javascript:
+  - https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-AMS-MML_HTMLorMML
+
+# footer
+copyright: Documentation made by Antonio Silletti
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Silleellie
+      name: Silleellie on GitHub
+    - icon: fontawesome/brands/linkedin
+      link: https://www.linkedin.com/in/antonio-silletti/
+      name: Silleellie on Likedin
+

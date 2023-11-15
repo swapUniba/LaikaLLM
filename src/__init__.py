@@ -19,6 +19,7 @@ class GeneralParams:
     device: str = "cuda:0"
     random_seed: int = 42
     log_wandb: bool = False
+    wandb_project: str = None
     eval_only: bool = False
 
     @classmethod
