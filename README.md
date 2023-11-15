@@ -6,6 +6,8 @@
 [![Hugging Face](https://tinyurl.com/2p9ft7xf)](https://huggingface.co/)
 [![Pytorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org/)
 
+[[Documentation](https://silleellie.github.io/LaikaLLM/)]
+
 # LaikaLLM
 
 LaikaLLM is a software, for researchers, that helps in setting up a repeatable, reproducible, 
