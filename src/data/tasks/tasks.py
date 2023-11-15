@@ -27,8 +27,8 @@ class RatingPredictionTask(LaikaTask):
         ),
         2: Template(
             input_text_placeholder="rating prediction - {user_id}: \n\n"
-                                   "Predict the score the user would give to {item_id} (in a 1-5 scale). "
-                                   "This is the user order ùhistory with associated rating that the user previously "
+                                   "Predict the score the user would give to {item_id} (in a 1-5 scale). \n "
+                                   "This is the user order history with associated rating that the user previously "
                                    "gave: \n"
                                    "{order_history_w_ratings} \n"
                                    "Consider that the average rating of the user is {avg_rating}",
