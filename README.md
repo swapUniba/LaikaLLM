@@ -71,8 +71,7 @@ of developing *accountable* experiment pipelines
 
 ## Installation
 
-*Tip:* If you don't want to install from source, you can pull the latest [LaikaLLM Docker Image](https://hub.docker.com/r/silleellie/laikallm) 
-which includes every preliminary step to run the project!
+### From source
 
 *LaikaLLM* requires **Python 3.10** or later, and all packages needed are listed in 
 [`requirements.txt`](requirements.txt)
@@ -102,6 +101,12 @@ export CUBLAS_WORKSPACE_CONFIG=:16:8
 ```
 
 You can check useful info about the above environment variables [here](https://docs.python.org/3.3/using/cmdline.html#envvar-PYTHONHASHSEED) and [here](https://docs.nvidia.com/cuda/cublas/index.html#results-reproducibility)
+
+### Via Docker Image
+
+Simply pull the latest [LaikaLLM Docker Image](https://hub.docker.com/r/silleellie/laikallm) 
+which includes every preliminary step to run the project, including setting `PYTHONHASHSEED` and
+`CUBLAS_WORKSPACE_CONFIG` for reproducibility purposes
 
 ## Usage
 
