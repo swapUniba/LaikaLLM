@@ -1,7 +1,6 @@
-exp_name: laikaLLM
+exp_name: t5_laikaLLM
 device: cuda:0
 random_seed: 42
-eval_only: true
 
 data:
   AmazonDataset:
