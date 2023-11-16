@@ -24,11 +24,7 @@ RUN pip install -U pip  \
     yaspin
 
 # copy src folder to docker image and relevant files
-COPY src /LaikaLLM/src
-COPY laikaLLM.py params.yml /LaikaLLM/
-
-# create cookiecutter directories
-RUN ["mkdir", "-p", "data/processed", "data/raw", "models", "reports/metrics"]
+COPY . /LaikaLLM/
 
 ENV PYTHONHASHSEED=42
 ENV CUBLAS_WORKSPACE_CONFIG=:16:8
