@@ -5,6 +5,7 @@
 [![Hugging Face](https://tinyurl.com/2p9ft7xf)](https://huggingface.co/)
 [![Pytorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![WandB](https://img.shields.io/badge/Weights_&_Biases-FFCC33?style=for-the-badge&logo=WeightsAndBiases&logoColor=black)](https://wandb.ai/)
+[![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)](https://hub.docker.com/r/silleellie/laikallm)
 
 # LaikaLLM
 [[Documentation](https://silleellie.github.io/LaikaLLM/)]
@@ -69,6 +70,9 @@ With *LaikaLLM* the idea is to fill that gap, or at least "start the conversatio
 of developing *accountable* experiment pipelines
 
 ## Installation
+
+*Tip:* If you don't want to install from source, you can pull the latest [LaikaLLM Docker Image](https://hub.docker.com/r/silleellie/laikallm) 
+which includes every preliminary step to run the project!
 
 *LaikaLLM* requires **Python 3.10** or later, and all packages needed are listed in 
 [`requirements.txt`](requirements.txt)
