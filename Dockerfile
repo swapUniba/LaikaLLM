@@ -1,4 +1,9 @@
-# ---- Base python ----
+# How to build this image:
+# docker build -t silleellie/laikallm:latest  https://github.com/silleellie/laikallm.git#main
+# How to run it:
+# docker run -t -d silleellie/laikallm
+
+# ---- Base pytorch ----
 FROM pytorch/pytorch:2.0.1-cuda11.7-cudnn8-runtime
 
 # Set working directory
