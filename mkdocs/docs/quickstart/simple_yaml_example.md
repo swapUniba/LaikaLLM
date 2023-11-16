@@ -21,7 +21,6 @@ Define your custom `params.yml:`
 exp_name: simple_exp
 device: cuda:0
 random_seed: 42
-log_wandb: true
 
 data:
   AmazonDataset:

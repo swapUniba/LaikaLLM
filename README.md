@@ -33,7 +33,6 @@ from **data pre-processing**, to **evaluation**:
 exp_name: to_the_moon
 device: cuda:0
 random_seed: 42
-log_wandb: true
 
 data:
   AmazonDataset:
@@ -137,7 +136,6 @@ In this simple experiment, we will:
   exp_name: simple_exp
   device: cuda:0
   random_seed: 42
-  log_wandb: true
   
   data:
     AmazonDataset:
