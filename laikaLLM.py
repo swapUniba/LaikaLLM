@@ -3,7 +3,7 @@ import dataclasses
 import os
 
 import yaml
-from pygit2 import Repository
+from pygit2 import Repository, GitError
 
 from src.data.main import data_main
 from src.evaluate.main import eval_main
@@ -67,7 +67,13 @@ if __name__ == '__main__':
 
     # this is the config dict that will be logged to wandb
     # apart from the params read from yml file, log env variables needed for reproducibility and
-    # also the current active branch in which experiment is being performed
+    # also the current active branch in which experiment is being performed (if the project is in a git directory)
+
+    try:
+        git_branch = Repository('.').head.shorthand
+    except GitError:
+        git_branch = None
+
     config_args = {
         "general_params": dataclasses.asdict(general_params),
         "data_params": dataclasses.asdict(data_params),
@@ -75,7 +81,7 @@ if __name__ == '__main__':
         "eval_params": dataclasses.asdict(eval_params),
         "PYTHONHASHSEED": os.environ.get("PYTHONHASHSEED"),
         "CUBLAS_WORKSPACE_CONFIG": os.environ.get("CUBLAS_WORKSPACE_CONFIG"),
-        "git_branch": Repository('.').head.shorthand
+        "git_branch": git_branch
     }
 
     pretty_print_configuration(config_args)
