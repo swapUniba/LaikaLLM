@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/Silleellie/LaikaLLM/assets/26851363/a43ed66b-f420-40e3-b261-9cfa690648fa" alt="drawing" width="50%"/>
+  <img src="https://github.com/Silleellie/LaikaLLM/assets/26851363/a43ed66b-f420-40e3-b261-9cfa690648fa" alt="drawing" width="60%"/>
 </p>
 
 [![Hugging Face](https://tinyurl.com/2p9ft7xf)](https://huggingface.co/)
