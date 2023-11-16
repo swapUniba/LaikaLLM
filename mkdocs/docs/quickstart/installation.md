@@ -1,7 +1,7 @@
 # Installation
 
 *LaikaLLM* requires **Python 3.10** or later, and all packages needed are listed in 
-[`requirements.txt`](https://github.com/Silleellie/LaikaLLM)
+[`requirements.txt`](https://github.com/Silleellie/LaikaLLM/blob/main/requirements.txt)
 
 - Torch with cuda **11.7** has been set as requirement for reproducibility purposes, but feel free to change the cuda
   version with the most appropriate for your use case!
@@ -17,6 +17,16 @@ To install **LaikaLLM**:
   pip install -r requirements.txt
   ```
 3. Start experimenting!
+
+**NOTE**: It is **highly** suggested to set the following environment variables to obtain *100%* reproducible results of
+your experiments:
+
+```bash
+export PYTHONHASHSEED=42
+export CUBLAS_WORKSPACE_CONFIG=:16:8
+```
+
+You can check useful info about the above environment variables [here](https://docs.python.org/3.3/using/cmdline.html#envvar-PYTHONHASHSEED) and [here](https://docs.nvidia.com/cuda/cublas/index.html#results-reproducibility)
 
 !!! info
 

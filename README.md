@@ -89,6 +89,15 @@ To install **LaikaLLM**:
 3. Start experimenting!
   - Use LaikaLLM via *Python API* or via `.yaml` config!
 
+**NOTE**: It is **highly** suggested to set the following environment variables to obtain *100%* reproducible results of
+your experiments:
+
+```bash
+export PYTHONHASHSEED=42
+export CUBLAS_WORKSPACE_CONFIG=:16:8
+```
+
+You can check useful info about the above environment variables [here](https://docs.python.org/3.3/using/cmdline.html#envvar-PYTHONHASHSEED) and [here](https://docs.nvidia.com/cuda/cublas/index.html#results-reproducibility)
 
 ## Usage
 
