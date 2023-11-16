@@ -8,7 +8,7 @@ import numpy as np
 import torch
 from torch.nn.utils.rnn import pad_sequence
 from torch.optim import AdamW
-from transformers import GPT2LMHeadModel, GPT2TokenizerFast, GenerationConfig, AutoConfig
+from transformers import GPT2LMHeadModel, GPT2TokenizerFast, GenerationConfig
 
 from src.model.abstract_model import LaikaModelHF
 from src.utils import dict_list2list_dict, list_dict2dict_list
@@ -52,6 +52,7 @@ class GPT2Rec(LaikaModelHF):
             **model_config_kwargs
         )
 
+        self.model.generation_config = generation_config
         self.model.generation_config.max_length = self.tokenizer.model_max_length
 
         # gpt2 has no pad token, eos_token_id is used instead
