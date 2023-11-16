@@ -40,7 +40,7 @@ log_wandb: false
 # with this parameter
 #
 # Optional, Default: null
-project_wandb: null
+wandb_project: null
 
 
 # If set to true, only the evaluation phase will be performed. Be sure that the model exists
