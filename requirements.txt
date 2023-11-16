@@ -6,12 +6,12 @@ torchvision==0.15.2+cu117
 # when instantiating GenerationConfig from pretrained for some models
 # see https://github.com/huggingface/transformers/issues/26950
 transformers[torch]~=4.33.1
-wandb
-pandas
+wandb~=0.15.2
+pandas~=2.1.2
 requests
 numpy~=1.24.3
-tqdm==4.65.0
-datasets
+tqdm
+datasets~=2.14.6
 pygit2
 pyyaml
 cytoolz
