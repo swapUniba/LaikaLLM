@@ -351,7 +351,7 @@ class DirectSideInfoTask(LaikaTask):
 
     @classmethod
     def is_ranking_task(cls) -> bool:
-        return False
+        return True
 
     @classmethod
     def compatible_metrics(cls):
