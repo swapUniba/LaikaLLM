@@ -2,6 +2,7 @@
   <img src="https://github.com/Silleellie/LaikaLLM/assets/26851363/a43ed66b-f420-40e3-b261-9cfa690648fa" alt="drawing" width="60%"/>
 </p>
 
+[![Documentation](https://img.shields.io/badge/Documentation-1d1625?logo=readthedocs&style=for-the-badge&logoColor=white)](https://silleellie.github.io/LaikaLLM/)
 [![Hugging Face](https://tinyurl.com/2p9ft7xf)](https://huggingface.co/)
 [![Pytorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![WandB](https://img.shields.io/badge/Weights_&_Biases-FFCC33?style=for-the-badge&logo=WeightsAndBiases&logoColor=black)](https://wandb.ai/)
