@@ -2,10 +2,28 @@
   <img src="https://github.com/Silleellie/LaikaLLM/assets/26851363/a43ed66b-f420-40e3-b261-9cfa690648fa" alt="drawing" width="60%"/>
 </p>
 
-[![Hugging Face](https://tinyurl.com/2p9ft7xf)](https://huggingface.co/)
-[![Pytorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org/)
-[![WandB](https://img.shields.io/badge/Weights_&_Biases-FFCC33?style=for-the-badge&logo=WeightsAndBiases&logoColor=black)](https://wandb.ai/)
-[![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)](https://hub.docker.com/r/silleellie/laikallm)
+<p align="center">
+  <a href="https://silleellie.github.io/LaikaLLM/"><img
+    src="https://img.shields.io/badge/Documentation-1d1625?logo=readthedocs&style=for-the-badge&logoColor=white"
+    alt="Documentation"
+  /></a>
+  <a href="https://huggingface.co/"><img
+    src="https://tinyurl.com/2p9ft7xf"
+    alt="Hugging Face"
+  /></a>
+  <a href="https://pytorch.org/"><img
+    src="https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white"
+    alt="Pythorch"
+  /></a>
+  <a href="https://wandb.ai/"><img
+    src="https://img.shields.io/badge/Weights_&_Biases-FFCC33?style=for-the-badge&logo=WeightsAndBiases&logoColor=black"
+    alt="WandB"
+  /></a>
+  <a href="https://hub.docker.com/r/silleellie/laikallm"><img
+    src="https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white"
+    alt="Docker"
+  /></a>
+</p>
 
 # LaikaLLM
 [[Documentation](https://silleellie.github.io/LaikaLLM/)]
