@@ -51,7 +51,7 @@ if __name__ == '__main__':
 
     # will first parse args from yml file, and if same are passed via cmd,
     # those passed via cmd will prevail
-    args = parser.parse_args(["-c", "params.yml"])
+    args = parser.parse_args()
 
     general_params, data_params, model_params, eval_params = parse_yml_config(args.config)
 
