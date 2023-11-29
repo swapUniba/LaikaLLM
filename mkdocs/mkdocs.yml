@@ -45,6 +45,7 @@ nav:
       - Installation: quickstart/installation.md
       - Simple Yaml example: quickstart/simple_yaml_example.md
       - Simple Python example: quickstart/simple_python_example.md
+      - Sample Experiments: quickstart/sample_experiments.md
   - Yaml usage:
       - Introduction: yaml_usage/introduction.md
       - Yaml Sections:
