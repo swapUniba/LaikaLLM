@@ -12,7 +12,7 @@ Each of the following runs has also been tracked with **WandB**. The full worksp
   </a>
 </p>
 
-## Best Seq Only results
+## Best sequential task results
 <a href="https://wandb.ai/silleellie/LaikaLLM/runs/7cq8bk1g">
   <img src="https://raw.githubusercontent.com/wandb/assets/main/wandb-github-badge-28.svg" alt="Visualize runs in WandB workspace" width="150px"/>
 </a>
