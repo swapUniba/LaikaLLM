@@ -26,7 +26,7 @@
 </p>
 
 # LaikaLLM
-[[Documentation](https://silleellie.github.io/LaikaLLM/)]
+[[Documentation](https://silleellie.github.io/LaikaLLM/)][[Sample Experiments](sample_experiments)]
 
 LaikaLLM is a software, for researchers, that helps in setting up a repeatable, reproducible, 
 replicable protocol for **training** and **evaluating** <ins>multitask</ins> LLM for recommendation!
@@ -77,6 +77,8 @@ eval:
 ```
 
 The whole pipeline can then be executed by simply invoking `python laikaLLM.py -c config.yml`!
+
+If you want to have a full view on how experiments are visualized in WandB and more, head up to [sample_experiments!](sample_experiments) 
 
 ## Motivation
 
