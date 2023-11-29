@@ -78,7 +78,7 @@ rel_u(i) = \begin{cases}
 \end{cases}
 $$
 
-After computing the \( AP \) for each user, the $MAP$ can be computed for the whole model:
+After computing the \( AP \) for each user, the \( MAP \) can be computed for the whole model:
 
 $$
 MAP_{model} = \frac{1}{|U|}\sum_{i \in |U|}^{|U|} AP_u
