@@ -239,10 +239,14 @@ Project Organization
     │   ├── 📁 processed                     <- The final, canonical data sets used for training/validation/evaluation
     │   └── 📁 raw                           <- The original, immutable data dump
     │
+    ├── 📁 mkdocs                        <- Directory containing source code for the online documentation
+    |
     ├── 📁 models                        <- Directory where trained and serialized models will be stored
     │
     ├── 📁 reports                       <- Where metrics will be stored after performing the evaluation phase
     │   └── 📁 metrics                          
+    │
+    ├── 📁 sample_experiments            <- Config and results of multiple experiment runs made with LaikaLLM
     │
     ├── 📁 src                           <- Source code of the project
     │   ├── 📁 data                          <- All scripts related to datasets and tasks
@@ -268,8 +272,10 @@ Project Organization
     │   ├── 📄 utils.py                  <- Contains utils function for the project
     │   └── 📄 yml_parse.py              <- Script responsible for coordinating the parsing of the .yaml file
     │
-    ├── 📄 LICENSE                       <- MIT License
+    ├── 📁 tests                         <- Package containing all tests for the source code
+    |
     ├── 📄 laikaLLM.py                   <- Script to invoke via command line to use LaikaLLM via .yaml
+    ├── 📄 LICENSE                       <- MIT License
     ├── 📄 params.yml                    <- The example .yaml config for starting using LaikaLLM
     ├── 📄 README.md                     <- The top-level README for developers using this project
     └── 📄 requirements.txt              <- The requirements file for reproducing the environment (src package)
