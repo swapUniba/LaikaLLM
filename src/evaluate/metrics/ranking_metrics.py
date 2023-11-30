@@ -43,12 +43,12 @@ class RankingMetric(LaikaMetric):
 
 class Hit(RankingMetric):
 
-    def __call__(self, per_user_per_user_precomputed_matrix: np.ndarray) -> float:
+    def __call__(self, per_user_precomputed_matrix: np.ndarray) -> float:
 
         # intuitively, we want to """remove""" the dimension of items (axis=1) and maintain
         # the user dimension (axis=0). This variable will contain a bool value for each user: if at least one prediction
         # is relevant (appears in the user ground truth) for the user, the bool value is True
-        per_user_hit = np.any(per_user_per_user_precomputed_matrix, axis=1)
+        per_user_hit = np.any(per_user_precomputed_matrix, axis=1)
 
         return np.mean(per_user_hit).item()
 
