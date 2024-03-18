@@ -36,7 +36,7 @@ T5Rec:
   # input prompt, and then passed to the encoder-decoder architecture of T5
   #
   # Optional, Default: false
-  inject_personalization: false
+  inject_user_embeds: false
   
   # You can pass any parameter that you would pass to the T5Config when instantiating the model with the
   # HuggingFace library # (4)

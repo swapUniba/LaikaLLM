@@ -45,7 +45,7 @@ class T5Rec(LaikaModelHF):
                  training_tasks_str: List[str],
                  all_unique_labels: List[str],
                  all_unique_users: List[str] = None,
-                 inject_personalization: bool = False,
+                 inject_user_embeds: bool = False,
                  eval_task_str: str = None,
                  eval_template_id: int | str = None,
                  train_task_selection_strat: Literal['random', 'all'] = "all",
@@ -77,16 +77,16 @@ class T5Rec(LaikaModelHF):
 
         self.model.generation_config = generation_config
 
-        self.model.config.inject_personalization = inject_personalization
+        self.model.config.inject_user_embeds = inject_user_embeds
         self.model.config.all_unique_users = all_unique_users
 
         self.model.config.user_mapping = {}
 
         self.user_embeddings = None
-        if inject_personalization is True:
+        if inject_user_embeds is True:
             if all_unique_users is None:
                 raise AttributeError("all_unique_users parameter can't be None when "
-                                     "inject_personalization is True!")
+                                     "inject_user_embeds is True!")
 
             for user in all_unique_users:
                 self.model.config.user_mapping[user] = len(self.model.config.user_mapping)
@@ -161,7 +161,7 @@ class T5Rec(LaikaModelHF):
                     whole_word_ids[special_token_mask] = self.tokenizer.pad_token_id
 
                     # even if surely there is only one user, we wrap it into a list to be coherent
-                    if self.model.config.inject_personalization is True:
+                    if self.model.config.inject_user_embeds is True:
                         encoded_sequence["user_idx"] = [self.model.config.user_mapping[sample["user_id"]]]
 
                     encoded_sequence["whole_word_ids"] = whole_word_ids.tolist()
@@ -209,7 +209,7 @@ class T5Rec(LaikaModelHF):
 
         return input_dict
 
-    def _inject_personalization(self, token_inputs_embeds: Tensor, user_idxs: Tensor):
+    def _inject_user_embeds(self, token_inputs_embeds: Tensor, user_idxs: Tensor):
 
         # whole_word_embeds = self.whole_word_embeddings(whole_word_ids)
         # # whole_word_embeds = self.relu(whole_word_embeds)
@@ -226,8 +226,8 @@ class T5Rec(LaikaModelHF):
 
         inputs_embeds = self.model.shared(batch["input_ids"])
 
-        if self.model.config.inject_personalization is True:
-            inputs_embeds = self._inject_personalization(inputs_embeds, batch["user_idx"])
+        if self.model.config.inject_user_embeds is True:
+            inputs_embeds = self._inject_user_embeds(inputs_embeds, batch["user_idx"])
 
         output = self.model(inputs_embeds=inputs_embeds,
                             attention_mask=batch["attention_mask"],
@@ -257,8 +257,8 @@ class T5Rec(LaikaModelHF):
         gt = np.array(batch.pop("gt"))
 
         inputs_embeds = self.model.shared(batch["input_ids"])
-        if self.model.config.inject_personalization is True:
-            inputs_embeds = self._inject_personalization(inputs_embeds, batch["user_idx"])
+        if self.model.config.inject_user_embeds is True:
+            inputs_embeds = self._inject_user_embeds(inputs_embeds, batch["user_idx"])
 
         loss = torch.tensor(torch.nan)
         if return_loss is True:
@@ -339,7 +339,7 @@ class T5Rec(LaikaModelHF):
                   training_tasks_str=config.training_tasks_str,
                   all_unique_labels=config.all_unique_labels,
                   all_unique_users=config.all_unique_users,
-                  inject_personalization=config.inject_personalization,
+                  inject_user_embeds=config.inject_user_embeds,
 
                   **laika_kwargs)
 
