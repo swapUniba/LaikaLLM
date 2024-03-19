@@ -277,15 +277,11 @@ class GPT2Rec(LaikaModelHF):
         return left_padded_input_ids, left_padded_attn_mask
 
     @torch.no_grad()
-    def inference(self, input_text: str | list[str], format_input: bool = True, only_target: bool = False,
+    def inference(self, input_text: str | list[str], format_input: bool = True, return_only_target: bool = False,
                   **gen_config):
 
         if not isinstance(input_text, list):
             input_text = [input_text]
-
-        generation_config = self.model.generation_config
-        if len(gen_config) != 0:
-            generation_config = GenerationConfig(**gen_config)
 
         if format_input is True:
             input_text = [f"{self.input_prefix}{inp} \n{self.target_prefix}" for inp in input_text]
@@ -302,15 +298,18 @@ class GPT2Rec(LaikaModelHF):
         beam_outputs = self.model.generate(
             input_ids=left_padded_input_ids,
             attention_mask=left_padded_attn_mask,
-            generation_config=generation_config
+            generation_config=self.model.generation_config,
+            **gen_config
         )
 
-        if only_target is True:
+        if return_only_target is True:
             beam_outputs = beam_outputs[:, left_padded_input_ids.shape[1]:]
+
+        num_return_sequences = gen_config.get("num_return_sequences", self.model.generation_config.num_return_sequences)
 
         generated_sents = self.tokenizer.batch_decode(beam_outputs, skip_special_tokens=True)
         mapped_predictions = np.array(generated_sents).reshape((len(input_text),
-                                                                generation_config.num_return_sequences))
+                                                                num_return_sequences))
 
         return mapped_predictions.tolist()
 
