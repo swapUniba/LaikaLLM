@@ -59,7 +59,7 @@ class LaikaMetric(ABC):
         raise NotImplementedError
 
     @staticmethod
-    def safe_div(num: np.ndarray, den: np.ndarray) -> np.ndarray:
+    def safe_div(num: np.ndarray, den: np.ndarray) -> np.ndarray[float]:
 
         # divide only if denominator is different from 0, otherwise 0
         return np.divide(num, den, out=np.zeros_like(num, dtype=float), where=den != 0)
