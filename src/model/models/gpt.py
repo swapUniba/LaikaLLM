@@ -25,6 +25,8 @@ class GPT2Rec(LaikaModelHF):
                  eval_task_str: str = None,
                  eval_template_id: int | str = None,
                  train_task_selection_strat: Literal['random', 'all'] = "all",
+                 input_prefix: str = "Input: ",
+                 target_prefix: str = "Target: ",
                  **model_config_and_gen_kwargs):
 
         # before passing the model config kwargs to super (which will pass them to the model config),
@@ -60,8 +62,8 @@ class GPT2Rec(LaikaModelHF):
         self.model.config.pad_token_id = self.tokenizer.eos_token_id
         self.model.generation_config.pad_token_id = self.tokenizer.eos_token_id
 
-        self.input_prefix = "Input: "
-        self.target_prefix = "Target: "
+        self.input_prefix = input_prefix
+        self.target_prefix = target_prefix
 
         self.encoded_input_prefix = self.tokenizer(self.input_prefix, return_attention_mask=False).input_ids
         self.encoded_target_prefix = self.tokenizer(self.target_prefix, return_attention_mask=False).input_ids
@@ -154,7 +156,7 @@ class GPT2Rec(LaikaModelHF):
         # from list of dicts to dict of lists
         return list_dict2dict_list(encoded_sequence_list)
 
-    def prepare_input(self, batch):
+    def prepare_input(self, batch: dict):
         input_dict = {}
 
         total_input_ids = pad_sequence(
@@ -200,7 +202,7 @@ class GPT2Rec(LaikaModelHF):
 
         return input_dict
 
-    def train_step(self, batch):
+    def train_step(self, batch: dict):
 
         output = self.model(input_ids=batch["total_input_ids"],
                             attention_mask=batch["total_attention_mask"],
@@ -209,7 +211,7 @@ class GPT2Rec(LaikaModelHF):
         return output.loss
 
     @torch.no_grad()
-    def generate_step(self, batch, return_loss: bool = False):
+    def generate_step(self, batch: dict, return_loss: bool = False):
 
         if self.eval_task is None:
             raise ValueError("Model can't perform generate_step since no eval_task is set! "
@@ -277,15 +279,11 @@ class GPT2Rec(LaikaModelHF):
         return left_padded_input_ids, left_padded_attn_mask
 
     @torch.no_grad()
-    def inference(self, input_text: str | list[str], format_input: bool = True, only_target: bool = False,
+    def inference(self, input_text: str | list[str], format_input: bool = True, return_only_target: bool = False,
                   **gen_config):
 
         if not isinstance(input_text, list):
             input_text = [input_text]
-
-        generation_config = self.model.generation_config
-        if len(gen_config) != 0:
-            generation_config = GenerationConfig(**gen_config)
 
         if format_input is True:
             input_text = [f"{self.input_prefix}{inp} \n{self.target_prefix}" for inp in input_text]
@@ -302,15 +300,18 @@ class GPT2Rec(LaikaModelHF):
         beam_outputs = self.model.generate(
             input_ids=left_padded_input_ids,
             attention_mask=left_padded_attn_mask,
-            generation_config=generation_config
+            generation_config=self.model.generation_config,
+            **gen_config
         )
 
-        if only_target is True:
+        if return_only_target is True:
             beam_outputs = beam_outputs[:, left_padded_input_ids.shape[1]:]
+
+        num_return_sequences = gen_config.get("num_return_sequences", self.model.generation_config.num_return_sequences)
 
         generated_sents = self.tokenizer.batch_decode(beam_outputs, skip_special_tokens=True)
         mapped_predictions = np.array(generated_sents).reshape((len(input_text),
-                                                                generation_config.num_return_sequences))
+                                                                num_return_sequences))
 
         return mapped_predictions.tolist()
 

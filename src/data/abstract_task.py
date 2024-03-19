@@ -100,7 +100,7 @@ class LaikaTask(ABC):
         raise NotImplementedError
 
     def __eq__(self, other):
-        if type(self) == type(other) and self.templates_dict == other.templates_dict:
+        if type(self) is type(other) and self.templates_dict == other.templates_dict:
             return True
         return False
 

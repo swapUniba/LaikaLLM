@@ -15,7 +15,7 @@ class ErrorMetric(LaikaMetric):
     def operator_comparison(self):
         return operator.lt
 
-    def per_user_precomputed_matrix(self, predictions: np.ndarray[np.ndarray[str]], truths: PaddedArr):
+    def per_user_precomputed_matrix(self, predictions: np.ndarray[str], truths: PaddedArr):
 
         if (predictions.shape != truths.shape) or (truths == "<PAD>").any():
             raise ValueError("When computing Error metrics, predictions and truths should be in 1:1 relationship and "

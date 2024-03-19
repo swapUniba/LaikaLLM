@@ -14,7 +14,7 @@ class RankingMetric(LaikaMetric):
     def operator_comparison(self):
         return operator.gt
 
-    def per_user_precomputed_matrix(self, predictions: np.ndarray[np.ndarray[str]], truths: PaddedArr):
+    def per_user_precomputed_matrix(self, predictions: np.ndarray[str], truths: PaddedArr):
 
         # If K is none a new dimension is added! Important to be sure k is not None
         if self.k is not None:

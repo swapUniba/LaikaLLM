@@ -12,7 +12,6 @@ import numpy as np
 
 class PaddedArr(np.ndarray):
     def __new__(cls, iterable: Collection[Collection[str]], *args, **kwargs):
-
         # Find the maximum length of the sublists
         max_len = max((len(sublist) for sublist in iterable), default=0)
 
@@ -32,7 +31,6 @@ class PaddedArr(np.ndarray):
 
 
 class LaikaMetric(ABC):
-
     # name - class mapping, used for when metrics should be initialized from strings
     str_alias_cls: dict[str, type[LaikaMetric]] = CaseInsensitiveDict()
 
@@ -57,11 +55,11 @@ class LaikaMetric(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def per_user_precomputed_matrix(self, predictions: np.ndarray[np.ndarray[str]], truths: PaddedArr) -> np.ndarray:
+    def per_user_precomputed_matrix(self, predictions: np.ndarray[str], truths: PaddedArr) -> np.ndarray:
         raise NotImplementedError
 
     @staticmethod
-    def safe_div(num: np.ndarray, den: np.ndarray) -> np.ndarray:
+    def safe_div(num: np.ndarray, den: np.ndarray) -> np.ndarray[float]:
 
         # divide only if denominator is different from 0, otherwise 0
         return np.divide(num, den, out=np.zeros_like(num, dtype=float), where=den != 0)
@@ -118,7 +116,7 @@ class LaikaMetric(ABC):
         raise NotImplementedError
 
     def __eq__(self, other):
-        if type(self) == type(other) and self.k == other.k:
+        if type(self) is type(other) and self.k == other.k:
             return True
         return False
 

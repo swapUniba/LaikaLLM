@@ -32,11 +32,19 @@ T5Rec:
   
   # If set to true, this adds an EmbeddingLayer to the model which tries to encode user information
   # from their ids, and project the encoded representation in the hidden dimension space of the
-  # chosen model. The user encoded information is then added to the encoded information of the
-  # input prompt, and then passed to the encoder-decoder architecture of T5
+  # chosen model. The user encoded information is then summed to the encoded information of each token in the
+  # input prompt, with the idea of "translating" the encoded input to a specific region in the latent space.
+  # This sum is later passed to the forward method of the T5 model
   #
   # Optional, Default: false
-  inject_personalization: false
+  inject_user_embeds: false
+  
+  # If set to true, this adds a custom EmbeddingLayer to the model which encodes whole word information.
+  # This encoding produces embeddings which have same hidden dimension of the input embeddings, and the two
+  # are summed together. This is basically the implementation of the P5 architecture # (4)
+  #
+  # Optional, Default: false
+  inject_whole_word_embeds: false
   
   # You can pass any parameter that you would pass to the T5Config when instantiating the model with the
   # HuggingFace library # (4)
@@ -54,10 +62,20 @@ T5Rec:
 1. Check all the [available models](https://huggingface.co/models?sort=trending&search=t5) hosted at HuggingFace!
 2. More robust strategy, but slower
 3. Less robust strategy, but faster
-4. Check all the config parameters that you can pass from the HuggingFace
+4. The P5 model is described in [this](https://arxiv.org/pdf/2203.13366.pdf) research paper
+5. Check all the config parameters that you can pass from the HuggingFace
    official [documentation](https://huggingface.co/docs/transformers/model_doc/t5#transformers.T5Config)
-5. Check all the generation parameters that you can pass from the HuggingFace
+6. Check all the generation parameters that you can pass from the HuggingFace
    official [documentation](https://huggingface.co/docs/transformers/main_classes/text_generation#transformers.GenerationConfig)
+
+
+This is a visualization of what `inject_user_embeds` set to `true` does:
+
+![inject_user_embeds](../../imgs/models/inject_user_embeds.png){: style="display:block;max-width:90%;margin-left:auto;margin-right:auto"}
+
+This is a visualization of what `inject_whole_word_embeds` set to `true` does:
+
+![inject_user_embeds](../../imgs/models/inject_whole_word_embeds.png){: style="display:block;max-width:90%;margin-left:auto;margin-right:auto"}
 
 ---
 
@@ -97,6 +115,16 @@ GPT2Rec:
   # 
   # Required
   name_or_path: "gpt2"
+  
+  # The text to add as prefix to the input part of the prompt fed to the model
+  #
+  # Optional, Default: "Input: "
+  input_prefix: "Input: "
+  
+  # The text to add as prefix to the target part of the prompt fed to the model
+  #
+  # Optional, Default: "Input: "
+  target_prefix: "Target: "
   
   # You can pass any parameter that you would pass to the T5Config when instantiating the model with the
   # HuggingFace library # (4)
