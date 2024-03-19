@@ -25,6 +25,8 @@ class GPT2Rec(LaikaModelHF):
                  eval_task_str: str = None,
                  eval_template_id: int | str = None,
                  train_task_selection_strat: Literal['random', 'all'] = "all",
+                 input_prefix: str = "Input: ",
+                 target_prefix: str = "Target: ",
                  **model_config_and_gen_kwargs):
 
         # before passing the model config kwargs to super (which will pass them to the model config),
@@ -60,8 +62,8 @@ class GPT2Rec(LaikaModelHF):
         self.model.config.pad_token_id = self.tokenizer.eos_token_id
         self.model.generation_config.pad_token_id = self.tokenizer.eos_token_id
 
-        self.input_prefix = "Input: "
-        self.target_prefix = "Target: "
+        self.input_prefix = input_prefix
+        self.target_prefix = target_prefix
 
         self.encoded_input_prefix = self.tokenizer(self.input_prefix, return_attention_mask=False).input_ids
         self.encoded_target_prefix = self.tokenizer(self.target_prefix, return_attention_mask=False).input_ids

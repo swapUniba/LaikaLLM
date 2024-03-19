@@ -116,6 +116,16 @@ GPT2Rec:
   # Required
   name_or_path: "gpt2"
   
+  # The text to add as prefix to the input part of the prompt fed to the model
+  #
+  # Optional, Default: "Input: "
+  input_prefix: "Input: "
+  
+  # The text to add as prefix to the target part of the prompt fed to the model
+  #
+  # Optional, Default: "Input: "
+  target_prefix: "Target: "
+  
   # You can pass any parameter that you would pass to the T5Config when instantiating the model with the
   # HuggingFace library # (4)
   CONFIG_PARAM_1: CONFIG_VAL_1
