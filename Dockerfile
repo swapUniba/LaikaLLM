@@ -12,9 +12,9 @@ WORKDIR /LaikaLLM
 # upgrade pip and install app dependencies
 # we don't copy and install requirements since we are starting from pytorch image,
 # no need to reinstall torch
-RUN pip install -U pip  \
-    &&  \
-    pip install --no-cache-dir --upgrade  \
+RUN pip install -U pip
+
+RUN pip install --no-cache-dir --upgrade  \
     transformers[torch]~=4.33.1 \
     wandb~=0.15.2 \
     pandas~=2.1.2 \
@@ -25,11 +25,14 @@ RUN pip install -U pip  \
     pygit2 \
     pyyaml \
     cytoolz \
-    gdown \
     yaspin
 
 # copy src folder to docker image and relevant files
 COPY . /LaikaLLM/
+
+# separate install for gdown and after file copy since it should
+# be executed at each docker build,
+RUN pip install --upgrade gdown>5.0.0
 
 ENV PYTHONHASHSEED=42
 ENV CUBLAS_WORKSPACE_CONFIG=:16:8
