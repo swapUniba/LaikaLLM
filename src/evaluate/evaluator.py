@@ -77,21 +77,24 @@ class RecEvaluator:
 
             task_result_df = pd.DataFrame(task_result, index=template_ids_to_evaluate)
 
-            task_result_df_mean_max = task_result_df.agg({metric_name: ["mean", "max"]
-                                                          for metric_name in task_result})
+            task_result_df_mean_best = task_result_df.agg({
+                str(metric): ["mean", "max"] if metric.operator_comparison == operator.gt else ["mean", "min"]
+                for metric in metric_list})
 
-            log_wandb({f"{split_name}/{task}/{metric} - Mean": task_result_df_mean_max[metric]["mean"]
+            log_wandb({f"{split_name}/{task}/{metric} - mean": task_result_df_mean_best[metric]["mean"]
                        for metric in task_result}, self.should_log)
 
-            log_wandb({f"{split_name}/{task}/{metric} - Max": task_result_df_mean_max[metric]["max"]
+            # best results is always the last row (that's why -1)
+            index_name_best = task_result_df_mean_best.index[-1]  # this could be "min" or "max"
+            log_wandb({f"{split_name}/{task}/{metric} - {index_name_best}": task_result_df_mean_best[metric].iloc[-1]
                        for metric in task_result}, self.should_log)
 
-            print(f"Mean and max result for task {task}:")
-            print(task_result_df_mean_max)
+            print(f"Mean and best result for task {task}:")
+            print(task_result_df_mean_best)
             print()
 
-            # locally we save a single df for each task containing result for each template ids + mean and max
-            task_result_df = pd.concat((task_result_df, task_result_df_mean_max))
+            # locally we save a single df for each task containing result for each template ids + mean and best
+            task_result_df = pd.concat((task_result_df, task_result_df_mean_best))
             task_result_df.index.name = "Template ID"
 
             all_result[str(task)] = task_result_df
@@ -225,7 +228,7 @@ class RecEvaluator:
         padded_truths = PaddedArr(truths)
 
         # convert preds to array and check that there is no <PAD> token
-        preds = np.array(preds)
+        preds: np.ndarray = np.array(preds)
         assert not (preds == "<PAD>").any(), "<PAD> is the pad token and can't be used as element of array!"
 
         # we are separating metrics depending on their class
@@ -244,7 +247,6 @@ class RecEvaluator:
 
         cls_precomputed_matrix = {}
         for metric_type in type2metric_dict:
-
             # find the metric with the max k: we will compute the precomputed matrix
             # using that metric.
             # Used to save some computational resources, since we will compute metrics
@@ -291,15 +293,16 @@ class RecEvaluator:
         latex_code += r"\toprule" + "\n"
 
         # --column headers start
-        latex_code += r"\multicolumn{1}{c}{Template ID}" + "\t&\t"
+        latex_code += r"\multicolumn{1}{c}{Template ID}" + " & "
 
         # first is |c
         latex_code += r"\multicolumn{1}{|c}{" + res_df.columns[0] + "}"
 
         # all the other column headers are c
-        latex_code += "\t&\t" + "\t&\t".join(r"\multicolumn{1}{c}{" + metric_name + "}"
+        if n_metrics > 1:
+            latex_code += " & " + " & ".join(r"\multicolumn{1}{c}{" + metric_name + "}"
                                              for metric_name in res_df.columns[1:])
-        latex_code += r"\\" + "\n"
+        latex_code += r" \\" + "\n"
 
         # --column headers end
 
@@ -307,7 +310,7 @@ class RecEvaluator:
         latex_code += r"\midrule" + "\n"
 
         template_res = res_df[:-2]
-        max_mean = res_df[-2:]
+        mean_best = res_df[-2:]
 
         # set bold for template id which gave best result for each metric
         for metric_name in template_res.columns:
@@ -326,15 +329,15 @@ class RecEvaluator:
 
         # fill cell values row by row
         for index, row in template_res.iterrows():
-            latex_code += f"{index}\t&\t" + "\t&\t".join(row) + r"\\" + "\n"
+            latex_code += f"{index} & " + " & ".join(row) + r" \\" + "\n"
 
         # --start max mean results
         latex_code += r"\midrule" + "\n"
 
         # fill cell values row by row
-        max_mean = max_mean.map(lambda x: "%.4f" % x)
-        for index, row in max_mean.iterrows():
-            latex_code += f"{index}\t&\t" + "\t&\t".join(row) + r"\\" + "\n"
+        mean_best = mean_best.map(lambda x: "%.4f" % x)
+        for index, row in mean_best.iterrows():
+            latex_code += f"{index} & " + " & ".join(row) + r" \\" + "\n"
 
         latex_code += r"\bottomrule" + "\n\n"
 
