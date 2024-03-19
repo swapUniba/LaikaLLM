@@ -115,7 +115,9 @@ class T5Rec(LaikaModelHF):
             warmup_init=False
         )
 
-    def tokenize(self, batch):
+    # for the future: whole_word_ids tokenization should be optional according to the parameter
+    # `inject_whole_word_embeds` to be consistent
+    def tokenize(self, batch: dict):
 
         if "user_id" not in batch:
             raise AttributeError("This model expects 'user_id' column in the dataset to tokenize!")
@@ -180,7 +182,7 @@ class T5Rec(LaikaModelHF):
         # from list of dicts to dict of lists
         return list_dict2dict_list(encoded_sequence_list)
 
-    def prepare_input(self, batch):
+    def prepare_input(self, batch: dict):
         input_dict = {}
 
         input_ids = pad_sequence(batch["input_ids"], batch_first=True, padding_value=self.tokenizer.pad_token_id)
@@ -222,7 +224,7 @@ class T5Rec(LaikaModelHF):
 
         return inputs_embeds
 
-    def train_step(self, batch):
+    def train_step(self, batch: dict):
 
         inputs_embeds = self.model.shared(batch["input_ids"])
 
@@ -236,7 +238,7 @@ class T5Rec(LaikaModelHF):
         return output.loss
 
     @torch.no_grad()
-    def generate_step(self, batch, return_loss: bool = False):
+    def generate_step(self, batch: dict, return_loss: bool = False):
 
         if self.eval_task is None:
             raise ValueError("Model can't perform generate_step since no eval_task is set! "

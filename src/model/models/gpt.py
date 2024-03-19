@@ -154,7 +154,7 @@ class GPT2Rec(LaikaModelHF):
         # from list of dicts to dict of lists
         return list_dict2dict_list(encoded_sequence_list)
 
-    def prepare_input(self, batch):
+    def prepare_input(self, batch: dict):
         input_dict = {}
 
         total_input_ids = pad_sequence(
@@ -200,7 +200,7 @@ class GPT2Rec(LaikaModelHF):
 
         return input_dict
 
-    def train_step(self, batch):
+    def train_step(self, batch: dict):
 
         output = self.model(input_ids=batch["total_input_ids"],
                             attention_mask=batch["total_attention_mask"],
@@ -209,7 +209,7 @@ class GPT2Rec(LaikaModelHF):
         return output.loss
 
     @torch.no_grad()
-    def generate_step(self, batch, return_loss: bool = False):
+    def generate_step(self, batch: dict, return_loss: bool = False):
 
         if self.eval_task is None:
             raise ValueError("Model can't perform generate_step since no eval_task is set! "
