@@ -12,7 +12,10 @@ from src.evaluate.evaluator import RecEvaluator
 from src.model import LaikaModel, ModelParams
 
 
-def eval_main(general_params: GeneralParams, data_params: DataParams, model_params: ModelParams, eval_params: EvalParams):
+def eval_main(general_params: GeneralParams,
+              data_params: DataParams,
+              model_params: ModelParams,
+              eval_params: EvalParams):
 
     # general params
     exp_name = general_params.exp_name
