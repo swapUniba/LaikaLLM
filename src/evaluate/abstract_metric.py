@@ -57,7 +57,7 @@ class LaikaMetric(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def per_user_precomputed_matrix(self, predictions: np.ndarray[np.ndarray[str]], truths: PaddedArr) -> np.ndarray:
+    def per_user_precomputed_matrix(self, predictions: np.ndarray[str], truths: PaddedArr) -> np.ndarray:
         raise NotImplementedError
 
     @staticmethod
