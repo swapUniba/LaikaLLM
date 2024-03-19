@@ -125,8 +125,6 @@ class T5Rec(LaikaModelHF):
             warmup_init=False
         )
 
-    # for the future: whole_word_ids tokenization should be optional according to the parameter
-    # `inject_whole_word_embeds` to be consistent
     def tokenize(self, batch: dict):
 
         if "user_id" not in batch:
@@ -164,19 +162,20 @@ class T5Rec(LaikaModelHF):
 
                     encoded_sequence = self.tokenizer(text=input_text, text_target=target_text, truncation=True)
 
-                    # get word ids from t5 tokenizer fast
-                    whole_word_ids = np.array(encoded_sequence.encodings[0].word_ids)
-                    special_token_mask = np.array(encoded_sequence.encodings[0].special_tokens_mask).astype(bool)
+                    if self.model.config.inject_whole_word_embeds is True:
+                        # get word ids from t5 tokenizer fast
+                        whole_word_ids = np.array(encoded_sequence.encodings[0].word_ids)
+                        special_token_mask = np.array(encoded_sequence.encodings[0].special_tokens_mask).astype(bool)
 
-                    # we set -1 to all special tokens (to substitute None, which is the value set by default)
-                    whole_word_ids[~special_token_mask] += 1
-                    whole_word_ids[special_token_mask] = self.tokenizer.pad_token_id
+                        # we set -1 to all special tokens (to substitute None, which is the value set by default)
+                        whole_word_ids[~special_token_mask] += 1
+                        whole_word_ids[special_token_mask] = self.tokenizer.pad_token_id
+
+                        encoded_sequence["whole_word_ids"] = whole_word_ids.tolist()
 
                     # even if surely there is only one user, we wrap it into a list to be coherent
                     if self.model.config.inject_user_embeds is True:
                         encoded_sequence["user_idx"] = [self.model.config.user_mapping[sample["user_id"]]]
-
-                    encoded_sequence["whole_word_ids"] = whole_word_ids.tolist()
 
                     if not self.model.training:
 
@@ -199,13 +198,15 @@ class T5Rec(LaikaModelHF):
         attention_mask = pad_sequence(batch["attention_mask"],
                                       batch_first=True,
                                       padding_value=0)
-        whole_word_ids = pad_sequence(batch["whole_word_ids"],
-                                      batch_first=True,
-                                      padding_value=0)
 
         input_dict["input_ids"] = input_ids.to(self.model.device)
         input_dict["attention_mask"] = attention_mask.to(self.model.device)
-        input_dict["whole_word_ids"] = whole_word_ids.to(self.model.device)
+
+        if "whole_word_ids" in batch:
+            whole_word_ids = pad_sequence(batch["whole_word_ids"],
+                                          batch_first=True,
+                                          padding_value=0)
+            input_dict["whole_word_ids"] = whole_word_ids.to(self.model.device)
 
         if "user_idx" in batch:
             # dim 1 is equal to 1, we don't need it since user_idxs will be passed
