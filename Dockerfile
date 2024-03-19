@@ -22,7 +22,7 @@ RUN pip install -U pip
 # install app dependencies. We are ok in installing each time all the dependencies
 # upon docker build (if the source code changes) because we want explicitly NOT to
 # cache this phase
-RUN pip install -r requirements-docker.txt && rm requirements-docker.txt
+RUN pip install --no-cache-dir -U -r requirements-docker.txt && rm requirements-docker.txt
 
 ENV PYTHONHASHSEED=42
 ENV CUBLAS_WORKSPACE_CONFIG=:16:8
