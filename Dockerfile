@@ -28,4 +28,4 @@ ENV PYTHONHASHSEED=42
 ENV CUBLAS_WORKSPACE_CONFIG=:16:8
 
 # gdown is critical for dataset download, it must be updated to the latest version always
-CMD pip install --no-cache-dir -U gdown
+CMD pip install --no-cache-dir -U gdown && /bin/bash
