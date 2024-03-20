@@ -20,9 +20,12 @@ RUN sed -n '4,$p' <requirements.txt >requirements-docker.txt
 RUN pip install -U pip
 
 # install app dependencies. We are ok in installing each time all the dependencies
-# upon docker build (if the source code changes) because we want explicitly NOT to
-# cache this phase
+# upon docker build (if the source code changes) to avoid listing again all requirements here
+# since requirements install is relatively lightweight
 RUN pip install --no-cache-dir -U -r requirements-docker.txt && rm requirements-docker.txt
 
 ENV PYTHONHASHSEED=42
 ENV CUBLAS_WORKSPACE_CONFIG=:16:8
+
+# gdown is critical for dataset download, it must be updated to the latest version always
+CMD pip install --no-cache-dir -U gdown
