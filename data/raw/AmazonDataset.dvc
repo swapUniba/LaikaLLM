@@ -1,0 +1,6 @@
+outs:
+- md5: cca4fb723726d7f6ee6ec893ec7651f9.dir
+  size: 1750471213
+  nfiles: 27
+  hash: md5
+  path: AmazonDataset

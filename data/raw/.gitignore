@@ -1,5 +1,6 @@
 # ignore everything
-*
+
 # except
 !.gitkeep
 !.gitignore
+/AmazonDataset

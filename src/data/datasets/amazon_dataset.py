@@ -5,17 +5,17 @@ import json
 import os
 import pickle
 import random
-import zipfile
 from collections import Counter
 from functools import cached_property
 from typing import Literal, Dict
 
 import datasets
-import gdown
+from dvc.fs import DVCFileSystem
 import pandas as pd
 from datasets import Dataset
+from fsspec.callbacks import TqdmCallback
 
-from src import RAW_DATA_DIR
+from src import RAW_DATA_DIR, ROOT_PATH
 from src.data.abstract_dataset import LaikaDataset
 from src.utils import dict_list2list_dict, list_dict2dict_list, PrintWithSpin
 
@@ -132,38 +132,22 @@ class AmazonDataset(LaikaDataset):
 
     def download_extract_raw_dataset(self):
 
-        url_raw_data = "https://drive.google.com/uc?id=1qGxgmx7G_WB7JE4Cn_bEcZ_o_NAJLE3G"
-        raw_data_folder_out = os.path.join(RAW_DATA_DIR, "AmazonDataset")
+        # folder from dvc and output path are the same
+        dvc_folder = "data/raw/AmazonDataset"
+        raw_data_out_folder = os.path.join(RAW_DATA_DIR, "AmazonDataset")
 
-        if not os.path.isdir(raw_data_folder_out):
+        if not os.path.isdir(raw_data_out_folder) or len(os.listdir(raw_data_out_folder)) == 0:
+            print("# Downloading raw Amazon Dataset from DVC:")
 
-            print("# Downloading raw Amazon Dataset:")
+            fs = DVCFileSystem(url="https://github.com/Silleellie/LaikaLLM")
 
-            zip_path = gdown.download(url=url_raw_data,
-                                      output=os.path.join(RAW_DATA_DIR, "Amazon_Data.zip"))
-
-            print("Done!")
-
-            # create AmazonDataset folder inside raw
-            os.makedirs(raw_data_folder_out)
-
-            with PrintWithSpin("Extracting datasets from zip"):
-
-                # process output path of zip file to extract, in order to not have
-                # "AmazonDataset/data/beauty/**" but simply "AmazonDataset/beauty/**"
-                subfolder_to_extract = ["beauty", "sports", "toys"]
-                with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-
-                    for subfolder in subfolder_to_extract:
-                        dir_to_extract = f"data/{subfolder}/"
-
-                        for path_in_zip in zip_ref.namelist():
-                            if path_in_zip.startswith(dir_to_extract):
-                                zip_ref.getinfo(path_in_zip).filename = "/".join(path_in_zip.split("/")[1:])
-                                zip_ref.extract(member=path_in_zip, path=raw_data_folder_out)
-
-            # remove zip once we are done
-            os.remove(zip_path)
+            fs.get(
+                dvc_folder, raw_data_out_folder,
+                callback=TqdmCallback(
+                    tqdm_kwargs={"bar_format": "{desc} {percentage:.0f}%|{bar}| [{elapsed}<{remaining}]"}
+                ),
+                recursive=True
+            )
         else:
             print("# Amazon Dataset found, skipping download and extraction part")
 
