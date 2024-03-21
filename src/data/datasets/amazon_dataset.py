@@ -14,6 +14,7 @@ import datasets
 import gdown
 import pandas as pd
 from datasets import Dataset
+from gdown.exceptions import FileURLRetrievalError
 
 from src import RAW_DATA_DIR
 from src.data.abstract_dataset import LaikaDataset
@@ -132,15 +133,23 @@ class AmazonDataset(LaikaDataset):
 
     def download_extract_raw_dataset(self):
 
-        url_raw_data = "https://drive.google.com/uc?id=1qGxgmx7G_WB7JE4Cn_bEcZ_o_NAJLE3G"
+        # url of dataset is https://drive.google.com/uc?id=1qGxgmx7G_WB7JE4Cn_bEcZ_o_NAJLE3G
+        id_gdrive_dataset = "1qGxgmx7G_WB7JE4Cn_bEcZ_o_NAJLE3G&confirm=t"
         raw_data_folder_out = os.path.join(RAW_DATA_DIR, "AmazonDataset")
 
         if not os.path.isdir(raw_data_folder_out):
 
             print("# Downloading raw Amazon Dataset:")
 
-            zip_path = gdown.download(url=url_raw_data,
-                                      output=os.path.join(RAW_DATA_DIR, "Amazon_Data.zip"))
+            try:
+                zip_path = gdown.download(id=id_gdrive_dataset,
+                                          output=os.path.join(RAW_DATA_DIR, "Amazon_Data.zip"))
+            except FileURLRetrievalError:
+                raise FileURLRetrievalError("Permission denied to download the dataset or dataset removed! "
+                                            "Please check if you can the dataset still exists here:"
+                                            "https://drive.google.com/uc?id=1qGxgmx7G_WB7JE4Cn_bEcZ_o_NAJLE3G."
+                                            "If yes, upgrade gdown library with 'pip install -U gdown' "
+                                            "(or any other package manager you use) and re-run the experiment!")
 
             print("Done!")
 
