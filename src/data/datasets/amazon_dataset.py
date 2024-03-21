@@ -133,15 +133,16 @@ class AmazonDataset(LaikaDataset):
     def download_extract_raw_dataset(self):
 
         # folder from dvc and output path are the same
-        raw_data_folder = os.path.join(RAW_DATA_DIR, "AmazonDataset")
+        dvc_folder = "data/raw/AmazonDataset"
+        raw_data_out_folder = os.path.join(RAW_DATA_DIR, "AmazonDataset")
 
-        if not os.path.isdir(raw_data_folder) or len(os.listdir(raw_data_folder)) == 0:
+        if not os.path.isdir(raw_data_out_folder) or len(os.listdir(raw_data_out_folder)) == 0:
             print("# Downloading raw Amazon Dataset from DVC:")
 
-            fs = DVCFileSystem(url=ROOT_PATH)
+            fs = DVCFileSystem(url="https://github.com/Silleellie/LaikaLLM")
 
             fs.get(
-                raw_data_folder, raw_data_folder,
+                dvc_folder, raw_data_out_folder,
                 callback=TqdmCallback(
                     tqdm_kwargs={"bar_format": "{desc} {percentage:.0f}%|{bar}| [{elapsed}<{remaining}]"}
                 ),
