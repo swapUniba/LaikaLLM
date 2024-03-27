@@ -167,9 +167,12 @@ class T5Rec(LaikaModelHF):
                         whole_word_ids = np.array(encoded_sequence.encodings[0].word_ids)
                         special_token_mask = np.array(encoded_sequence.encodings[0].special_tokens_mask).astype(bool)
 
-                        # we set -1 to all special tokens (to substitute None, which is the value set by default)
+                        # we increment all word ids (except special tokens) by 1
+                        # (because they start from 0, but 0 is pad token)
                         whole_word_ids[~special_token_mask] += 1
-                        whole_word_ids[special_token_mask] = self.tokenizer.pad_token_id
+
+                        # special tokens are None by default, we substitute None with 0
+                        whole_word_ids[special_token_mask] = 0
 
                         encoded_sequence["whole_word_ids"] = whole_word_ids.tolist()
 
@@ -350,7 +353,7 @@ class T5Rec(LaikaModelHF):
 
             # we set -1 to all special tokens (to substitute None, which is the value set by default)
             whole_word_ids[~special_token_mask] += 1
-            whole_word_ids[special_token_mask] = self.tokenizer.pad_token_id
+            whole_word_ids[special_token_mask] = 0
 
             whole_word_ids = torch.tensor(whole_word_ids.astype(int)).to(self.model.device)
 
