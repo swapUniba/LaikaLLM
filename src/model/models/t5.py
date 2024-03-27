@@ -8,7 +8,7 @@ import numpy as np
 import torch
 from torch import nn, Tensor
 from torch.nn.utils.rnn import pad_sequence
-from transformers import T5ForConditionalGeneration, Adafactor, T5TokenizerFast, AutoConfig, GenerationConfig
+from transformers import T5ForConditionalGeneration, Adafactor, T5TokenizerFast, GenerationConfig, AutoConfig
 
 from src.data.abstract_dataset import LaikaDataset
 from src.model.abstract_model import LaikaModelHF
@@ -99,7 +99,7 @@ class T5Rec(LaikaModelHF):
         if inject_whole_word_embeds is True:
             self.whole_word_embeddings = nn.Embedding(
                 512, self.model.config.d_model  # config.d_model is 768 for base
-            )
+            ).to(self.model.device)
 
     @property
     def get_suggested_optimizer(self):
@@ -410,7 +410,6 @@ class T5Rec(LaikaModelHF):
         obj = cls(name_or_path=dir_path,
                   training_tasks_str=config.training_tasks_str,
                   all_unique_labels=config.all_unique_labels,
-                  all_unique_users=config.all_unique_users,
                   inject_user_embeds=config.inject_user_embeds,
                   inject_whole_word_embeds=config.inject_whole_word_embeds,
 
