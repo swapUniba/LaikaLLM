@@ -403,6 +403,10 @@ class T5Rec(LaikaModelHF):
                                                           **config_laika_kwargs,
                                                           return_unused_kwargs=True)
 
+        # all parameters were basically saved inside the model config and are loaded back
+        # automatically, but (apart from the mandatory parameters) we need to pass
+        # `inject_user_embeds` and `inject_whole_word_embeds`
+        # so that they are initialized in case they are needed. Their state dicts is loaded below
         obj = cls(name_or_path=dir_path,
                   training_tasks_str=config.training_tasks_str,
                   all_unique_labels=config.all_unique_labels,
@@ -415,6 +419,7 @@ class T5Rec(LaikaModelHF):
         obj.model.config = config
         obj.model.generation_config = gen_config
 
+        # we load back additional weights back if needed
         if obj.user_embeddings is not None:
             user_emb_pth = os.path.join(dir_path, "user_emb.pth")
             obj.user_embeddings.load_state_dict(torch.load(user_emb_pth))

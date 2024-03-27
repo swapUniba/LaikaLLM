@@ -184,7 +184,8 @@ class LaikaModelHF(LaikaModel):
         self.tokenizer.save_pretrained(save_directory=output_dir)
 
     @classmethod
-    # generic to say that the model returned is of same type of the caller class
+    # this method should be subclassed whenever the model has any additional parameter
+    # that is NOT stored inside the hugging face model config
     def load(cls, dir_path: str, **config_and_laika_kwargs) -> LaikaModelHF:
 
         # laika kwargs for example are val_template, val_template_id, etc.
@@ -192,9 +193,8 @@ class LaikaModelHF(LaikaModel):
                                                           **config_and_laika_kwargs,
                                                           return_unused_kwargs=True)
 
-        # we can't pass **config, because model instantiation via config should be done
-        # using .from_config() rather than .from_pretrained().
-        # that's why we use config just to load parameters of LaikaModel serialized
+        # we use config to load mandatory parameters of LaikaModel serialized
+        # in this case **laika_kwargs are those not saved into the model config
         obj = cls(name_or_path=dir_path,
                   training_tasks_str=config.training_tasks_str,
                   all_unique_labels=config.all_unique_labels,
@@ -203,8 +203,8 @@ class LaikaModelHF(LaikaModel):
         # regardless of what happens in init, we will substitute the initialized
         # config with the loaded config, to avoid re-initialization to possible default
         # values since we passed through __init__ again.
-        # this loaded config already has updated laika kwargs, if they were saved into the config
-        # and new values are passed to this function through *kwargs
+        # NOTE: this loaded config already has updated laika kwargs, if they were saved into the config
+        # and new values are passed to this function through **kwargs
         obj.model.config = config
 
         return obj
