@@ -79,14 +79,16 @@ class GPT2Rec(LaikaModelHF):
         self.target_prefix_word_ids = None
         self.whole_word_embeddings = None
         if inject_whole_word_embeds is True:
+
+            # By default, the tokenizer truncates to max 1024 tokens. At worst,
+            # we expect 1024 different words (if custom max length is set to the tokenizer,
+            # the first dimension should be changed here too)
             self.whole_word_embeddings = nn.Embedding(
-                512, self.model.config.hidden_size
+                self.tokenizer.model_max_length, self.model.config.hidden_size
             ).to(self.model.device)
 
-            self.input_prefix_word_ids = self.tokenizer(self.model.config.input_prefix,
-                                                        return_tensors="np").word_ids(0)
-            self.target_prefix_word_ids = self.tokenizer(self.model.config.target_prefix,
-                                                         return_tensors="np").word_ids(0)
+            self.input_prefix_word_ids = np.array(self.tokenizer(self.model.config.input_prefix).word_ids(0))
+            self.target_prefix_word_ids = np.array(self.tokenizer(self.model.config.target_prefix).word_ids(0))
 
     @property
     def get_suggested_optimizer(self):

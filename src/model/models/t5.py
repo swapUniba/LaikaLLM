@@ -97,8 +97,12 @@ class T5Rec(LaikaModelHF):
 
         self.whole_word_embeddings = None
         if inject_whole_word_embeds is True:
+
+            # By default, the tokenizer truncates to max 512 tokens. At worst,
+            # we expect 512 different words (if custom max length is set to the tokenizer,
+            # the first dimension should be changed here too)
             self.whole_word_embeddings = nn.Embedding(
-                512, self.model.config.d_model  # config.d_model is 768 for base
+                self.tokenizer.model_max_length, self.model.config.d_model  # config.d_model is 768 for base
             ).to(self.model.device)
 
     @property
