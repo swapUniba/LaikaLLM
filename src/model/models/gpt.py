@@ -1,14 +1,16 @@
 from __future__ import annotations
 
+import os
 import random
 from copy import deepcopy
 from typing import List, Literal
 
 import numpy as np
 import torch
+from torch import nn, Tensor
 from torch.nn.utils.rnn import pad_sequence
 from torch.optim import AdamW
-from transformers import GPT2LMHeadModel, GPT2TokenizerFast, GenerationConfig
+from transformers import GPT2LMHeadModel, GPT2TokenizerFast, GenerationConfig, AutoConfig
 
 from src.model.abstract_model import LaikaModelHF
 from src.utils import dict_list2list_dict, list_dict2dict_list
@@ -27,6 +29,7 @@ class GPT2Rec(LaikaModelHF):
                  train_task_selection_strat: Literal['random', 'all'] = "all",
                  input_prefix: str = "Input: ",
                  target_prefix: str = "Target: ",
+                 inject_whole_word_embeds: bool = True,
                  **model_config_and_gen_kwargs):
 
         # before passing the model config kwargs to super (which will pass them to the model config),
@@ -62,17 +65,39 @@ class GPT2Rec(LaikaModelHF):
         self.model.config.pad_token_id = self.tokenizer.eos_token_id
         self.model.generation_config.pad_token_id = self.tokenizer.eos_token_id
 
-        self.input_prefix = input_prefix
-        self.target_prefix = target_prefix
+        self.model.config.input_prefix = input_prefix
+        self.model.config.target_prefix = target_prefix
+        self.model.config.inject_whole_word_embeds = inject_whole_word_embeds
 
-        self.encoded_input_prefix = self.tokenizer(self.input_prefix, return_attention_mask=False).input_ids
-        self.encoded_target_prefix = self.tokenizer(self.target_prefix, return_attention_mask=False).input_ids
+        self.encoded_input_prefix = self.tokenizer(self.model.config.input_prefix,
+                                                   return_attention_mask=False).input_ids
+        self.encoded_target_prefix = self.tokenizer(self.model.config.target_prefix,
+                                                    return_attention_mask=False).input_ids
         self.newline_token_id = self.tokenizer("\n", return_attention_mask=False).input_ids
+
+        self.input_prefix_word_ids = None
+        self.target_prefix_word_ids = None
+        self.whole_word_embeddings = None
+        if inject_whole_word_embeds is True:
+            self.whole_word_embeddings = nn.Embedding(
+                512, self.model.config.hidden_size
+            ).to(self.model.device)
+
+            self.input_prefix_word_ids = self.tokenizer(self.model.config.input_prefix,
+                                                        return_tensors="np").word_ids(0)
+            self.target_prefix_word_ids = self.tokenizer(self.model.config.target_prefix,
+                                                         return_tensors="np").word_ids(0)
 
     @property
     def get_suggested_optimizer(self):
+
+        parameters = list(self.model.parameters())
+
+        if self.whole_word_embeddings is not None:
+            parameters += list(self.whole_word_embeddings.parameters())
+
         return AdamW(
-            list(self.model.parameters()),
+            parameters,
             lr=5e-5,
             betas=(0.9, 0.999),
             eps=1e-8,
@@ -116,23 +141,26 @@ class GPT2Rec(LaikaModelHF):
 
                     # <end of text token> so we enforce the fact that the model should make the prediction
                     # (represented by the target text) and that's it! No endless generation!
-                    target_ids = self.tokenizer(f"{target_text}<|endoftext|>",
-                                                truncation=True,
-                                                return_attention_mask=False).input_ids
+                    target_encoded_sequence = self.tokenizer(f"{target_text}<|endoftext|>",
+                                                             truncation=True,
+                                                             return_attention_mask=False)
+                    target_ids = target_encoded_sequence.input_ids
 
                     len_reserved_target = len(self.newline_token_id) + len(self.encoded_target_prefix) + len(target_ids)
 
-                    input_text_ids = self.tokenizer(
-                        f"{self.input_prefix}{input_text} ",
+                    input_text_encoded_sequence = self.tokenizer(
+                        f"{self.model.config.input_prefix}{input_text} ",
                         truncation=True,
                         max_length=self.tokenizer.model_max_length - len_reserved_target,
-                        return_attention_mask=False).input_ids
+                        return_attention_mask=False)
+                    input_text_ids = input_text_encoded_sequence.input_ids
 
                     # why we add later newline, target_prefix and target? due to POSSIBLE TRUNCATION!
                     # in this way, the context may be truncated, but the target WILL BE NOT
                     input_text_ids += self.newline_token_id + self.encoded_target_prefix
 
                     total_input_ids = input_text_ids + target_ids
+
                     encoded_sequence: dict = {
                         "input_prompt_ids": input_text_ids,
                         "input_prompt_attention_mask": [1] * len(input_text_ids),
@@ -142,6 +170,18 @@ class GPT2Rec(LaikaModelHF):
                         # objective is to reconstruct the input text + target
                         "total_labels": deepcopy(total_input_ids)
                     }
+
+                    if self.model.config.inject_whole_word_embeds is True:
+                        input_whole_word_ids, total_whole_word_ids = self._tokenize_whole_word_ids(
+                            input_text_encoded_sequence.word_ids(0),
+                            target_encoded_sequence.word_ids(0)
+                        )
+
+                        assert len(input_whole_word_ids) == len(input_text_ids)
+                        assert len(total_whole_word_ids) == len(total_input_ids)
+
+                        encoded_sequence["input_whole_word_ids"] = input_whole_word_ids.tolist()
+                        encoded_sequence["total_whole_word_ids"] = total_whole_word_ids.tolist()
 
                     if not self.model.training:
                         if gt is None:
@@ -197,14 +237,73 @@ class GPT2Rec(LaikaModelHF):
         input_dict["input_prompt_attention_mask"] = input_prompt_attention_mask.to(self.model.device)
         input_dict["total_labels"] = lm_labels.to(self.model.device)
 
+        if self.model.config.inject_whole_word_embeds is True:
+            input_whole_word_ids = pad_sequence(
+                batch["input_whole_word_ids"],
+                batch_first=True,
+                padding_value=0
+            )
+            total_whole_word_ids = pad_sequence(
+                batch["total_whole_word_ids"],
+                batch_first=True,
+                padding_value=0
+            )
+
+            input_dict["input_whole_word_ids"] = input_whole_word_ids.to(self.model.device)
+            input_dict["total_whole_word_ids"] = total_whole_word_ids.to(self.model.device)
+
         if "gt" in batch:
             input_dict["gt"] = batch["gt"]
 
         return input_dict
 
+    def _tokenize_whole_word_ids(self, input_whole_word_ids: list, target_whole_word_ids: list):
+
+        # get word ids from gpt2 tokenizer fast
+        # gpt2 tokenizer doesn't add any special token, so this snipped is under the assumption
+        # that no special token is added by the tokenizer
+        # (and so word_ids arrays do not have any None value)
+        input_whole_word_ids.append(input_whole_word_ids[-1] + 1)  # newline token
+        input_whole_word_ids = np.array(input_whole_word_ids)
+
+        # adding the "Target: " prefix, but the word ids count should continue where the
+        # "input_whole_word_ids" left
+        offset_target_prefix_word_ids = self.target_prefix_word_ids + input_whole_word_ids[-1] + 1
+        input_whole_word_ids = np.concatenate((input_whole_word_ids, offset_target_prefix_word_ids))
+
+        # adding the target sequence, that is used in the training phase only.
+        # again, word ids count should continue from where we left off
+        offset_target_word_ids = np.array(target_whole_word_ids) + input_whole_word_ids[-1] + 1
+        total_whole_word_ids = np.concatenate((input_whole_word_ids,
+                                               offset_target_word_ids))
+
+        # increase word ids count starting from 1 rather than 0
+        input_whole_word_ids += 1
+        total_whole_word_ids += 1
+
+        # gpt2 tokenizer doesn't add any special token, but the last token is
+        # surely the eos token due to how we set the target sequence to tokenize.
+        if len(total_whole_word_ids) != 0:
+            total_whole_word_ids[-1] = 0
+
+        return input_whole_word_ids, total_whole_word_ids
+
+    def _inject_whole_word_embeds(self, token_inputs_embeds: Tensor, whole_word_ids: Tensor):
+
+        whole_word_embeds = self.whole_word_embeddings(whole_word_ids)
+        assert whole_word_embeds.shape[-1] == token_inputs_embeds.shape[-1]
+        inputs_embeds = token_inputs_embeds + whole_word_embeds
+
+        return inputs_embeds
+
     def train_step(self, batch: dict):
 
-        output = self.model(input_ids=batch["total_input_ids"],
+        inputs_embeds = self.model.transformer.wte(batch["total_input_ids"])
+
+        if self.model.config.inject_whole_word_embeds is True:
+            inputs_embeds = self._inject_whole_word_embeds(inputs_embeds, batch["total_whole_word_ids"])
+
+        output = self.model(inputs_embeds=inputs_embeds,
                             attention_mask=batch["total_attention_mask"],
                             labels=batch["total_labels"])
 
@@ -232,19 +331,29 @@ class GPT2Rec(LaikaModelHF):
 
         loss = torch.tensor(torch.nan)
         if return_loss is True:
-            output = self.model(inputs_embeds=batch["input_ids"],
-                                attention_mask=batch["attention_mask"],
-                                labels=batch["labels"])
-            loss = output.loss
+            # this does not update gradients since we use decorator torch.no_grad()
+            loss = self.train_step(batch)
 
         # for decoder only model, input should be padded to the left when performing batch inference with generate,
         # otherwise you are continuing generating over a pad token which was little meaning!
         # Check https://github.com/huggingface/transformers/issues/3021#issuecomment-1454267951
-        left_padded_input_ids, left_padded_attn_mask = self._left_pad(batch["input_prompt_ids"],
-                                                                      batch["input_prompt_attention_mask"])
+        left_padded_input_ids = self._left_pad(batch["input_prompt_ids"],
+                                               pad_token=self.tokenizer.pad_token_id)
+        left_padded_attn_mask = self._left_pad(batch["input_prompt_attention_mask"],
+                                               pad_token=0)
 
+        inputs_embeds = self.model.transformer.wte(left_padded_input_ids)
+
+        if self.model.config.inject_whole_word_embeds is True:
+            left_padded_word_ids = self._left_pad(batch["input_whole_word_ids"], pad_token=0)
+            inputs_embeds = self._inject_whole_word_embeds(inputs_embeds, left_padded_word_ids)
+
+        # for some decoder only models (in particular gpt2) it is possible to perform generate using
+        # custom inputs_embeds. They are used at the 1st step of the generation process only.
+        # It is needed to pass also "input_ids" so that the input prompt is returned in output
         beam_outputs = self.model.generate(
             input_ids=left_padded_input_ids,
+            inputs_embeds=inputs_embeds,
             attention_mask=left_padded_attn_mask,
             num_return_sequences=num_return_sequences,
             generation_config=self.model.generation_config
@@ -252,31 +361,28 @@ class GPT2Rec(LaikaModelHF):
 
         # this works for all rows of tensor because, when generating, also pad tokens are generated,
         # so the index where the target prediction starts is in common to all rows!
-        beam_outputs_targets = beam_outputs[:, batch["input_prompt_ids"].shape[1]:]
+        beam_outputs_targets = beam_outputs[:, inputs_embeds.shape[1]:]
 
         generated_sents = self.tokenizer.batch_decode(beam_outputs_targets, skip_special_tokens=True)
         mapped_predictions = np.array(generated_sents).reshape((len(gt), num_return_sequences))
 
         return mapped_predictions, gt, loss
 
-    def _left_pad(self, input_prompt_ids: torch.LongTensor, input_prompt_attention_mask: torch.LongTensor):
+    def _left_pad(self, right_padded_tensor: torch.Tensor, pad_token: int):
 
         # calculate the number of padding tokens in each row, which is where
         # the valid ids start for each row
-        num_padding_tokens = (input_prompt_ids == self.tokenizer.pad_token_id).sum(dim=1)
+        num_padding_tokens = (right_padded_tensor == pad_token).sum(dim=1)
 
         # create a new tensor filled with padding tokens (zero tokens for attention mask)
-        left_padded_input_ids = torch.full_like(input_prompt_ids, fill_value=self.tokenizer.pad_token_id)
-        left_padded_attn_mask = torch.zeros_like(input_prompt_attention_mask)
+        left_padded_tensor = torch.full_like(right_padded_tensor, fill_value=pad_token)
 
         # For each row, move the actual content to the specified positions
-        for i in range(input_prompt_ids.size(0)):
-            end_index_valid_ids = input_prompt_ids.size(1) - num_padding_tokens[i]
+        for i in range(right_padded_tensor.size(0)):
+            end_index_valid_ids = right_padded_tensor.size(1) - num_padding_tokens[i]
+            left_padded_tensor[i, num_padding_tokens[i]:] = right_padded_tensor[i, :end_index_valid_ids]
 
-            left_padded_input_ids[i, num_padding_tokens[i]:] = input_prompt_ids[i, :end_index_valid_ids]
-            left_padded_attn_mask[i, num_padding_tokens[i]:] = 1
-
-        return left_padded_input_ids, left_padded_attn_mask
+        return left_padded_tensor
 
     @torch.no_grad()
     def inference(self, input_text: str | list[str], format_input: bool = True, return_only_target: bool = False,
@@ -286,19 +392,37 @@ class GPT2Rec(LaikaModelHF):
             input_text = [input_text]
 
         if format_input is True:
-            input_text = [f"{self.input_prefix}{inp} \n{self.target_prefix}" for inp in input_text]
+            input_text = [f"{self.model.config.input_prefix}{inp} \n{self.model.config.target_prefix}"
+                          for inp in input_text]
 
         encoded_inputs = self.tokenizer(input_text,
                                         truncation=True,
                                         padding=True,
-                                        padding_side="left",
                                         return_tensors="pt")
 
-        left_padded_input_ids = encoded_inputs.input_ids.to(self.model.device)
-        left_padded_attn_mask = encoded_inputs.attention_mask.to(self.model.device)
+        left_padded_input_ids = self._left_pad(encoded_inputs.input_ids,
+                                               pad_token=self.tokenizer.pad_token_id).to(self.model.device)
+        left_padded_attn_mask = self._left_pad(encoded_inputs.attention_mask,
+                                               pad_token=0).to(self.model.device)
+
+        inputs_embeds = self.model.transformer.wte(left_padded_input_ids)
+
+        if self.model.config.inject_whole_word_embeds is True:
+            whole_word_ids = np.array([encoded_inputs.word_ids(i) for i in range(len(input_text))])
+
+            special_tokens_mask = whole_word_ids == None
+
+            whole_word_ids[~special_tokens_mask] += 1
+            whole_word_ids[special_tokens_mask] = 0
+
+            whole_word_ids = torch.tensor(whole_word_ids.astype(int)).to(self.model.device)
+
+            left_padded_word_ids = self._left_pad(whole_word_ids, pad_token=0)
+            inputs_embeds = self._inject_whole_word_embeds(inputs_embeds, left_padded_word_ids)
 
         beam_outputs = self.model.generate(
             input_ids=left_padded_input_ids,
+            inputs_embeds=inputs_embeds,
             attention_mask=left_padded_attn_mask,
             generation_config=self.model.generation_config,
             **gen_config
@@ -315,6 +439,20 @@ class GPT2Rec(LaikaModelHF):
 
         return mapped_predictions.tolist()
 
+    def to(self, device: str):
+        if self.whole_word_embeddings is not None:
+            self.whole_word_embeddings.to(device)
+
+        return super().to(device)
+
+    def save(self, output_dir: str):
+
+        super().save(output_dir)
+
+        if self.whole_word_embeddings is not None:
+            whole_word_emb_out_pth = os.path.join(output_dir, "whole_word_emb.pth")
+            torch.save(self.whole_word_embeddings.state_dict(), whole_word_emb_out_pth)
+
     @classmethod
     def load(cls, dir_path: str, **config_gen_laika_kwargs) -> GPT2Rec:
 
@@ -322,7 +460,27 @@ class GPT2Rec(LaikaModelHF):
                                                                            **config_gen_laika_kwargs,
                                                                            return_unused_kwargs=True)
 
-        obj: GPT2Rec = super().load(dir_path, **config_laika_kwargs)  # type: ignore
+        config, laika_kwargs = AutoConfig.from_pretrained(dir_path,
+                                                          **config_laika_kwargs,
+                                                          return_unused_kwargs=True)
+
+        # all parameters were basically saved inside the model config and are loaded back
+        # automatically, but we need to pass `inject_whole_word_embeds`
+        # so that they are initialized in case they are needed. Their state dicts is loaded
+        # below
+        obj: GPT2Rec = cls(name_or_path=dir_path,
+                           training_tasks_str=config.training_tasks_str,
+                           all_unique_labels=config.all_unique_labels,
+                           inject_whole_word_embeds=config.inject_whole_word_embeds,
+
+                           **laika_kwargs)
+
+        obj.model.config = config
         obj.model.generation_config = gen_config
+
+        # we load back the whole word emb layer weights if needed
+        if obj.whole_word_embeddings is not None:
+            whole_word_emb_pth = os.path.join(dir_path, "whole_word_emb.pth")
+            obj.whole_word_embeddings.load_state_dict(torch.load(whole_word_emb_pth))
 
         return obj
