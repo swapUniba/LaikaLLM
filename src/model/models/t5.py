@@ -347,11 +347,10 @@ class T5Rec(LaikaModelHF):
         if self.model.config.inject_whole_word_embeds is True:
 
             # get word ids from t5 tokenizer fast
-            whole_word_ids = np.array([encoded_inputs.encodings[i].word_ids for i in range(len(input_text))])
-            special_token_mask = np.array([encoded_inputs.encodings[i].special_tokens_mask
-                                          for i in range(len(input_text))]).astype(bool)
+            whole_word_ids = np.array([encoded_inputs.word_ids(i) for i in range(len(input_text))])
 
-            # we set -1 to all special tokens (to substitute None, which is the value set by default)
+            special_token_mask = whole_word_ids == None
+
             whole_word_ids[~special_token_mask] += 1
             whole_word_ids[special_token_mask] = 0
 
