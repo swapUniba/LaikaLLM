@@ -81,7 +81,7 @@ class LaikaTask(ABC):
         try:
             task_cls = cls.str_alias_cls[task_cls_name]
         except KeyError:
-            raise KeyError(f"LaikaTask {task_cls_name} does not exist!") from None
+            raise KeyError(f"Task {task_cls_name} does not exist!") from None
 
         if template_id is not None and template_id not in task_cls.templates_dict.keys():
             raise KeyError(f"Template {template_id} for task {task_cls_name} does not exist!") from None
