@@ -312,7 +312,7 @@ class T5Rec(LaikaModelHF):
         if not isinstance(input_text, list):
             input_text = [input_text]
 
-        if not isinstance(user_id, list):
+        if not isinstance(user_id, list) and user_id is not None:
             user_id = [user_id]
 
         encoded_inputs = self.tokenizer(input_text,
@@ -327,7 +327,7 @@ class T5Rec(LaikaModelHF):
         if self.model.config.inject_user_embeds is True:
 
             # we are sure there is an element since we did the wrapping
-            if user_id[0] is None:
+            if user_id is None:
                 raise ValueError("Model was fine-tuned with `inject_user_embeds`, please for each input text "
                                  "specify to which user it refers to with the `user_id` parameter")
 
