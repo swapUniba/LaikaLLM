@@ -125,7 +125,7 @@ class LaikaModel(ABC):
         try:
             model_cls = cls.str_alias_cls[model_cls_name]
         except KeyError:
-            raise KeyError(f"Dataset {model_cls_name} does not exist!") from None
+            raise KeyError(f"Model {model_cls_name} does not exist!") from None
 
         # if we arrive at the return clause, model_cls exists that's why we return True directly
         return model_cls if not return_bool else True
