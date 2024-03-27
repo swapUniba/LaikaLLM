@@ -29,7 +29,7 @@ class GPT2Rec(LaikaModelHF):
                  train_task_selection_strat: Literal['random', 'all'] = "all",
                  input_prefix: str = "Input: ",
                  target_prefix: str = "Target: ",
-                 inject_whole_word_embeds: bool = True,
+                 inject_whole_word_embeds: bool = False,
                  **model_config_and_gen_kwargs):
 
         # before passing the model config kwargs to super (which will pass them to the model config),
