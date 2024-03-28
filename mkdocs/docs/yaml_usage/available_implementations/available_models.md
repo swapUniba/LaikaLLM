@@ -41,31 +41,29 @@ T5Rec:
   
   # If set to true, this adds a custom EmbeddingLayer to the model which encodes whole word information.
   # This encoding produces embeddings which have same hidden dimension of the input embeddings, and the two
-  # are summed together. This is basically the implementation of the P5 architecture # (4)
+  # are summed together. # (2)
   #
   # Optional, Default: false
   inject_whole_word_embeds: false
   
   # You can pass any parameter that you would pass to the T5Config when instantiating the model with the
-  # HuggingFace library # (4)
+  # HuggingFace library # (3)
   CONFIG_PARAM_1: CONFIG_VAL_1
   CONFIG_PARAM_2: CONFIG_VAL_2
   ... 
   
   # You can pass any parameter that you would pass to the GenerationConfig when instantiating it with the
-  # HuggingFace library # (5)
+  # HuggingFace library # (4)
   GEN_PARAM_1: GEN_VAL_1
   GEN_PARAM_2: GEN_VAL_2
   ...
 ```
 
 1. Check all the [available models](https://huggingface.co/models?sort=trending&search=t5) hosted at HuggingFace!
-2. More robust strategy, but slower
-3. Less robust strategy, but faster
-4. The P5 model is described in [this](https://arxiv.org/pdf/2203.13366.pdf) research paper
-5. Check all the config parameters that you can pass from the HuggingFace
+2. This is based on the architecture of the P5 model described in [this](https://arxiv.org/pdf/2203.13366.pdf) research paper
+3. Check all the config parameters that you can pass from the HuggingFace
    official [documentation](https://huggingface.co/docs/transformers/model_doc/t5#transformers.T5Config)
-6. Check all the generation parameters that you can pass from the HuggingFace
+4. Check all the generation parameters that you can pass from the HuggingFace
    official [documentation](https://huggingface.co/docs/transformers/main_classes/text_generation#transformers.GenerationConfig)
 
 
@@ -126,23 +124,29 @@ GPT2Rec:
   # Optional, Default: "Input: "
   target_prefix: "Target: "
   
+  # If set to true, this adds a custom EmbeddingLayer to the model which encodes whole word information.
+  # This encoding produces embeddings which have same hidden dimension of the input embeddings, and the two
+  # are summed together. This is basically the implementation of the P5 architecture # (2)
+  #
+  # Optional, Default: false
+  inject_whole_word_embeds: false
+  
   # You can pass any parameter that you would pass to the T5Config when instantiating the model with the
-  # HuggingFace library # (4)
+  # HuggingFace library # (3)
   CONFIG_PARAM_1: CONFIG_VAL_1
   CONFIG_PARAM_2: CONFIG_VAL_2
   ... 
   
   # You can pass any parameter that you would pass to the GenerationConfig when instantiating it with the
-  # HuggingFace library # (5)
+  # HuggingFace library # (4)
   GEN_PARAM_1: GEN_VAL_1
   GEN_PARAM_2: GEN_VAL_2
   ...
 ```
 
 1. Check all the [available models](https://huggingface.co/models?sort=trending&search=gpt2) hosted at HuggingFace!
-2. More robust strategy, but slower
-3. Less robust strategy, but faster
-4. Check all the config parameters that you can pass from the HuggingFace
+2. It's the same as described for the [T5 model](#t5rec)
+3. Check all the config parameters that you can pass from the HuggingFace
    official [documentation](https://huggingface.co/docs/transformers/model_doc/gpt2#transformers.GPT2Config)
-5. Check all the generation parameters that you can pass from the HuggingFace
+4. Check all the generation parameters that you can pass from the HuggingFace
    official [documentation](https://huggingface.co/docs/transformers/main_classes/text_generation#transformers.GenerationConfig)

@@ -8,7 +8,7 @@ import numpy as np
 import torch
 from torch import nn, Tensor
 from torch.nn.utils.rnn import pad_sequence
-from transformers import T5ForConditionalGeneration, Adafactor, T5TokenizerFast, AutoConfig, GenerationConfig
+from transformers import T5ForConditionalGeneration, Adafactor, T5TokenizerFast, GenerationConfig, AutoConfig
 
 from src.data.abstract_dataset import LaikaDataset
 from src.model.abstract_model import LaikaModelHF
@@ -97,9 +97,13 @@ class T5Rec(LaikaModelHF):
 
         self.whole_word_embeddings = None
         if inject_whole_word_embeds is True:
+
+            # By default, the tokenizer truncates to max 512 tokens. At worst,
+            # we expect 512 different words (if custom max length is set to the tokenizer,
+            # the first dimension should be changed here too)
             self.whole_word_embeddings = nn.Embedding(
-                512, self.model.config.d_model  # config.d_model is 768 for base
-            )
+                self.tokenizer.model_max_length, self.model.config.d_model  # config.d_model is 768 for base
+            ).to(self.model.device)
 
     @property
     def get_suggested_optimizer(self):
@@ -167,9 +171,12 @@ class T5Rec(LaikaModelHF):
                         whole_word_ids = np.array(encoded_sequence.encodings[0].word_ids)
                         special_token_mask = np.array(encoded_sequence.encodings[0].special_tokens_mask).astype(bool)
 
-                        # we set -1 to all special tokens (to substitute None, which is the value set by default)
+                        # we increment all word ids (except special tokens) by 1
+                        # (because they start from 0, but 0 is pad token)
                         whole_word_ids[~special_token_mask] += 1
-                        whole_word_ids[special_token_mask] = self.tokenizer.pad_token_id
+
+                        # special tokens are None by default, we substitute None with 0
+                        whole_word_ids[special_token_mask] = 0
 
                         encoded_sequence["whole_word_ids"] = whole_word_ids.tolist()
 
@@ -309,7 +316,7 @@ class T5Rec(LaikaModelHF):
         if not isinstance(input_text, list):
             input_text = [input_text]
 
-        if not isinstance(user_id, list):
+        if not isinstance(user_id, list) and user_id is not None:
             user_id = [user_id]
 
         encoded_inputs = self.tokenizer(input_text,
@@ -324,7 +331,7 @@ class T5Rec(LaikaModelHF):
         if self.model.config.inject_user_embeds is True:
 
             # we are sure there is an element since we did the wrapping
-            if user_id[0] is None:
+            if user_id is None:
                 raise ValueError("Model was fine-tuned with `inject_user_embeds`, please for each input text "
                                  "specify to which user it refers to with the `user_id` parameter")
 
@@ -344,13 +351,12 @@ class T5Rec(LaikaModelHF):
         if self.model.config.inject_whole_word_embeds is True:
 
             # get word ids from t5 tokenizer fast
-            whole_word_ids = np.array([encoded_inputs.encodings[i].word_ids for i in range(len(input_text))])
-            special_token_mask = np.array([encoded_inputs.encodings[i].special_tokens_mask
-                                          for i in range(len(input_text))]).astype(bool)
+            whole_word_ids = np.array([encoded_inputs.word_ids(i) for i in range(len(input_text))])
 
-            # we set -1 to all special tokens (to substitute None, which is the value set by default)
+            special_token_mask = whole_word_ids == None
+
             whole_word_ids[~special_token_mask] += 1
-            whole_word_ids[special_token_mask] = self.tokenizer.pad_token_id
+            whole_word_ids[special_token_mask] = 0
 
             whole_word_ids = torch.tensor(whole_word_ids.astype(int)).to(self.model.device)
 
@@ -403,10 +409,13 @@ class T5Rec(LaikaModelHF):
                                                           **config_laika_kwargs,
                                                           return_unused_kwargs=True)
 
+        # all parameters were basically saved inside the model config and are loaded back
+        # automatically, but (apart from the mandatory parameters) we need to pass
+        # `inject_user_embeds` and `inject_whole_word_embeds`
+        # so that they are initialized in case they are needed. Their state dicts is loaded below
         obj = cls(name_or_path=dir_path,
                   training_tasks_str=config.training_tasks_str,
                   all_unique_labels=config.all_unique_labels,
-                  all_unique_users=config.all_unique_users,
                   inject_user_embeds=config.inject_user_embeds,
                   inject_whole_word_embeds=config.inject_whole_word_embeds,
 
@@ -415,6 +424,7 @@ class T5Rec(LaikaModelHF):
         obj.model.config = config
         obj.model.generation_config = gen_config
 
+        # we load back additional weights back if needed
         if obj.user_embeddings is not None:
             user_emb_pth = os.path.join(dir_path, "user_emb.pth")
             obj.user_embeddings.load_state_dict(torch.load(user_emb_pth))
