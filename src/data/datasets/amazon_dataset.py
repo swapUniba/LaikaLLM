@@ -143,13 +143,14 @@ class AmazonDataset(LaikaDataset):
 
             try:
                 zip_path = gdown.download(id=id_gdrive_dataset,
-                                          output=os.path.join(RAW_DATA_DIR, "Amazon_Data.zip"))
+                                          output=os.path.join(RAW_DATA_DIR, "P5_data.zip"))
             except FileURLRetrievalError:
                 raise FileURLRetrievalError("Permission denied to download the dataset or dataset removed! "
-                                            "Please check if you can the dataset still exists here:"
-                                            "https://drive.google.com/uc?id=1qGxgmx7G_WB7JE4Cn_bEcZ_o_NAJLE3G."
-                                            "If yes, upgrade gdown library with 'pip install -U gdown' "
-                                            "(or any other package manager you use) and re-run the experiment!")
+                                            "Please check if you the dataset still exists here:"
+                                            "https://drive.google.com/uc?id=1qGxgmx7G_WB7JE4Cn_bEcZ_o_NAJLE3G"
+                                            "If yes, try to upgrade the gdown library with 'pip install -U gdown' "
+                                            "(or any other package manager you use) or download the .zip manually"
+                                            "and move it into 'data/raw' folder!") from None
 
             print("Done!")
 
