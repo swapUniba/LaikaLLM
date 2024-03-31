@@ -2,6 +2,7 @@ import operator
 
 import numpy as np
 import pandas as pd
+from loguru import logger
 
 from src.evaluate.abstract_metric import LaikaMetric, PaddedArr
 
@@ -35,6 +36,11 @@ class ErrorMetric(LaikaMetric):
         valid_preds = predictions[~nan_predictions]
         valid_truths = truths[~nan_predictions]
 
+        if len(valid_preds) != len(predictions):
+            ignored_users = len(predictions) - len(valid_preds)
+            logger.info(f"For metric {str(self)}, {ignored_users} users are ignored since the LLM did not "
+                        f"generate valid numbers")
+
         # we are bounding the predictions made which are over/below
         # the range of values we have in truth
         max_truth = valid_truths.max()
@@ -50,12 +56,10 @@ class ErrorMetric(LaikaMetric):
 class RMSE(ErrorMetric):
 
     def __call__(self, per_user_precomputed_matrix: np.ndarray) -> float:
-
         return np.sqrt(np.mean(per_user_precomputed_matrix ** 2)).item()
 
 
 class MAE(ErrorMetric):
 
     def __call__(self, per_user_precomputed_matrix: np.ndarray) -> float:
-
         return np.mean(np.abs(per_user_precomputed_matrix)).item()

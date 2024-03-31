@@ -19,3 +19,4 @@ pyyaml~=6.0.1
 cytoolz~=0.12.3
 yaspin~=3.0.1
 gdown~=5.1.0
+loguru~=0.7.2

@@ -1,6 +1,13 @@
 import os
+import sys
 from dataclasses import dataclass
 from pathlib import Path
+
+from loguru import logger
+
+# format logging for a more user-friendly approach
+logger.remove(0)
+logger.add(sys.stderr, format="<level>{level}</level>: <level>{message}</level>", colorize=True)
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_PATH = str(Path(os.path.join(_THIS_DIR, "..")).resolve())

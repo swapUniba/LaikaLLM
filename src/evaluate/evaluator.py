@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import wandb
 from tqdm import tqdm
+from loguru import logger
 
 from src.data.abstract_task import LaikaTask
 from src.evaluate.abstract_metric import LaikaMetric, PaddedArr
@@ -174,6 +175,11 @@ class RecEvaluator:
         total_preds: list[np.ndarray[str]] = []
         total_truths = []
 
+        # during predictions generations, we disable logging coming from the metrics package (and its children)
+        # logging will be enabled back when we generate ALL predictions
+        # this is done to avoid redundant and duplicated messages
+        logger.disable("src.evaluate.metrics")
+
         # progress will go from 0 to 100. Init to -1 so at 0 we perform the first print
         progress = -1
         for i, batch in enumerate(pbar_eval, start=1):
@@ -207,6 +213,9 @@ class RecEvaluator:
         pbar_eval.close()
 
         eval_loss /= total_n_batch
+
+        # enable back logging for metrics package
+        logger.enable("src.evaluate.metrics")
 
         res_eval_dict = self._compute_metrics(total_preds, total_truths, metric_list)
 
