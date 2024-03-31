@@ -37,9 +37,9 @@ class ErrorMetric(LaikaMetric):
         valid_truths = truths[~nan_predictions]
 
         if len(valid_preds) != len(predictions):
-            ignored_users = len(predictions) - len(valid_preds)
-            logger.info(f"For metric {str(self)}, {ignored_users} users are ignored since the LLM did not "
-                        f"generate valid numbers")
+            ignored_predictions = len(predictions) - len(valid_preds)
+            logger.info(f"For metric {str(self)}, {ignored_predictions} predictions (out of a total of "
+                        f"{len(predictions)}) are ignored since the LLM did not generate valid numbers")
 
         # we are bounding the predictions made which are over/below
         # the range of values we have in truth

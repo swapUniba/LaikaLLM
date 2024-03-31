@@ -93,6 +93,44 @@ class TestErrorMetric(unittest.TestCase):
         with self.assertRaises(ValueError):
             metric.per_user_precomputed_matrix(predictions, truths)
 
+        # predictions and truths are in 1:1 relationships but some predictions are invalid
+        # (i.e. they are not numbers)
+        predictions = np.array([
+            ["not a number", "4.4", "3.3"],
+            ["4.2", "not a number", "5"]
+        ])
+
+        truths = PaddedArr([
+            ["3", "3", "1"],
+            ["4", "1", "5"]
+        ])
+
+        result = metric.per_user_precomputed_matrix(predictions, truths)
+
+        valid_predictions = predictions.flatten()
+
+        valid_numbers_index = [1, 2, 3, 5]  # position of valid numbers in the flattened arr
+        valid_predictions = valid_predictions[valid_numbers_index].astype(float)
+        valid_truths = truths.astype(float).flatten()[valid_numbers_index]
+
+        expected = valid_predictions - valid_truths
+
+        self.assertTrue(np.array_equal(expected, result))
+
+        # truths contain invalid numbers, which should be impossible
+        predictions = np.array([
+            ["1.2", "4.4", "3.3"],
+            ["4.2", "3.2", "5"]
+        ])
+
+        truths = PaddedArr([
+            ["3", "3", "1"],
+            ["4", "1", "not a number"]
+        ])
+
+        with self.assertRaises(ValueError):
+            metric.per_user_precomputed_matrix(predictions, truths)
+
 
 # for actual metrics we only test the correctness of results,
 # all limit cases are tested in test_per_user_precomputed_matrix()
