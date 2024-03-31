@@ -24,9 +24,19 @@ class ErrorMetric(LaikaMetric):
         predictions = pd.to_numeric(predictions.flatten(), errors="coerce")
         truths = pd.to_numeric(truths.flatten(), errors="coerce")
 
-        valid_preds = predictions[~np.isnan(predictions)]
-        valid_truths = truths[~np.isnan(truths)]
+        if np.isnan(truths).any():
+            raise ValueError("Array representing the ground truth contains elements which are not numbers, "
+                             "but numbers are required for error metrics!")
 
+        # we consider only valid predictions (and their corresponding truth values),
+        # i.e. generated text by the LLM which can be converted into a number
+        nan_predictions = np.isnan(predictions)
+
+        valid_preds = predictions[~nan_predictions]
+        valid_truths = truths[~nan_predictions]
+
+        # we are bounding the predictions made which are over/below
+        # the range of values we have in truth
         max_truth = valid_truths.max()
         min_truth = valid_truths.min()
 
