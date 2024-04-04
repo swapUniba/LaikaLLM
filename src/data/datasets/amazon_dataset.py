@@ -136,23 +136,26 @@ class AmazonDataset(LaikaDataset):
         # url of dataset is https://drive.google.com/uc?id=1qGxgmx7G_WB7JE4Cn_bEcZ_o_NAJLE3G
         id_gdrive_dataset = "1qGxgmx7G_WB7JE4Cn_bEcZ_o_NAJLE3G&confirm=t"
         raw_data_folder_out = os.path.join(RAW_DATA_DIR, "AmazonDataset")
+        raw_data_zip_path = os.path.join(RAW_DATA_DIR, "P5_data.zip")
 
         if not os.path.isdir(raw_data_folder_out):
 
-            print("# Downloading raw Amazon Dataset:")
+            if not os.path.isfile(raw_data_zip_path):
+                print("# Downloading raw Amazon Dataset:")
 
-            try:
-                zip_path = gdown.download(id=id_gdrive_dataset,
-                                          output=os.path.join(RAW_DATA_DIR, "P5_data.zip"))
-            except FileURLRetrievalError:
-                raise FileURLRetrievalError("Permission denied to download the dataset or dataset removed! "
-                                            "Please check if you the dataset still exists here:"
-                                            "https://drive.google.com/uc?id=1qGxgmx7G_WB7JE4Cn_bEcZ_o_NAJLE3G"
-                                            "If yes, try to upgrade the gdown library with 'pip install -U gdown' "
-                                            "(or any other package manager you use) or download the .zip manually"
-                                            "and move it into 'data/raw' folder!") from None
+                try:
+                    gdown.download(id=id_gdrive_dataset, output=raw_data_zip_path)
+                except FileURLRetrievalError:
+                    raise FileURLRetrievalError("Permission denied to download the dataset or dataset removed!\n"
+                                                "Please check if you the dataset still exists here: "
+                                                "https://drive.google.com/uc?id=1qGxgmx7G_WB7JE4Cn_bEcZ_o_NAJLE3G\n"
+                                                "If yes, try to upgrade the gdown library with 'pip install -U gdown' "
+                                                "(or any other package manager you use) or download the .zip manually "
+                                                "from the link above and move it into 'data/raw' folder!") from None
 
-            print("Done!")
+                print("Done!")
+            else:
+                print("# ZIP file found, skipping download phase")
 
             # create AmazonDataset folder inside raw
             os.makedirs(raw_data_folder_out)
@@ -162,7 +165,7 @@ class AmazonDataset(LaikaDataset):
                 # process output path of zip file to extract, in order to not have
                 # "AmazonDataset/data/beauty/**" but simply "AmazonDataset/beauty/**"
                 subfolder_to_extract = ["beauty", "sports", "toys"]
-                with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                with zipfile.ZipFile(raw_data_zip_path, 'r') as zip_ref:
 
                     for subfolder in subfolder_to_extract:
                         dir_to_extract = f"data/{subfolder}/"
@@ -173,7 +176,7 @@ class AmazonDataset(LaikaDataset):
                                 zip_ref.extract(member=path_in_zip, path=raw_data_folder_out)
 
             # remove zip once we are done
-            os.remove(zip_path)
+            os.remove(raw_data_zip_path)
         else:
             print("# Amazon Dataset found, skipping download and extraction part")
 
