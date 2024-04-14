@@ -65,9 +65,9 @@ These are the results of all the considered models when trained and evaluated on
 ### Flan T5 Runs
 - **FlanT5-S**: `google/flan-t5-small` trained and evaluated on the Sequential task alone [[.yml config](flan-t5/flan_t5_seq.yml)][[Results directory](flan-t5/metrics_results/flan_t5_seq)][[Visualize in WandB](https://wandb.ai/silleellie/LaikaLLM/runs/2t521nr4)]
 
-- **FlanT5-B**: `google/flan-t5-base` trained and evaluated on the Sequential task alone [[.yml config](flan-t5/flan_t5_base_seq.yml)][[Results directory](flan-t5/metrics_results/flan_t5_base_seq)][[Visualize in WandB](https://wandb.ai/silleellie/LaikaLLM/runs/jzmgz2p9)]
-
 - **FlanT5-S + W**: `google/flan-t5-small` with the injection of `whole word embeddings` trained and evaluated on the Sequential task alone [[.yml config](flan-t5+w/flan_t5+w_seq.yml)][[Results directory](flan-t5+w/metrics_results/flan_t5+w_seq)][[Visualize in WandB](https://wandb.ai/silleellie/LaikaLLM/runs/cuz0hguh)]
+
+- **FlanT5-B**: `google/flan-t5-base` trained and evaluated on the Sequential task alone [[.yml config](flan-t5/flan_t5_base_seq.yml)][[Results directory](flan-t5/metrics_results/flan_t5_base_seq)][[Visualize in WandB](https://wandb.ai/silleellie/LaikaLLM/runs/jzmgz2p9)]
 
 - **FlanT5-B + W**: `google/flan-t5-base` with the injection of `whole word embeddings` trained and evaluated on the Sequential task alone [[.yml config](flan-t5+w/flan_t5+w_base_seq.yml)][[Results directory](flan-t5+w/metrics_results/flan_t5+w_base_seq)][[Visualize in WandB](https://wandb.ai/silleellie/LaikaLLM/runs/our9jkc3)]
 
