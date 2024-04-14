@@ -39,12 +39,19 @@ The model which yielded the best results when trained on Sequential, Direct and 
 ## All runs
 
 ### T5 runs
-- `t5-small` trained and evaluated on the Sequential task alone
-[[.yml config](t5/t5_seq.yml)][[Results directory](t5/metrics_results/t5_seq)][[Visualize in WandB](https://wandb.ai/silleellie/LaikaLLM/runs/go1k5yvh)]
+- `t5-small` trained and evaluated on the Sequential task alone [[.yml config](t5/t5_seq.yml)][[Results directory](t5/metrics_results/t5_seq)][[Visualize in WandB](https://wandb.ai/silleellie/LaikaLLM/runs/go1k5yvh)]
 
 - `t5-small` trained and evaluated on Sequential, Direct, Rating Prediction task with train task selection strategy `random` [[.yml config](t5/t5_full_random.yml)][[Results directory](t5/metrics_results/t5_full_random)][[Visualize in WandB](https://wandb.ai/silleellie/LaikaLLM/runs/tc9i2f2n)]
 
 - `t5-small` trained and evaluated on Sequential, Direct, Rating Prediction task with train task selection strategy `all` [[.yml config](t5/t5_full_all.yml)][[Results directory](t5/metrics_results/t5_full_all)][[Visualize in WandB](https://wandb.ai/silleellie/LaikaLLM/runs/n9e1e0ue)]
+
+### T5+W runs
+- `t5-small` with the injection of `whole word embeddings` trained and evaluated on the Sequential task alone [[.yml config](t5+w/t5+w_seq.yml)][[Results directory](t5+w/metrics_results/t5+w_seq)][[Visualize in WandB](https://wandb.ai/silleellie/LaikaLLM/runs/4y3idqj5)]
+
+- `t5-small` with the injection of `whole word embeddings` trained and evaluated on Sequential, Direct, Rating Prediction task with train task selection strategy `random` [[.yml config](t5+w/t5+w_full_random.yml)][[Results directory](t5+w/metrics_results/t5+w_full_random)][[Visualize in WandB](https://wandb.ai/silleellie/LaikaLLM/runs/he9ypxdb)]
+
+- `t5-small` with the injection of `whole word embeddings` trained and evaluated on Sequential, Direct, Rating Prediction task with train task selection strategy `all` [[.yml config](t5+w/t5+w_full_all.yml)][[Results directory](t5+w/metrics_results/t5+w_full_all)][[Visualize in WandB](https://wandb.ai/silleellie/LaikaLLM/runs/tcqrvyon)]
+
 
 ### Flan T5 Runs
 - `google/flan-t5-small` trained and evaluated on the Sequential task alone [[.yml config](flan-t5/flan_t5_seq.yml)][[Results directory](flan-t5/metrics_results/flan_t5_seq)][[Visualize in WandB](https://wandb.ai/silleellie/LaikaLLM/runs/gz3952ot)]
@@ -59,8 +66,32 @@ The model which yielded the best results when trained on Sequential, Direct and 
 
 - `google/flan-t5-base` trained and evaluated on Sequential, Direct, Rating Prediction task with train task selection strategy `all` [[.yml config](flan-t5/flan_t5_base_full_all.yml)][[Results directory](flan-t5/metrics_results/flan_t5_base_full_all)][[Visualize in WandB](https://wandb.ai/silleellie/LaikaLLM/runs/zhxlhbt4)]
 
+
+### Flan T5 + W Runs
+- `google/flan-t5-small` with the injection of `whole word embeddings` trained and evaluated on the Sequential task alone [[.yml config](flan-t5+w/flan_t5+w_seq.yml)][[Results directory](flan-t5+w/metrics_results/flan_t5+w_seq)][[Visualize in WandB](https://wandb.ai/silleellie/LaikaLLM/runs/cuz0hguh)]
+
+- `google/flan-t5-small` with the injection of `whole word embeddings` trained and evaluated on Sequential, Direct, Rating Prediction task with train task selection strategy `random` [[.yml config](flan-t5+w/flan_t5+w_full_random.yml)][[Results directory](flan-t5+w/metrics_results/flan_t5+w_full_random)][[Visualize in WandB](https://wandb.ai/silleellie/LaikaLLM/runs/7n03oosq)]
+
+- `google/flan-t5-small` with the injection of `whole word embeddings` trained and evaluated on Sequential, Direct, Rating Prediction task with train task selection strategy `all` [[.yml config](flan-t5+w/flan_t5+w_full_all.yml)][[Results directory](flan-t5+w/metrics_results/flan_t5+w_full_all)][[Visualize in WandB](https://wandb.ai/silleellie/LaikaLLM/runs/mfi0zvjs)]
+
+- `google/flan-t5-base` with the injection of `whole word embeddings` trained and evaluated on the Sequential task alone [[.yml config](flan-t5+w/flan_t5+w_base_seq.yml)][[Results directory](flan-t5+w/metrics_results/flan_t5+w_base_seq)][[Visualize in WandB](https://wandb.ai/silleellie/LaikaLLM/runs/our9jkc3)]
+
+- `google/flan-t5-base` with the injection of `whole word embeddings` trained and evaluated on Sequential, Direct, Rating Prediction task with train task selection strategy `random` [[.yml config](flan-t5+w/flan_t5+w_base_full_random.yml)][[Results directory](flan-t5+w/metrics_results/flan_t5+w_base_full_random)][[Visualize in WandB](https://wandb.ai/silleellie/LaikaLLM/runs/efba0es8)]
+
+- `google/flan-t5-base` with the injection of `whole word embeddings` trained and evaluated on Sequential, Direct, Rating Prediction task with train task selection strategy `all` [[.yml config](flan-t5+w/flan_t5+w_base_full_all.yml)][[Results directory](flan-t5+w/metrics_results/flan_t5+w_base_full_all)][[Visualize in WandB](https://wandb.ai/silleellie/LaikaLLM/runs/oxxjo006)]
+
+
 ### GPT2 Runs
 - `gpt2` model trained and evaluated on the Sequential task alone [[.yml config](gpt2/gpt2_seq.yml)][[Results directory](gpt2/metrics_results/gpt2_seq)][[Visualize in WandB](https://wandb.ai/silleellie/LaikaLLM/runs/7cq8bk1g)]
+
 - `gpt2` trained and evaluated on Sequential, Direct, Rating Prediction task with train task selection strategy `random` [[.yml config](gpt2/gpt2_full_random.yml)][[Results directory](gpt2/metrics_results/gpt2_full_random)][[Visualize in WandB](https://wandb.ai/silleellie/LaikaLLM/runs/nsmbueqr)]
 
 - `gpt2` trained and evaluated on Sequential, Direct, Rating Prediction task with train task selection strategy `all` [[.yml config](gpt2/gpt2_full_all.yml)][[Results directory](gpt2/metrics_results/gpt2_full_all)][[Visualize in WandB](https://wandb.ai/silleellie/LaikaLLM/runs/alpneygs)]
+
+
+### GPT2 + W Runs
+- `gpt2` with the injection of `whole word embeddings` model trained and evaluated on the Sequential task alone [[.yml config](gpt2+w/gpt2+w_seq.yml)][[Results directory](gpt2+w/metrics_results/gpt2+w_seq)][[Visualize in WandB](https://wandb.ai/silleellie/LaikaLLM/runs/dnw1ope5)]
+
+- `gpt2` with the injection of `whole word embeddings` trained and evaluated on Sequential, Direct, Rating Prediction task with train task selection strategy `random` [[.yml config](gpt2+w/gpt2+w_full_random.yml)][[Results directory](gpt2+w/metrics_results/gpt2+w_full_random)][[Visualize in WandB](https://wandb.ai/silleellie/LaikaLLM/runs/sve0j31i)]
+
+- `gpt2` with the injection of `whole word embeddings` trained and evaluated on Sequential, Direct, Rating Prediction task with train task selection strategy `all` [[.yml config](gpt2+w/gpt2+w_full_all.yml)][[Results directory](gpt2+w/metrics_results/gpt2+w_full_all)][[Visualize in WandB](https://wandb.ai/silleellie/LaikaLLM/runs/vpeb84av)]
