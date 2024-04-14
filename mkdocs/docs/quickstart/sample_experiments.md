@@ -16,7 +16,7 @@ Each of the following runs has also been tracked with **WandB**. The full worksp
 
 These are the results of all the considered models when trained and evaluated on the *Sequential*, *Direct* and *Rating Prediction* tasks:
 <p align="center">
-    <img src="multitask_results.png" alt="Multitask results"/>
+    <img src="https://raw.githubusercontent.com/Silleellie/LaikaLLM/main/sample_experiments/multitask_results.png" alt="Multitask results"/>
 </p>
 
 ### Flan T5 Runs
@@ -59,7 +59,7 @@ These are the results of all the considered models when trained and evaluated on
 
 These are the results of all the considered models when trained and evaluated only on the *Sequential* task:
 <p align="center">
-    <img src="only_seq_results.png" alt="Only Sequential results" width="70%"/>
+    <img src="https://raw.githubusercontent.com/Silleellie/LaikaLLM/main/sample_experiments/only_seq_results.png" alt="Only Sequential results" width="70%"/>
 </p>
 
 ### Flan T5 Runs
