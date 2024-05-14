@@ -41,7 +41,7 @@ class AmazonDataset(LaikaDataset):
         self.add_prefix = add_prefix_items_users
         self.items_start_from_1001 = items_start_from_1001
 
-        # read mapping between user string id (ABXMSBDSI) and user int idxs (331)
+        # read mapping between user/item string id (ABXMSBDSI) and user/item int id (331)
         with open(os.path.join(RAW_DATA_DIR, "AmazonDataset", self.dataset_name, 'datamaps.json'), "r") as f:
             datamaps = json.load(f)
 
@@ -49,6 +49,10 @@ class AmazonDataset(LaikaDataset):
         self.item_id2idx = {str(key): str(val) for key, val in datamaps['item2id'].items()}
         self.user_idx2id = {str(key): str(val) for key, val in datamaps['id2user'].items()}
         self.item_idx2id = {str(key): str(val) for key, val in datamaps['id2item'].items()}
+        self.user2id = {str(key): str(val) for key, val in datamaps['user2id'].items()}
+        self.item2id = {str(key): str(val) for key, val in datamaps['item2id'].items()}
+        self.id2user = {str(key): str(val) for key, val in datamaps['id2user'].items()}
+        self.id2item = {str(key): str(val) for key, val in datamaps['id2item'].items()}
 
         with PrintWithSpin("Reading sequential data"):
             user_items, _ = self._read_sequential()
@@ -58,17 +62,17 @@ class AmazonDataset(LaikaDataset):
 
         # here we save meta information (the "content") about items.
         # We only save info about items which appear in the user profiles
-        relevant_items_id = set(self.item_id2idx.keys())
+        relevant_items = set(self.item2id.keys())
         meta_dict = {}
         with PrintWithSpin("Extracting side-information"):
             for meta_content in parse(os.path.join(RAW_DATA_DIR, "AmazonDataset", self.dataset_name, 'meta.json.gz')):
-                item_id = meta_content.pop("asin")
-                if item_id in relevant_items_id:
-                    item_idx = self.item_id2idx[item_id]
+                item = meta_content.pop("asin")
+                if item in relevant_items:
+                    item_id = self.item2id[item]
 
                     # categories are list of lists for no reason
                     meta_content["categories"] = meta_content["categories"][0]
-                    meta_dict[item_idx] = meta_content
+                    meta_dict[item_id] = meta_content
 
         df_dict = {
             "user_id": [],
@@ -83,22 +87,24 @@ class AmazonDataset(LaikaDataset):
         }
 
         with PrintWithSpin("Creating tabular data"):
-            for user_idx, item_list_idxs in user_items.items():
+            for user_id, item_list_ids in user_items.items():
 
                 user_col_repeated = [user_idx for _ in range(len(item_list_idxs))]
                 [item_col_value, ratings_col_value] = list(zip(*item_list_idxs))
+                user_col_repeated = [user_id for _ in range(len(item_list_ids))]
+                [item_col_value, ratings_col_value] = list(zip(*item_list_ids))
 
                 df_dict["user_id"].extend(user_col_repeated)
                 df_dict["item_sequence"].extend(item_col_value)
                 df_dict["rating_sequence"].extend(map(str, ratings_col_value))
 
-                for item_idx in item_col_value:
-                    desc = meta_dict[item_idx].get("description", "")
-                    item_categories = meta_dict[item_idx].get("categories", [])
-                    title = meta_dict[item_idx].get("title", "")
-                    price = meta_dict[item_idx].get("price", "")
-                    imurl = meta_dict[item_idx].get("imUrl", "")
-                    brand = meta_dict[item_idx].get("brand", "")
+                for item_id in item_col_value:
+                    desc = meta_dict[item_id].get("description", "")
+                    item_categories = meta_dict[item_id].get("categories", [])
+                    title = meta_dict[item_id].get("title", "")
+                    price = meta_dict[item_id].get("price", "")
+                    imurl = meta_dict[item_id].get("imUrl", "")
+                    brand = meta_dict[item_id].get("brand", "")
 
                     df_dict["description_sequence"].append(str(desc))
                     df_dict["categories_sequence"].append(item_categories)
@@ -318,9 +324,9 @@ class AmazonDataset(LaikaDataset):
         with open(os.path.join(RAW_DATA_DIR, "AmazonDataset", self.dataset_name, "sequential_data.txt")) as f:
             for user_item_sequence in f:
                 # user_item sequence is in the form {user_id}, {item_id}, {item_id}, ... {item_id}
-                item_sequence = [str(item_idx) for item_idx in user_item_sequence.split()]
-                user_idx = str(item_sequence.pop(0))
-                user_items[user_idx] = item_sequence
+                item_sequence = [str(item_id) for item_id in user_item_sequence.split()]
+                user_id = str(item_sequence.pop(0))
+                user_items[user_id] = item_sequence
 
         # count occurrences of each time (we must flatten) the item sequences first
         item_count = dict(Counter(itertools.chain.from_iterable(user_items.values())))
@@ -342,19 +348,19 @@ class AmazonDataset(LaikaDataset):
         # controlling how data is split for each task independently
 
         for rating_dict in ratings_list["train"] + ratings_list["val"] + ratings_list["test"]:
-            user_idx = self.user_id2idx[rating_dict["reviewerID"]]
-            item_idx = self.item_id2idx[rating_dict["asin"]]
+            user_id = self.user2id[rating_dict["reviewerID"]]
+            item_id = self.item2id[rating_dict["asin"]]
             # rating is an integer number between 1 and 5 (included)
             rating = int(rating_dict["overall"])
 
-            item_sequence = user_items[user_idx]
+            item_sequence = user_items[user_id]
 
             # if the rating is for an item id which is not present in the sequence of items rated by the user,
             # we don't consider it
             try:
-                item_index = item_sequence.index(item_idx)
+                item_index = item_sequence.index(item_id)
 
-                user_items[user_idx][item_index] = (item_idx, rating)
+                user_items[user_id][item_index] = (item_id, rating)
             except ValueError:
                 pass
 
