@@ -149,7 +149,7 @@ class LaikaModelHF(LaikaModel):
                  name_or_path: str,
                  training_tasks_str: List[str],
                  all_unique_labels: List[str],
-                 items_meta_dict: Dict[str],
+                 items_meta_dict: dict,
                  eval_task_str: str = None,
                  eval_template_id: int | str = None,
                  train_task_selection_strat: Literal['random', 'all'] = "all",
