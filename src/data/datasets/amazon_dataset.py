@@ -63,7 +63,7 @@ class AmazonDataset(LaikaDataset):
         # here we save meta information (the "content") about items.
         # We only save info about items which appear in the user profiles
         relevant_items = set(self.item2id.keys())
-        meta_dict = {}
+        self.meta_dict = {}
         with PrintWithSpin("Extracting side-information"):
             for meta_content in parse(os.path.join(RAW_DATA_DIR, "AmazonDataset", self.dataset_name, 'meta.json.gz')):
                 item = meta_content.pop("asin")
@@ -72,7 +72,7 @@ class AmazonDataset(LaikaDataset):
 
                     # categories are list of lists for no reason
                     meta_content["categories"] = meta_content["categories"][0]
-                    meta_dict[item_id] = meta_content
+                    self.meta_dict[item_id] = meta_content
 
         df_dict = {
             "user_id": [],
@@ -100,12 +100,12 @@ class AmazonDataset(LaikaDataset):
                 df_dict["rating_sequence"].extend(map(str, ratings_col_value))
 
                 for item_id in item_col_value:
-                    desc = meta_dict[item_id].get("description", "")
-                    item_categories = meta_dict[item_id].get("categories", [])
-                    title = meta_dict[item_id].get("title", "")
-                    price = meta_dict[item_id].get("price", "")
-                    imurl = meta_dict[item_id].get("imUrl", "")
-                    brand = meta_dict[item_id].get("brand", "")
+                    desc = self.meta_dict[item_id].get("description", "")
+                    item_categories = self.meta_dict[item_id].get("categories", [])
+                    title = self.meta_dict[item_id].get("title", "")
+                    price = self.meta_dict[item_id].get("price", "")
+                    imurl = self.meta_dict[item_id].get("imUrl", "")
+                    brand = self.meta_dict[item_id].get("brand", "")
 
                     df_dict["description_sequence"].append(str(desc))
                     df_dict["categories_sequence"].append(item_categories)
@@ -137,6 +137,10 @@ class AmazonDataset(LaikaDataset):
     @cached_property
     def all_items(self):
         return pd.unique(self.original_df["item_sequence"].explode())
+
+    @property
+    def items_meta_dict(self):
+        return self.meta_dict
 
     def download_extract_raw_dataset(self):
 

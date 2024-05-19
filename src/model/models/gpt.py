@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import pickle
 import random
 from copy import deepcopy
 from typing import List, Literal
@@ -24,6 +25,7 @@ class GPT2Rec(LaikaModelHF):
                  name_or_path: str,
                  training_tasks_str: List[str],
                  all_unique_labels: List[str],
+                 items_meta_dict: dict,
                  eval_task_str: str = None,
                  eval_template_id: int | str = None,
                  train_task_selection_strat: Literal['random', 'all'] = "all",
@@ -51,6 +53,7 @@ class GPT2Rec(LaikaModelHF):
             name_or_path=name_or_path,
             training_tasks_str=training_tasks_str,
             all_unique_labels=all_unique_labels,
+            items_meta_dict=items_meta_dict,
             eval_task_str=eval_task_str,
             eval_template_id=eval_template_id,
             train_task_selection_strat=train_task_selection_strat,
@@ -134,7 +137,8 @@ class GPT2Rec(LaikaModelHF):
                 # give all info that we have about the sample to the task randomly sampled to generate
                 # input prompt and target text. Each task may have mandatory arguments, if they are missing
                 # an assertion error will be raised
-                templates_list = task(catalog_items=self.all_unique_labels, **sample)
+                templates_list = task(items_meta_dict=self.items_meta_dict,
+                                      catalog_items=self.all_unique_labels, **sample)
 
                 # each task gives as output a list: this list contains surely an inference prompt-target (i.e.,
                 # a prompt target which could be used at inference time) and a variable number of support tasks
@@ -466,6 +470,9 @@ class GPT2Rec(LaikaModelHF):
                                                           **config_laika_kwargs,
                                                           return_unused_kwargs=True)
 
+        with open(os.path.join(dir_path, "items_meta_dict.pkl"), 'rb') as handle:
+            items_meta_dict = pickle.load(handle)
+
         # all parameters were basically saved inside the model config and are loaded back
         # automatically, but we need to pass `inject_whole_word_embeds`
         # so that they are initialized in case they are needed. Their state dicts is loaded
@@ -473,6 +480,7 @@ class GPT2Rec(LaikaModelHF):
         obj: GPT2Rec = cls(name_or_path=dir_path,
                            training_tasks_str=config.training_tasks_str,
                            all_unique_labels=config.all_unique_labels,
+                           items_meta_dict=items_meta_dict,
                            inject_whole_word_embeds=config.inject_whole_word_embeds,
 
                            **laika_kwargs)
