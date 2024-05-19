@@ -77,6 +77,7 @@ class AmazonDataset(LaikaDataset):
         df_dict = {
             "user_id": [],
             "user_name": [],
+            "user_asin": [],
             "item_sequence": [],
             "rating_sequence": [],
             "title_sequence": [],
@@ -91,11 +92,13 @@ class AmazonDataset(LaikaDataset):
             for user_id, item_list_ids in user_items.items():
 
                 user_col_repeated = [user_id for _ in range(len(item_list_ids))]
-                user_name_col_repeated = [self.user_id2name[user_id] for _ in range(len(item_list_ids))]
+                user_name_col_repeated = [self.user_id2name.get(user_id, "") for _ in range(len(item_list_ids))]
+                user_asin_col_repeated = [self.id2user.get(user_id, "") for _ in range(len(item_list_ids))]
                 [item_col_value, ratings_col_value] = list(zip(*item_list_ids))
 
                 df_dict["user_id"].extend(user_col_repeated)
                 df_dict["user_name"].extend(user_name_col_repeated)
+                df_dict["user_asin"].extend(user_asin_col_repeated)
                 df_dict["item_sequence"].extend(item_col_value)
                 df_dict["rating_sequence"].extend(map(str, ratings_col_value))
 
@@ -195,12 +198,12 @@ class AmazonDataset(LaikaDataset):
 
         # For Amazon Dataset, Leave One Out is performed following P5 paper
 
-        groupby_obj = exploded_data_df.groupby(by=["user_id", "user_name"])
+        groupby_obj = exploded_data_df.groupby(by=["user_id", "user_name", "user_asin"])
 
         # train set will be divided into input and target at each epoch: we will sample
         # each time a different input sequence and target item for each user so to reduce chances of
         # overfitting and performing a sort of augmentation in real time
-        train_set = groupby_obj.nth[:-2].groupby(by=["user_id", "user_name"]).agg(list).reset_index()
+        train_set = groupby_obj.nth[:-2].groupby(by=["user_id", "user_name", "user_asin"]).agg(list).reset_index()
 
         # since validation set and test set do not need sampling (they must remain constant in order to validate
         # and evaluate the model fairly across epochs), we split directly here data in input and target.
@@ -220,7 +223,7 @@ class AmazonDataset(LaikaDataset):
             "imurl_sequence": "input_imurl_seq",
             "brand_sequence": "input_brand_seq"
         })
-        input_val_set = input_val_set.groupby(by=["user_id", "user_name"]).agg(list).reset_index()
+        input_val_set = input_val_set.groupby(by=["user_id", "user_name", "user_asin"]).agg(list).reset_index()
 
         gt_val_set = groupby_obj.nth[-2].rename(columns={
             "item_sequence": "gt_item",
@@ -233,9 +236,9 @@ class AmazonDataset(LaikaDataset):
             "brand_sequence": "gt_brand"})
         # this is done only for generality purpose, in order to have a list wrapping all target item
         # features. We are performing Leave One Out, so we are sure there is only one item
-        gt_val_set = gt_val_set.groupby(by=["user_id", "user_name"]).agg(list).reset_index()
+        gt_val_set = gt_val_set.groupby(by=["user_id", "user_name", "user_asin"]).agg(list).reset_index()
 
-        val_set = input_val_set.merge(gt_val_set, on=["user_id", "user_name"])
+        val_set = input_val_set.merge(gt_val_set, on=["user_id", "user_name", "user_asin"])
 
         # if sequence is -> [1 2 3 4 5 6 7 8], TEST SET will have
         # input_sequence: [1 2 3 4 5 6 7]
@@ -249,7 +252,7 @@ class AmazonDataset(LaikaDataset):
             "price_sequence": "input_price_seq",
             "imurl_sequence": "input_imurl_seq",
             "brand_sequence": "input_brand_seq"})
-        input_test_set = input_test_set.groupby(by=["user_id", "user_name"]).agg(list).reset_index()
+        input_test_set = input_test_set.groupby(by=["user_id", "user_name", "user_asin"]).agg(list).reset_index()
 
         gt_test_set = groupby_obj.nth[-1].rename(columns={
             "item_sequence": "gt_item",
@@ -262,9 +265,9 @@ class AmazonDataset(LaikaDataset):
             "brand_sequence": "gt_brand"})
         # this is done only for generality purpose, in order to have a list wrapping all target item
         # features. We are performing Leave One Out, so we are sure there is only one item
-        gt_test_set = gt_test_set.groupby(by=["user_id", "user_name"]).agg(list).reset_index()
+        gt_test_set = gt_test_set.groupby(by=["user_id", "user_name", "user_asin"]).agg(list).reset_index()
 
-        test_set = input_test_set.merge(gt_test_set, on=["user_id", "user_name"])
+        test_set = input_test_set.merge(gt_test_set, on=["user_id", "user_name", "user_asin"])
 
         return train_set, val_set, test_set
 
@@ -301,6 +304,7 @@ class AmazonDataset(LaikaDataset):
 
             single_out_dict["user_id"] = sample["user_id"]
             single_out_dict["user_name"] = sample["user_name"]
+            single_out_dict["user_asin"] = sample["user_asin"]
             single_out_dict["input_item_seq"] = sample["item_sequence"][start_index:end_index]
             single_out_dict["input_rating_seq"] = sample["rating_sequence"][start_index:end_index]
             single_out_dict["input_description_seq"] = sample["description_sequence"][start_index:end_index]
