@@ -377,8 +377,9 @@ class P5SequentialTask(LaikaTask):
         out_list.append(TaskOutput(input_text_inference, target_text_inference, ground_truth_for_eval=[target_item]))
 
         if self.training:
-            input_text_qa, target_text_qa = self._create_input_target_qa(user_id, user_name, catalog_items,
-                                                                         separator, order_history_str, target_item)
+            input_text_qa, target_text_qa = self._create_input_target_qa(user_id, user_name, input_item_seq,
+                                                                         catalog_items, separator, order_history_str,
+                                                                         target_item)
 
             input_text_pair, target_text_pair = self._create_input_target_pairwise(user_id, user_name, catalog_items,
                                                                                    order_history_str, target_item)
@@ -388,14 +389,16 @@ class P5SequentialTask(LaikaTask):
 
         return out_list
 
-    def _create_input_target_qa(self, user_id: str, user_name: str, catalog_items: np.ndarray[str],
-                                separator: str, order_history_str: str, target_item: str):
+    def _create_input_target_qa(self, user_id: str, user_name: str, input_item_seq: list[str],
+                                catalog_items: np.ndarray[str], separator: str, order_history_str: str,
+                                target_item: str):
 
         sampled_key = random.choice(self.qa_templates(return_id=True))
         input_text_placeholder_qa, target_text_placeholder_qa = self.templates_dict[sampled_key]
 
+        # choose as candidates items with which the user did not interact
         candidate_num = 99
-        all_possible_candidates = catalog_items[catalog_items != target_item]
+        all_possible_candidates = np.setdiff1d(catalog_items, np.array(input_item_seq + [target_item]))
         candidates = np.random.choice(all_possible_candidates, size=candidate_num, replace=False)
 
         candidates = np.append(candidates, target_item)
@@ -556,8 +559,9 @@ class P5DirectTask(LaikaTask):
         sampled_key = random.choice(self.inference_templates(return_id=True))
         input_text_placeholder_inference, target_text_placeholder_inference = self.templates_dict[sampled_key]
 
+        # choose as candidates items with which the user did not interact
         bullet_list_wrong_size = 99
-        all_possible_candidates = catalog_items[catalog_items != target_item]
+        all_possible_candidates = np.setdiff1d(catalog_items, np.array(input_item_seq + gt_item))
         candidates = np.random.choice(all_possible_candidates, size=bullet_list_wrong_size, replace=False)
 
         candidates = np.append(candidates, target_item)
@@ -661,8 +665,9 @@ class P5EvalDirectTask(LaikaTask):
         sampled_key = random.choice(self.all_templates(return_id=True))
         input_text_placeholder, target_text_placeholder = self.templates_dict[sampled_key]
 
+        # choose as candidates items with which the user did not interact
         bullet_list_wrong_size = 99
-        all_possible_candidates = catalog_items[catalog_items != target_item]
+        all_possible_candidates = np.setdiff1d(catalog_items, np.array(input_item_seq + gt_item))
         candidates = np.random.choice(all_possible_candidates, size=bullet_list_wrong_size, replace=False)
 
         candidates = np.append(candidates, target_item)
