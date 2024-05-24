@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/Silleellie/LaikaLLM/assets/26851363/a43ed66b-f420-40e3-b261-9cfa690648fa" alt="drawing" width="60%"/>
+  <img src="mkdocs/docs/assets/logo_full.png" alt="LaikaLLM logo" width="60%"/>
 </p>
 
 <p align="center">
