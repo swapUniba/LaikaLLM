@@ -5,7 +5,7 @@ hide:
 ---
 
 <p align="center">
-  <img src="https://github.com/Silleellie/LaikaLLM/assets/26851363/a43ed66b-f420-40e3-b261-9cfa690648fa" alt="drawing" width="50%"/>
+  <img src="assets/logo_full.png" alt="drawing" width="50%"/>
 </p>
 
 # LaikaLLM

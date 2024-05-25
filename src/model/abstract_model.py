@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import inspect
+import os.path
+import pickle
 from abc import abstractmethod, ABC
-from typing import List, Optional, Literal
+from typing import List, Optional, Literal, Dict
 
 import numpy as np
 import torch
@@ -25,6 +27,7 @@ class LaikaModel(ABC):
 
     def __init__(self, training_tasks_str: List[str],
                  all_unique_labels: List[str],
+                 items_meta_dict: dict,
                  eval_task_str: str = None,
                  eval_template_id: int | str = None,
                  train_task_selection_strat: Literal['random', 'all'] = "all"):
@@ -37,6 +40,7 @@ class LaikaModel(ABC):
             raise AttributeError("train_task_selection_strat should be 'all' or 'random'!")
 
         self.all_unique_labels = np.array(all_unique_labels)
+        self.items_meta_dict = items_meta_dict
         self.training_tasks = [LaikaTask.from_string(training_task_str) for training_task_str in training_tasks_str]
 
         self.eval_task: Optional[LaikaTask] = None
@@ -145,6 +149,7 @@ class LaikaModelHF(LaikaModel):
                  name_or_path: str,
                  training_tasks_str: List[str],
                  all_unique_labels: List[str],
+                 items_meta_dict: dict,
                  eval_task_str: str = None,
                  eval_template_id: int | str = None,
                  train_task_selection_strat: Literal['random', 'all'] = "all",
@@ -152,6 +157,7 @@ class LaikaModelHF(LaikaModel):
 
         super().__init__(training_tasks_str=training_tasks_str,
                          all_unique_labels=all_unique_labels,
+                         items_meta_dict=items_meta_dict,
                          eval_task_str=eval_task_str,
                          eval_template_id=eval_template_id,
                          train_task_selection_strat=train_task_selection_strat)
@@ -183,6 +189,9 @@ class LaikaModelHF(LaikaModel):
         # also tokenizer is saved
         self.tokenizer.save_pretrained(save_directory=output_dir)
 
+        with open(os.path.join(output_dir, "items_meta_dict.pkl"), 'wb') as handle:
+            pickle.dump(self.items_meta_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
     @classmethod
     # this method should be subclassed whenever the model has any additional parameter
     # that is NOT stored inside the hugging face model config
@@ -193,11 +202,15 @@ class LaikaModelHF(LaikaModel):
                                                           **config_and_laika_kwargs,
                                                           return_unused_kwargs=True)
 
+        with open(os.path.join(dir_path, "items_meta_dict.pkl"), 'rb') as handle:
+            items_meta_dict = pickle.load(handle)
+
         # we use config to load mandatory parameters of LaikaModel serialized
         # in this case **laika_kwargs are those not saved into the model config
         obj = cls(name_or_path=dir_path,
                   training_tasks_str=config.training_tasks_str,
                   all_unique_labels=config.all_unique_labels,
+                  items_meta_dict=items_meta_dict,
                   **laika_kwargs)
 
         # regardless of what happens in init, we will substitute the initialized
@@ -216,5 +229,6 @@ class LaikaModelHF(LaikaModel):
     def from_cls(cls, model_cls: type[LaikaModelHF], dataset_obj: LaikaDataset, **kwargs) -> LaikaModelHF:
 
         kwargs["all_unique_labels"] = dataset_obj.all_items.tolist()
+        kwargs["items_meta_dict"] = dataset_obj.items_meta_dict
 
         return model_cls(**kwargs)

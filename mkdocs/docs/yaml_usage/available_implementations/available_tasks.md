@@ -464,3 +464,538 @@ the rating that the *user* would give to an *unseen* item.
       </tbody>
     </table>
 </center>
+
+---
+
+## P5 Tasks
+
+Below there are defined the *Rating*, *Sequential*, *Direct* task prompts from the [P5 paper](https://arxiv.org/pdf/2203.13366).
+Each task has its ***"Eval"*** counterpart, where there are defined the prompts used by the P5 author's for the evaluation phase.
+Each *Eval* task has one *seen* prompt (a prompt used during fine-tuning) and an *unseen* one.
+
+### P5RatingTask
+
+The *RatingPredictionTask* is built for [AmazonDataset](available_datasets.md#amazondataset): the goal is to predict
+the rating that the *user* would give to an *unseen* item.
+
+**Inference templates**:
+
+<center>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align: center">Template ID</th>
+          <th style="text-align: center">Input Placeholder text</th>
+          <th style="text-align: center">Target Placeholder text</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">1-1</td>
+          <td style="vertical-align: middle">
+            Which star rating will user_{user_id} give item_{item_id} ? ( 1 being lowest and 5 being highest )
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {star_rating}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">1-2</td>
+          <td style="vertical-align: middle">
+            How will user_{user_id} rate this product : {item_title} ? ( 1 being lowest and 5 being highest )
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {star_rating}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">1-5</td>
+          <td style="vertical-align: middle">
+            Predict the user_{user_id} 's preference on item_{item_id} ( {item_title} ) <br/> 
+            -1 <br/> 
+            -2 <br/> 
+            -3 <br/> 
+            -4 <br/> 
+            -5
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {star_rating}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">1-6</td>
+          <td style="vertical-align: middle">
+            What star rating do you think {user_name} will give item_{item_id} ? ( 1 being lowest and 5 being highest )
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {star_rating}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">1-7</td>
+          <td style="vertical-align: middle">
+            How will {user_name} rate this product : {item_title} ? ( 1 being lowest and 5 being highest )
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {star_rating}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+</center>
+
+**Support templates**:
+
+<center>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align: center">Template ID</th>
+          <th style="text-align: center">Input Placeholder text</th>
+          <th style="text-align: center">Target Placeholder text</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">1-3</td>
+          <td style="vertical-align: middle">
+            Will user_{user_id} give item_{item_id} a {star_rating}-star rating ? ( 1 being lowest and 5 being highest )
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {yes_no}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">1-4</td>
+          <td style="vertical-align: middle">
+            Does user_{user_id} like or dislike item_{item_id} ?
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {like_dislike}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">1-8</td>
+          <td style="vertical-align: middle">
+            Will {user_name} give a {star_rating}-star rating for {item_title} ? ( 1 being lowest and 5 being highest )
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {yes_no}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">1-9</td>
+          <td style="vertical-align: middle">
+            Does {user_name} like or dislike {item_title} ?
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {like_dislike}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+</center>
+
+### P5EvalRatingTask
+
+<center>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align: center">Template ID</th>
+          <th style="text-align: center">Input Placeholder text</th>
+          <th style="text-align: center">Target Placeholder text</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">1-6</td>
+          <td style="vertical-align: middle">
+            What star rating do you think {user_name} will give item_{item_id} ? ( 1 being lowest and 5 being highest )
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {star_rating}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">1-10</td>
+          <td style="vertical-align: middle">
+            Predict {user_name} 's preference towards {item_title} ( 1 being lowest and 5 being highest )
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {star_rating}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+</center>
+
+
+### P5SequentialTask
+
+The SequentialSideInfoTask is built for [AmazonDataset](available_datasets.md#amazondataset): the goal is to predict
+the next item of the **order history** of the user. This task has the **SideInfo** suffix because **categories** of the
+items bought by the user are used additional information for the prediction.
+
+**Inference templates**:
+
+<center>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align: center">Template ID</th>
+          <th style="text-align: center">Input Placeholder text</th>
+          <th style="text-align: center">Target Placeholder text</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">2-1</td>
+          <td style="vertical-align: middle">
+            Given the following purchase history of user_{user_id} : <br/> 
+            {order_history} <br/> 
+            predict next possible item to be purchased by the user ?
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">2-2</td>
+          <td style="vertical-align: middle">
+            I find the purchase history list of user_{user_id} : <br/> 
+            {order_history} <br/> 
+            I wonder what is the next item to recommend to the user . Can you help me decide ?
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">2-3</td>
+          <td style="vertical-align: middle">
+            Here is the purchase history list of user_{user_id} : <br/> 
+            {order_history} <br/> 
+            try to recommend next item to the user
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">2-4</td>
+          <td style="vertical-align: middle">
+            Given the following purchase history of {user_name} : <br/> 
+            {order_history} <br/> 
+            predict next possible item for the user
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">2-5</td>
+          <td style="vertical-align: middle">
+            Based on the purchase history of {user_name} : <br/> 
+            {order_history} <br/> 
+            Can you decide the next item likely to be purchased by the user ?
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">2-6</td>
+          <td style="vertical-align: middle">
+            Here is the purchase history of {user_name} : <br/> 
+            {order_history} <br/> 
+            What to recommend next for the user ?
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+</center>
+
+**Extractive QAs templates:**
+
+<center>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align: center">Template ID</th>
+          <th style="text-align: center">Input Placeholder text</th>
+          <th style="text-align: center">Target Placeholder text</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">2-7</td>
+          <td style="vertical-align: middle">
+            Here is the purchase history of user_{user_id} : <br/> 
+            {order_history} <br/> 
+            Select the next possible item likely to be purchased by the user from the following candidates : <br/> 
+            {candidate_items}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">2-8</td>
+          <td style="vertical-align: middle">
+            Given the following purchase history of {user_name} : <br/> 
+            {order_history} <br/> 
+            What to recommend next for the user? Select one from the following items : <br/> 
+            {candidate_items}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">2-9</td>
+          <td style="vertical-align: middle">
+            Based on the purchase history of user_{user_id} : <br/> 
+            {order_history} <br/> 
+            Choose the next possible purchased item from the following candidates : <br/> 
+            {candidate_items}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">2-10</td>
+          <td style="vertical-align: middle">
+            I find the purchase history list of {user_name} : <br/> 
+            {order_history} <br/> 
+            I wonder which is the next item to recommend to the user . Try to select one from the following candidates : <br/> 
+            {candidate_items}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+</center>
+
+**Pairwise prediction templates**:
+
+<center>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align: center">Template ID</th>
+          <th style="text-align: center">Input Placeholder text</th>
+          <th style="text-align: center">Target Placeholder text</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">2-11</td>
+          <td style="vertical-align: middle">
+            user_{user_id} has the following purchase history : <br/> 
+            {order_history} <br/> 
+            does the user likely to buy {target_item} next ?
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {yes_no}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">2-12</td>
+          <td style="vertical-align: middle">
+            According to {user_name} 's purchase history list : <br/> 
+            {order_history} <br/> 
+            Predict whether the user will purchase {target_item} next ?
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {yes_no}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+</center>
+
+### P5EvalSequentialTask
+
+<center>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align: center">Template ID</th>
+          <th style="text-align: center">Input Placeholder text</th>
+          <th style="text-align: center">Target Placeholder text</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">2-3</td>
+          <td style="vertical-align: middle">
+            Here is the purchase history list of user_{user_id} : <br/> 
+            {order_history} <br/> 
+            try to recommend next item to the user
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">2-13</td>
+          <td style="vertical-align: middle">
+            According to the purchase history of {user_name} : <br/> 
+            {order_history} <br/> 
+            Can you recommend the next possible item to the user ?
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+</center>
+
+
+### P5DirectTask
+
+The P5DirectTask is built for [AmazonDataset](available_datasets.md#amazondataset): the goal is to predict
+a good item to recommend for the *user*.
+
+**Inference templates**:
+
+<center>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align: center">Template ID</th>
+          <th style="text-align: center">Input Placeholder text</th>
+          <th style="text-align: center">Target Placeholder text</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">5-5</td>
+          <td style="vertical-align: middle">
+            Which item of the following to recommend for {user_name} ? <br/> 
+            {candidate_items}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">5-6</td>
+          <td style="vertical-align: middle">
+            Choose the best item from the candidates to recommend for {user_name} ? <br/> 
+            {candidate_items}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">5-7</td>
+          <td style="vertical-align: middle">
+            Pick the most suitable item from the following list and recommend to user_{user_id} : <br/> 
+            {candidate_items}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+</center>
+
+**Support templates**:
+
+<center>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align: center">Template ID</th>
+          <th style="text-align: center">Input Placeholder text</th>
+          <th style="text-align: center">Target Placeholder text</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">5-1</td>
+          <td style="vertical-align: middle">
+            Will user_{user_id} likely to interact with item_{item_id} ?
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {yes_no}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">5-2</td>
+          <td style="vertical-align: middle">
+            Shall we recommend item_{item_id} to {user_name} ?
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {yes_no}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">5-3</td>
+          <td style="vertical-align: middle">
+            For {user_name}, do you think it is good to recommend {item_title} ?
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {yes_no}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">5-4</td>
+          <td style="vertical-align: middle">
+            I would like to recommend some items for user_{user_id} . Is the following item a good choice ? <br/> 
+            {item_title}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {yes_no}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+</center>
+
+### P5EvalDirectTask
+
+<center>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align: center">Template ID</th>
+          <th style="text-align: center">Input Placeholder text</th>
+          <th style="text-align: center">Target Placeholder text</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">5-5</td>
+          <td style="vertical-align: middle">
+            Which item of the following to recommend for {user_name} ? <br/> 
+            {candidate_items}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">5-8</td>
+          <td style="vertical-align: middle">
+            We want to make recommendation for user_{user_id} .  Select the best item from these candidates : <br/> 
+            {candidate_items}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+</center>

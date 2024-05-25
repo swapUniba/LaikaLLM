@@ -1,0 +1,40 @@
+exp_name: exp2_t5_s
+device: cuda:0
+random_seed: 42
+log_wandb: true
+wandb_project: LaikaLLM
+
+data:
+  AmazonDataset:
+    dataset_name: toys
+    add_prefix_items_users: false
+    items_start_from_1001: false
+
+model:
+  T5Rec:
+    name_or_path: t5-small
+  n_epochs: 10
+  train_batch_size: 32
+  train_task_selection_strat: all
+  train_tasks:
+    - P5SequentialTask
+    - P5DirectTask
+    - P5RatingTask
+
+eval:
+  eval_batch_size: 16
+  eval_tasks:
+    P5EvalSequentialTask:
+      - hit@10
+      - hit@5
+      - ndcg@10
+      - ndcg@5
+    P5EvalDirectTask:
+      - hit@10
+      - hit@5
+      - hit@1
+      - ndcg@10
+      - ndcg@5
+    P5EvalRatingTask:
+      - mae
+      - rmse

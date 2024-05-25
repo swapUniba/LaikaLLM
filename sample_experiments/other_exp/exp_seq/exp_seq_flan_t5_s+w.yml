@@ -1,0 +1,29 @@
+exp_name: exp_seq_flan_t5_s+w
+device: cuda:0
+random_seed: 42
+log_wandb: true
+wandb_project: LaikaLLM
+
+data:
+  AmazonDataset:
+    dataset_name: toys
+    add_prefix_items_users: true
+    items_start_from_1001: true
+
+model:
+  T5Rec:
+    name_or_path: google/flan-t5-small
+    inject_whole_word_embeds: true
+  n_epochs: 10
+  train_batch_size: 32
+  train_tasks:
+    - SequentialSideInfoTask
+
+eval:
+  eval_batch_size: 16
+  eval_tasks:
+    SequentialSideInfoTask:
+      - hit@10
+      - hit@5
+      - ndcg@10
+      - ndcg@5

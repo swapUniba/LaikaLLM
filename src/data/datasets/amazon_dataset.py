@@ -41,14 +41,18 @@ class AmazonDataset(LaikaDataset):
         self.add_prefix = add_prefix_items_users
         self.items_start_from_1001 = items_start_from_1001
 
-        # read mapping between user string id (ABXMSBDSI) and user int idxs (331)
+        # read mapping between user/item string id (ABXMSBDSI) and user/item int id (331)
         with open(os.path.join(RAW_DATA_DIR, "AmazonDataset", self.dataset_name, 'datamaps.json'), "r") as f:
             datamaps = json.load(f)
 
-        self.user_id2idx = {str(key): str(val) for key, val in datamaps['user2id'].items()}
-        self.item_id2idx = {str(key): str(val) for key, val in datamaps['item2id'].items()}
-        self.user_idx2id = {str(key): str(val) for key, val in datamaps['id2user'].items()}
-        self.item_idx2id = {str(key): str(val) for key, val in datamaps['id2item'].items()}
+        self.user2id = {str(key): str(val) for key, val in datamaps['user2id'].items()}
+        self.item2id = {str(key): str(val) for key, val in datamaps['item2id'].items()}
+        self.id2user = {str(key): str(val) for key, val in datamaps['id2user'].items()}
+        self.id2item = {str(key): str(val) for key, val in datamaps['id2item'].items()}
+
+        # read mapping between user int id (331) and username (Melissa)
+        with open(os.path.join(RAW_DATA_DIR, "AmazonDataset", self.dataset_name, "user_id2name.pkl"), "rb") as f:
+            self.user_id2name = pickle.load(f)
 
         with PrintWithSpin("Reading sequential data"):
             user_items, _ = self._read_sequential()
@@ -58,20 +62,22 @@ class AmazonDataset(LaikaDataset):
 
         # here we save meta information (the "content") about items.
         # We only save info about items which appear in the user profiles
-        relevant_items_id = set(self.item_id2idx.keys())
-        meta_dict = {}
+        relevant_items = set(self.item2id.keys())
+        self.meta_dict = {}
         with PrintWithSpin("Extracting side-information"):
             for meta_content in parse(os.path.join(RAW_DATA_DIR, "AmazonDataset", self.dataset_name, 'meta.json.gz')):
-                item_id = meta_content.pop("asin")
-                if item_id in relevant_items_id:
-                    item_idx = self.item_id2idx[item_id]
+                item = meta_content.pop("asin")
+                if item in relevant_items:
+                    item_id = self.item2id[item]
 
                     # categories are list of lists for no reason
                     meta_content["categories"] = meta_content["categories"][0]
-                    meta_dict[item_idx] = meta_content
+                    self.meta_dict[item_id] = meta_content
 
         df_dict = {
             "user_id": [],
+            "user_name": [],
+            "user_asin": [],
             "item_sequence": [],
             "rating_sequence": [],
             "title_sequence": [],
@@ -83,22 +89,26 @@ class AmazonDataset(LaikaDataset):
         }
 
         with PrintWithSpin("Creating tabular data"):
-            for user_idx, item_list_idxs in user_items.items():
+            for user_id, item_list_ids in user_items.items():
 
-                user_col_repeated = [user_idx for _ in range(len(item_list_idxs))]
-                [item_col_value, ratings_col_value] = list(zip(*item_list_idxs))
+                user_col_repeated = [user_id for _ in range(len(item_list_ids))]
+                user_name_col_repeated = [self.user_id2name.get(user_id, "") for _ in range(len(item_list_ids))]
+                user_asin_col_repeated = [self.id2user.get(user_id, "") for _ in range(len(item_list_ids))]
+                [item_col_value, ratings_col_value] = list(zip(*item_list_ids))
 
                 df_dict["user_id"].extend(user_col_repeated)
+                df_dict["user_name"].extend(user_name_col_repeated)
+                df_dict["user_asin"].extend(user_asin_col_repeated)
                 df_dict["item_sequence"].extend(item_col_value)
                 df_dict["rating_sequence"].extend(map(str, ratings_col_value))
 
-                for item_idx in item_col_value:
-                    desc = meta_dict[item_idx].get("description", "")
-                    item_categories = meta_dict[item_idx].get("categories", [])
-                    title = meta_dict[item_idx].get("title", "")
-                    price = meta_dict[item_idx].get("price", "")
-                    imurl = meta_dict[item_idx].get("imUrl", "")
-                    brand = meta_dict[item_idx].get("brand", "")
+                for item_id in item_col_value:
+                    desc = self.meta_dict[item_id].get("description", "")
+                    item_categories = self.meta_dict[item_id].get("categories", [])
+                    title = self.meta_dict[item_id].get("title", "")
+                    price = self.meta_dict[item_id].get("price", "")
+                    imurl = self.meta_dict[item_id].get("imUrl", "")
+                    brand = self.meta_dict[item_id].get("brand", "")
 
                     df_dict["description_sequence"].append(str(desc))
                     df_dict["categories_sequence"].append(item_categories)
@@ -130,6 +140,10 @@ class AmazonDataset(LaikaDataset):
     @cached_property
     def all_items(self):
         return pd.unique(self.original_df["item_sequence"].explode())
+
+    @property
+    def items_meta_dict(self):
+        return self.meta_dict
 
     def download_extract_raw_dataset(self):
 
@@ -184,12 +198,12 @@ class AmazonDataset(LaikaDataset):
 
         # For Amazon Dataset, Leave One Out is performed following P5 paper
 
-        groupby_obj = exploded_data_df.groupby(by=["user_id"])
+        groupby_obj = exploded_data_df.groupby(by=["user_id", "user_name", "user_asin"])
 
         # train set will be divided into input and target at each epoch: we will sample
         # each time a different input sequence and target item for each user so to reduce chances of
         # overfitting and performing a sort of augmentation in real time
-        train_set = groupby_obj.nth[:-2].groupby(by=["user_id"]).agg(list).reset_index()
+        train_set = groupby_obj.nth[:-2].groupby(by=["user_id", "user_name", "user_asin"]).agg(list).reset_index()
 
         # since validation set and test set do not need sampling (they must remain constant in order to validate
         # and evaluate the model fairly across epochs), we split directly here data in input and target.
@@ -209,7 +223,7 @@ class AmazonDataset(LaikaDataset):
             "imurl_sequence": "input_imurl_seq",
             "brand_sequence": "input_brand_seq"
         })
-        input_val_set = input_val_set.groupby(by=["user_id"]).agg(list).reset_index()
+        input_val_set = input_val_set.groupby(by=["user_id", "user_name", "user_asin"]).agg(list).reset_index()
 
         gt_val_set = groupby_obj.nth[-2].rename(columns={
             "item_sequence": "gt_item",
@@ -222,9 +236,9 @@ class AmazonDataset(LaikaDataset):
             "brand_sequence": "gt_brand"})
         # this is done only for generality purpose, in order to have a list wrapping all target item
         # features. We are performing Leave One Out, so we are sure there is only one item
-        gt_val_set = gt_val_set.groupby(by=["user_id"]).agg(list).reset_index()
+        gt_val_set = gt_val_set.groupby(by=["user_id", "user_name", "user_asin"]).agg(list).reset_index()
 
-        val_set = input_val_set.merge(gt_val_set, on="user_id")
+        val_set = input_val_set.merge(gt_val_set, on=["user_id", "user_name", "user_asin"])
 
         # if sequence is -> [1 2 3 4 5 6 7 8], TEST SET will have
         # input_sequence: [1 2 3 4 5 6 7]
@@ -238,7 +252,7 @@ class AmazonDataset(LaikaDataset):
             "price_sequence": "input_price_seq",
             "imurl_sequence": "input_imurl_seq",
             "brand_sequence": "input_brand_seq"})
-        input_test_set = input_test_set.groupby(by=["user_id"]).agg(list).reset_index()
+        input_test_set = input_test_set.groupby(by=["user_id", "user_name", "user_asin"]).agg(list).reset_index()
 
         gt_test_set = groupby_obj.nth[-1].rename(columns={
             "item_sequence": "gt_item",
@@ -251,9 +265,9 @@ class AmazonDataset(LaikaDataset):
             "brand_sequence": "gt_brand"})
         # this is done only for generality purpose, in order to have a list wrapping all target item
         # features. We are performing Leave One Out, so we are sure there is only one item
-        gt_test_set = gt_test_set.groupby(by=["user_id"]).agg(list).reset_index()
+        gt_test_set = gt_test_set.groupby(by=["user_id", "user_name", "user_asin"]).agg(list).reset_index()
 
-        test_set = input_test_set.merge(gt_test_set, on="user_id")
+        test_set = input_test_set.merge(gt_test_set, on=["user_id", "user_name", "user_asin"])
 
         return train_set, val_set, test_set
 
@@ -289,6 +303,8 @@ class AmazonDataset(LaikaDataset):
             end_index = start_index + sliding_size
 
             single_out_dict["user_id"] = sample["user_id"]
+            single_out_dict["user_name"] = sample["user_name"]
+            single_out_dict["user_asin"] = sample["user_asin"]
             single_out_dict["input_item_seq"] = sample["item_sequence"][start_index:end_index]
             single_out_dict["input_rating_seq"] = sample["rating_sequence"][start_index:end_index]
             single_out_dict["input_description_seq"] = sample["description_sequence"][start_index:end_index]
@@ -318,9 +334,9 @@ class AmazonDataset(LaikaDataset):
         with open(os.path.join(RAW_DATA_DIR, "AmazonDataset", self.dataset_name, "sequential_data.txt")) as f:
             for user_item_sequence in f:
                 # user_item sequence is in the form {user_id}, {item_id}, {item_id}, ... {item_id}
-                item_sequence = [str(item_idx) for item_idx in user_item_sequence.split()]
-                user_idx = str(item_sequence.pop(0))
-                user_items[user_idx] = item_sequence
+                item_sequence = [str(item_id) for item_id in user_item_sequence.split()]
+                user_id = str(item_sequence.pop(0))
+                user_items[user_id] = item_sequence
 
         # count occurrences of each time (we must flatten) the item sequences first
         item_count = dict(Counter(itertools.chain.from_iterable(user_items.values())))
@@ -342,19 +358,19 @@ class AmazonDataset(LaikaDataset):
         # controlling how data is split for each task independently
 
         for rating_dict in ratings_list["train"] + ratings_list["val"] + ratings_list["test"]:
-            user_idx = self.user_id2idx[rating_dict["reviewerID"]]
-            item_idx = self.item_id2idx[rating_dict["asin"]]
+            user_id = self.user2id[rating_dict["reviewerID"]]
+            item_id = self.item2id[rating_dict["asin"]]
             # rating is an integer number between 1 and 5 (included)
             rating = int(rating_dict["overall"])
 
-            item_sequence = user_items[user_idx]
+            item_sequence = user_items[user_id]
 
             # if the rating is for an item id which is not present in the sequence of items rated by the user,
             # we don't consider it
             try:
-                item_index = item_sequence.index(item_idx)
+                item_index = item_sequence.index(item_id)
 
-                user_items[user_idx][item_index] = (item_idx, rating)
+                user_items[user_id][item_index] = (item_id, rating)
             except ValueError:
                 pass
 

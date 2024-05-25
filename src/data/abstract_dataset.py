@@ -37,6 +37,11 @@ class LaikaDataset(ABC):
     def all_items(self) -> np.ndarray[str]:
         raise NotImplementedError
 
+    @property
+    @abstractmethod
+    def items_meta_dict(self) -> dict:
+        raise NotImplementedError
+
     @abstractmethod
     def download_extract_raw_dataset(self):
         raise NotImplementedError
