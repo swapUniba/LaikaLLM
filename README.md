@@ -13,7 +13,7 @@
   /></a>
   <a href="https://pytorch.org/"><img
     src="https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white"
-    alt="Pythorch"
+    alt="Pytorch"
   /></a>
   <a href="https://wandb.ai/"><img
     src="https://img.shields.io/badge/Weights_&_Biases-FFCC33?style=for-the-badge&logo=WeightsAndBiases&logoColor=black"
