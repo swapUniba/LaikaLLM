@@ -1,0 +1,28 @@
+exp_name: exp_seq_gpt2
+device: cuda:0
+random_seed: 42
+log_wandb: true
+wandb_project: LaikaLLM
+
+data:
+  AmazonDataset:
+    dataset_name: toys
+    add_prefix_items_users: true
+    items_start_from_1001: true
+
+model:
+  GPT2Rec:
+    name_or_path: gpt2
+  n_epochs: 10
+  train_batch_size: 4
+  train_tasks:
+    - SequentialSideInfoTask
+
+eval:
+  eval_batch_size: 1
+  eval_tasks:
+    SequentialSideInfoTask:
+      - hit@10
+      - hit@5
+      - ndcg@10
+      - ndcg@5
