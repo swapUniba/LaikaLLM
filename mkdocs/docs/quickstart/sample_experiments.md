@@ -29,8 +29,8 @@ The evaluation is carried out on a *seen* prompt and an *unseen* one.
     <img src="https://raw.githubusercontent.com/Silleellie/LaikaLLM/main/sample_experiments/exp2_results.png" alt="Experiment 2 results"/>
 </p>
 
-- **T5-S**: [[.yml config](https://github.com/Silleellie/LaikaLLM/tree/main/sample_experiments/exp2/exp2_t5_s.yml)][[Results directory](https://github.com/Silleellie/LaikaLLM/tree/main/sample_experiments/exp2/metrics_results/exp2_t5_s)][[Visualize in WandB](https://wandb.ai/silleellie/LaikaLLM/runs/vlzzj3gx)]
-- **T5-S + W**: [[.yml config](https://github.com/Silleellie/LaikaLLM/tree/main/sample_experiments/exp2/exp2_t5_s+w.yml)][[Results directory](https://github.com/Silleellie/LaikaLLM/tree/main/sample_experiments/exp2/metrics_results/exp2_t5_s+w)][[Visualize in WandB](https://wandb.ai/silleellie/LaikaLLM/runs/u076mjj8)]
+- **T5-S**: [[.yml config](https://github.com/Silleellie/LaikaLLM/tree/main/sample_experiments/exp2/exp2_t5_s.yml)][[Results directory](https://github.com/Silleellie/LaikaLLM/tree/main/sample_experiments/exp2/metrics_results/exp2_t5_s)][[Visualize in WandB](https://wandb.ai/silleellie/LaikaLLM/runs/l7y2jhl2)]
+- **T5-S + W**: [[.yml config](https://github.com/Silleellie/LaikaLLM/tree/main/sample_experiments/exp2/exp2_t5_s+w.yml)][[Results directory](https://github.com/Silleellie/LaikaLLM/tree/main/sample_experiments/exp2/metrics_results/exp2_t5_s+w)][[Visualize in WandB](https://wandb.ai/silleellie/LaikaLLM/runs/ucfz1zyx)]
 
 
 ## Experiment 3 results

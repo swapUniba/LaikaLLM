@@ -28,8 +28,8 @@ The evaluation is carried out on a *seen* prompt and an *unseen* one.
     <img src="exp2_results.png" alt="Experiment 2 results"/>
 </p>
 
-- **T5-S**: [[.yml config](exp2/exp2_t5_s.yml)][[Results directory](exp2/metrics_results/exp2_t5_s)][[Visualize in WandB](https://wandb.ai/silleellie/LaikaLLM/runs/vlzzj3gx)]
-- **T5-S + W**: [[.yml config](exp2/exp2_t5_s+w.yml)][[Results directory](exp2/metrics_results/exp2_t5_s+w)][[Visualize in WandB](https://wandb.ai/silleellie/LaikaLLM/runs/u076mjj8)]
+- **T5-S**: [[.yml config](exp2/exp2_t5_s.yml)][[Results directory](exp2/metrics_results/exp2_t5_s)][[Visualize in WandB](https://wandb.ai/silleellie/LaikaLLM/runs/l7y2jhl2)]
+- **T5-S + W**: [[.yml config](exp2/exp2_t5_s+w.yml)][[Results directory](exp2/metrics_results/exp2_t5_s+w)][[Visualize in WandB](https://wandb.ai/silleellie/LaikaLLM/runs/ucfz1zyx)]
 
 
 ## Experiment 3 results

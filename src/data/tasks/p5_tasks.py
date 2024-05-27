@@ -503,7 +503,7 @@ class P5DirectTask(LaikaTask):
             target_text_placeholder="{yes_no}"
         ),
         "5-2": Template(
-            input_text_placeholder="Shall we recommend item_{item_id} to {user_name}",
+            input_text_placeholder="Shall we recommend item_{item_id} to {user_name} ?",
             target_text_placeholder="{yes_no}"
         ),
         "5-3": Template(
@@ -520,8 +520,8 @@ class P5DirectTask(LaikaTask):
             target_text_placeholder="{target_item}"
         ),
         "5-6": Template(
-            input_text_placeholder="Choose the best item from the candidates to recommend for {user_name} ? \n"
-                                   " {candidate_items}",
+            input_text_placeholder="Choose the best item from the candidates to recommend for {user_name} ? \n "
+                                   "{candidate_items}",
             target_text_placeholder="{target_item}"
         ),
         "5-7": Template(
