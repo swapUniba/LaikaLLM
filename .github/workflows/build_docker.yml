@@ -5,7 +5,7 @@ on:
     inputs:
       latest:
         type: boolean
-        description: "Check this if the docker image should be tagged also with the 'latest' tag"
+        description: "Tag image also as 'latest'"
         default: false
 
 env:
@@ -33,7 +33,9 @@ jobs:
       -
         if: inputs.latest == true
         name: Append 'latest' tag to docker image
-        run: echo "${IMAGE_TAG},silleellie/laikallm:latest" >> $GITHUB_ENV
+        run: |
+          echo "${IMAGE_TAG},silleellie/laikallm:latest" >> $GITHUB_ENV
+          echo $IMAGE_TAG
       -
         name: Build and push
         uses: docker/build-push-action@v6
