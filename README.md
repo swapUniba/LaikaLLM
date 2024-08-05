@@ -90,6 +90,12 @@ of developing *accountable* experiment pipelines
 
 ## Installation
 
+### Via Docker Image
+
+Simply pull the latest [LaikaLLM Docker Image](https://hub.docker.com/r/silleellie/laikallm) 
+which includes every preliminary step to run the project, including setting `PYTHONHASHSEED` and
+`CUBLAS_WORKSPACE_CONFIG` for reproducibility purposes
+
 ### From source
 
 *LaikaLLM* requires **Python 3.10** or later, and all packages needed are listed in 
@@ -100,9 +106,10 @@ of developing *accountable* experiment pipelines
 
 To install **LaikaLLM**:
 
-1. Clone this repository:
+1. Clone this repository and change work directory:
   ```
   git clone https://github.com/Silleellie/LaikaLLM.git
+  cd LaikaLLM
   ```
 2. Install the requirements:
   ```
@@ -121,11 +128,6 @@ export CUBLAS_WORKSPACE_CONFIG=:16:8
 
 You can check useful info about the above environment variables [here](https://docs.python.org/3.3/using/cmdline.html#envvar-PYTHONHASHSEED) and [here](https://docs.nvidia.com/cuda/cublas/index.html#results-reproducibility)
 
-### Via Docker Image
-
-Simply pull the latest [LaikaLLM Docker Image](https://hub.docker.com/r/silleellie/laikallm) 
-which includes every preliminary step to run the project, including setting `PYTHONHASHSEED` and
-`CUBLAS_WORKSPACE_CONFIG` for reproducibility purposes
 
 ## Usage
 
