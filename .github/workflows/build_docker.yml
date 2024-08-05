@@ -1,0 +1,43 @@
+name: Build & Push Docker
+
+on:
+  workflow_dispatch:
+    inputs:
+      latest:
+        type: boolean
+        description: "Check this if the docker image should be tagged also with the 'latest' tag"
+        default: false
+
+env:
+  IMAGE_TAG: silleellie/laikallm:${{ github.ref_name }}
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v4
+      -
+        name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      -
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      -
+        name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      -
+        if: inputs.latest == true
+        name: Append 'latest' tag to docker image
+        run: echo "${IMAGE_TAG},silleellie/laikallm:latest" >> $GITHUB_ENV
+      -
+        name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ env.IMAGE_TAG }}
