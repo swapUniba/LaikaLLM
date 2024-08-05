@@ -1,6 +1,6 @@
 site_name: LaikaLLM
-repo_url: https://github.com/Silleellie/LaikaLLM
-repo_name: silleellie/LaikaLLM
+repo_url: https://github.com/swapUniba/LaikaLLM
+repo_name: swapUniba/LaikaLLM
 edit_uri: mkdocs/docs
 theme:
   name: material
@@ -85,8 +85,8 @@ extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/Silleellie
-      name: Silleellie on GitHub
+      name: Personal GitHub
     - icon: fontawesome/brands/linkedin
       link: https://www.linkedin.com/in/antonio-silletti/
-      name: Silleellie on Likedin
+      name: Personal Likedin
 
