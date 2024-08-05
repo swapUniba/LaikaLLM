@@ -34,8 +34,8 @@ jobs:
         if: inputs.latest == true
         name: Append 'latest' tag to docker image
         run: |
-          echo "${IMAGE_TAG},silleellie/laikallm:latest" >> $GITHUB_ENV
-          echo $IMAGE_TAG
+          echo "IMAGE_TAG=${IMAGE_TAG},${DOCKERHUB_USERNAME}/laikallm:latest" >> $GITHUB_ENV
+          echo "$IMAGE_TAG"
       -
         name: Build and push
         uses: docker/build-push-action@v6
