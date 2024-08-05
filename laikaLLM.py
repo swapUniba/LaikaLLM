@@ -47,12 +47,11 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Main script to reproduce perform the experiments')
 
-    parser.add_argument('-c', '--config', default="params.yml", required=True, help='')
+    parser.add_argument('-c', '--config', default="params.yml", required=True,
+                        help='The path to the .yml file in which are specified all the experiment parameters')
 
-    # will first parse args from yml file, and if same are passed via cmd,
-    # those passed via cmd will prevail
+    # parse yml config
     args = parser.parse_args()
-
     general_params, data_params, model_params, eval_params = parse_yml_config(args.config)
 
     if general_params.log_wandb:
