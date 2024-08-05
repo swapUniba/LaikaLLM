@@ -8,9 +8,6 @@ on:
         description: "Tag image also as 'latest'"
         default: false
 
-env:
-  IMAGE_TAG: ${{ secrets.DOCKERHUB_USERNAME }}/laikallm:${{ github.ref_name }}
-
 jobs:
   docker:
     runs-on: ubuntu-latest
@@ -30,6 +27,12 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      -
+        name: Optionally remove 'v' from tag
+        run: |
+          VERSION="${{ github.ref_name }}" | sed -r 's/^v([0-9]+(\.[0-9]+)*)$/\1/'
+          echo "IMAGE_TAG=${{ secrets.DOCKERHUB_USERNAME }}/laikallm:$VERSION" >> $GITHUB_ENV
+          echo "Tag version: ${VERSION}"
       -
         if: inputs.latest == true
         name: Append 'latest' tag to docker image
