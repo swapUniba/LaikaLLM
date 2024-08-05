@@ -9,7 +9,7 @@ on:
         default: false
 
 env:
-  IMAGE_TAG: silleellie/laikallm:${{ github.ref_name }}
+  IMAGE_TAG: ${{ secrets.DOCKERHUB_USERNAME }}/laikallm:${{ github.ref_name }}
 
 jobs:
   docker:
@@ -34,7 +34,7 @@ jobs:
         if: inputs.latest == true
         name: Append 'latest' tag to docker image
         run: |
-          echo "IMAGE_TAG=${IMAGE_TAG},${DOCKERHUB_USERNAME}/laikallm:latest" >> $GITHUB_ENV
+          echo "IMAGE_TAG=${IMAGE_TAG},${{ secrets.DOCKERHUB_USERNAME }}/laikallm:latest" >> $GITHUB_ENV
           echo "$IMAGE_TAG"
       -
         name: Build and push
