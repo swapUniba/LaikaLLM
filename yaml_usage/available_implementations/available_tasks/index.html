@@ -1,0 +1,2062 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../available_datasets/">
+      
+      
+        <link rel="next" href="../available_models/">
+      
+      
+      <link rel="icon" href="../../../assets/logo_only_face_favicon.png">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.31">
+    
+    
+      
+        <title>Tasks - LaikaLLM</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.3cba04c6.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="black" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#available-tasks" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="LaikaLLM" class="md-header__button md-logo" aria-label="LaikaLLM" data-md-component="logo">
+      
+  <img src="../../../assets/logo_only_face.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            LaikaLLM
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Tasks
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="black" data-md-color-accent="deep-orange"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3Z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="orange"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6zm0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4zM7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/swapUniba/LaikaLLM" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    swapUniba/LaikaLLM
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../.." class="md-tabs__link">
+        
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../quickstart/installation/" class="md-tabs__link">
+          
+  
+  Quickstart
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../introduction/" class="md-tabs__link">
+          
+  
+  Yaml usage
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../python_api_usage/wip/" class="md-tabs__link">
+        
+  
+    
+  
+  Python API usage
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="LaikaLLM" class="md-nav__button md-logo" aria-label="LaikaLLM" data-md-component="logo">
+      
+  <img src="../../../assets/logo_only_face.png" alt="logo">
+
+    </a>
+    LaikaLLM
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/swapUniba/LaikaLLM" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    swapUniba/LaikaLLM
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Quickstart
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Quickstart
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quickstart/installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quickstart/simple_yaml_example/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Simple Yaml example
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quickstart/simple_python_example/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Simple Python example
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quickstart/sample_experiments/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Sample Experiments
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Yaml usage
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Yaml usage
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../introduction/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Introduction
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Yaml Sections
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            Yaml Sections
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../yaml_sections/general_parameters/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    General parameters
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../yaml_sections/data_section/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Data section
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../yaml_sections/model_section/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Model section
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../yaml_sections/eval_section/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Eval section
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Available implementations
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            Available implementations
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../available_datasets/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Datasets
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Tasks
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Tasks
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#sequentialsideinfotask" class="md-nav__link">
+    <span class="md-ellipsis">
+      SequentialSideInfoTask
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#directsideinfotask" class="md-nav__link">
+    <span class="md-ellipsis">
+      DirectSideInfoTask
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ratingpredictiontask" class="md-nav__link">
+    <span class="md-ellipsis">
+      RatingPredictionTask
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#p5-tasks" class="md-nav__link">
+    <span class="md-ellipsis">
+      P5 Tasks
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="P5 Tasks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#p5ratingtask" class="md-nav__link">
+    <span class="md-ellipsis">
+      P5RatingTask
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p5evalratingtask" class="md-nav__link">
+    <span class="md-ellipsis">
+      P5EvalRatingTask
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p5sequentialtask" class="md-nav__link">
+    <span class="md-ellipsis">
+      P5SequentialTask
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p5evalsequentialtask" class="md-nav__link">
+    <span class="md-ellipsis">
+      P5EvalSequentialTask
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p5directtask" class="md-nav__link">
+    <span class="md-ellipsis">
+      P5DirectTask
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p5evaldirecttask" class="md-nav__link">
+    <span class="md-ellipsis">
+      P5EvalDirectTask
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../available_models/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Models
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../available_metrics/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Metrics
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../python_api_usage/wip/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Python API usage
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="available-tasks">Available Tasks</h1>
+<p>Each task can have <strong>Inference templates</strong> and <strong>Support templates</strong>:</p>
+<ul>
+<li><strong>Inference templates</strong> are those templates which can be used at <em>inference time</em> and are those upon which
+  the evaluation is carried out</li>
+<li><strong>Support templates</strong> are those templates which can <strong>NOT</strong> be used at <em>inference time</em>, since they have intrinsic
+  assumption which requires the knowledge of the ground truth</li>
+</ul>
+<p>Example of <strong>inference template</strong>:</p>
+<p><center>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align: center">Input Placeholder text</th>
+          <th style="text-align: center">Target Placeholder text</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="vertical-align: middle">
+            Recommend an item for {user_id}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+</center></p>
+<p>Example of <strong>support template</strong>:</p>
+<p><center>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align: center">Input Placeholder text</th>
+          <th style="text-align: center">Target Placeholder text</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="vertical-align: middle">
+            Recommend an item for {user_id}, knowing that a good item to recommend is present among {candidates}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+</center></p>
+<p>As you can easily see, the <em>support template</em> requires information that we <strong>do not have</strong> at inference time: that is,
+the target item to recommend</p>
+<p>To specify one of the following tasks the <code>.yaml</code> file, you can simply use its <strong>name</strong> 
+(The parsing is <strong>not</strong> <em>case-sensitive</em>)!</p>
+<hr />
+<h2 id="sequentialsideinfotask">SequentialSideInfoTask</h2>
+<p>The SequentialSideInfoTask is built for <a href="../available_datasets/#amazondataset">AmazonDataset</a>: the goal is to predict
+the next item of the <strong>order history</strong> of the user. This task has the <strong>SideInfo</strong> suffix because <strong>categories</strong> of the
+items bought by the user are used additional information for the prediction.</p>
+<p>There are two different support tasks:</p>
+<ul>
+<li><em>Extractive QA</em>: For the specific <em>user_id</em>, given its <strong>order history</strong> and the <strong>categories</strong> of each item bought,
+  select the <em>next element to recommend</em> from a list of <strong>candidates</strong></li>
+<li><em>Pair Seq</em>: For the specific <em>user_id</em>, given only one element from the <strong>order history</strong> and its <strong>categories</strong>,
+  predict the <strong>immediate successor</strong> of the element</li>
+</ul>
+<p><strong>Inference templates:</strong></p>
+<p><center>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align: center">Template ID</th>
+          <th style="text-align: center">Input Placeholder text</th>
+          <th style="text-align: center">Target Placeholder text</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">0</td>
+          <td style="vertical-align: middle">
+            sequential recommendation - {user_id}: <br/><br/>
+            Predict for the user the next element of the following sequence -&gt; {order_history} <br/>
+            The category of each element of the sequence is -&gt; {category_history}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">1</td>
+          <td style="vertical-align: middle">
+            sequential recommendation - {user_id}: <br/><br/>
+            Predict the next element which the user will buy given the following order history -&gt; {order_history} <br/>
+            Each item bought belongs to these categories (in order) -&gt; {category_history}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">2</td>
+          <td style="vertical-align: middle">
+            sequential recommendation - {user_id}: <br/><br/>
+            What is the element that should be recommended to the user knowing that it has bought -&gt; {order_history} <br/>
+            Categories of the items are -&gt; {category_history}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">3</td>
+          <td style="vertical-align: middle">
+            sequential recommendation - {user_id}: <br/><br/>
+            Recommend to the user an item from the catalog given its order history -&gt; {order_history}  <br/>
+            Each item of the order history belongs to the following categories (in order) -&gt; {category_history}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">4</td>
+          <td style="vertical-align: middle">
+            sequential recommendation - {user_id}: <br/><br/>
+            This is the order history of the user -&gt; {order_history} <br/>
+            These are the categories of each item -&gt; {category_history} <br/>
+            Please recommend the next element that the user will buy
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">5</td>
+          <td style="vertical-align: middle">
+            sequential recommendation - {user_id}: <br/><br/>
+            Please predict what item is best to recommend to the user given its order history -&gt; {order_history} <br/>
+            Categories of each item -&gt; {category_history} <br/>
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+</center></p>
+<p><strong>Extractive QA templates</strong></p>
+<p><center>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align: center">Template ID</th>
+          <th style="text-align: center">Input Placeholder text</th>
+          <th style="text-align: center">Target Placeholder text</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">6</td>
+          <td style="vertical-align: middle">
+            sequential recommendation - {user_id}: <br/><br/>
+            The user has the following order history -&gt; {order_history} <br/>
+            The categories of each item bought are -&gt; {category_history} <br/>
+            Which item would the user buy next? Select from the following: <br/>
+            {candidate_items}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">7</td>
+          <td style="vertical-align: middle">
+            sequential recommendation - {user_id}: <br/><br/>
+            The user has bought {order_history}, and the categories of those items are {category_history}. <br/>
+            Choose an item to recommend to the user selecting from: <br/>
+            {candidate_items}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+</center></p>
+<p><strong>Pair Seq templates</strong>:</p>
+<p><center>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align: center">Template ID</th>
+          <th style="text-align: center">Input Placeholder text</th>
+          <th style="text-align: center">Target Placeholder text</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">8</td>
+          <td style="vertical-align: middle">
+            sequential recommendation - {user_id}: <br/><br/>
+            The user has recently bought {precedent_item_id} which has the following categories: {categories_precedent_item} <br/>
+            What is the next item to recommend? <br/>
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">9</td>
+          <td style="vertical-align: middle">
+            sequential recommendation - {user_id}: <br/><br/>
+            The latest item bought by the user is {precedent_item_id}. <br/>
+            The categories of that item are {categories_precedent_item}. <br/>
+            Predict which item the user will buy next
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+</center></p>
+<hr />
+<h2 id="directsideinfotask">DirectSideInfoTask</h2>
+<p>The DirectSideInfoTask is built for <a href="../available_datasets/#amazondataset">AmazonDataset</a>: the goal is to predict
+a good item to recommend for the <em>user</em>. This task has the <strong>SideInfo</strong> suffix because <strong>categories</strong> of the
+items bought by the user are used additional information for the prediction.</p>
+<p>There are two different support tasks:</p>
+<ul>
+<li><em>Extractive QA</em>: For the specific <em>user_id</em>, given <strong>categories liked</strong> by the user, select the <em>item to recommend</em> 
+   from a list of <strong>candidates</strong></li>
+</ul>
+<p><strong>Inference templates</strong>:</p>
+<p><center>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align: center">Template ID</th>
+          <th style="text-align: center">Input Placeholder text</th>
+          <th style="text-align: center">Target Placeholder text</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">0</td>
+          <td style="vertical-align: middle">
+            direct recommendation - {user_id}: <br/><br/>
+            Pick an item from the catalog knowing that these are the categories the user likes -&gt; {unique_categories_liked} <br/>
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">1</td>
+          <td style="vertical-align: middle">
+            direct recommendation - {user_id}: <br/><br/>
+            Recommend an item to the user. The categories of the items bought by the user are -&gt; {unique_categories_liked} <br/>
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">2</td>
+          <td style="vertical-align: middle">
+            direct recommendation - {user_id}: <br/><br/>
+            What is the item that should be recommended to the user? It likes these categories -&gt; {unique_categories_liked} <br/>
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">3</td>
+          <td style="vertical-align: middle">
+            direct recommendation - {user_id}: <br/><br/>
+            Select an item to present to the user given the categories that it likes -&gt; {unique_categories_liked} <br/>
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">4</td>
+          <td style="vertical-align: middle">
+            direct recommendation - {user_id}: <br/><br/>
+            These are the categories of the items bought by the user -&gt; {unique_categories_liked} <br/>
+            Please recommend an item that the user will buy
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">5</td>
+          <td style="vertical-align: middle">
+            direct recommendation - {user_id}: <br/><br/>
+            Please predict what item is best to recommend to the user. The categories that it likes are -&gt; {unique_categories_liked} <br/>
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+</center></p>
+<p><strong>Extractive QA templates</strong>:</p>
+<p><center>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align: center">Template ID</th>
+          <th style="text-align: center">Input Placeholder text</th>
+          <th style="text-align: center">Target Placeholder text</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">6</td>
+          <td style="vertical-align: middle">
+            direct recommendation - {user_id}: <br/><br/>
+            The categories liked by the user are -&gt; {unique_categories_liked} <br/>
+            Which item can interest the user? Select one from the following: <br/>
+            {candidate_items}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">7</td>
+          <td style="vertical-align: middle">
+            direct recommendation - {user_id}: <br/><br/>
+            The user so far has bought items with these categories -&gt; {unique_categories_liked}. <br/>
+            Choose an item to recommend to the user selecting from: <br/>
+            {candidate_items}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">8</td>
+          <td style="vertical-align: middle">
+            direct recommendation - {user_id}: <br/><br/>
+            These are the categories of the items bought by the user -&gt; {unique_categories_liked}. <br/>
+            Predict an item to suggest to the user from the followings: <br/>
+            {candidate_items}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+</center></p>
+<hr />
+<h2 id="ratingpredictiontask">RatingPredictionTask</h2>
+<p>The <em>RatingPredictionTask</em> is built for <a href="../available_datasets/#amazondataset">AmazonDataset</a>: the goal is to predict
+the rating that the <em>user</em> would give to an <em>unseen</em> item.</p>
+<p><strong>Inference templates</strong></p>
+<p><center>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align: center">Template ID</th>
+          <th style="text-align: center">Input Placeholder text</th>
+          <th style="text-align: center">Target Placeholder text</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">0</td>
+          <td style="vertical-align: middle">
+            rating prediction - {user_id}: <br/><br/>
+            Average rating of the user -&gt; {avg_rating} <br/>
+            Continue this rating sequence for the user, predicting the rating for {item_id}: <br/>
+            {order_history_w_ratings}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_rating}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">1</td>
+          <td style="vertical-align: middle">
+            rating prediction - {user_id}: <br/><br/>
+            Average rating of the user -&gt; {avg_rating} <br/>
+            Predict the rating that the user would give to {item_id}, by considering the following previously bought item and the rating assigned: <br/>
+            {order_history_w_ratings}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_rating}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">2</td>
+          <td style="vertical-align: middle">
+            rating prediction - {user_id}: <br/><br/>
+            Predict the score the user would give to {item_id} (in a 1-5 scale). <br/>
+            This is the user order history with associated rating that the user previously gave: <br/>
+            {order_history_w_ratings} <br/>
+            Consider that the average rating of the user is {avg_rating}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_rating}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">3</td>
+          <td style="vertical-align: middle">
+            rating prediction - {user_id}: <br/><br/>
+            This is the order history of the user with the associated rating -&gt; <br/>
+            {order_history_w_ratings} <br/>
+            This is the average rating given by the user -&gt; {avg_rating} <br/>
+            Based on that, predict the score (in a 1-5 scale) the user would give to {item_id}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_rating}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">4</td>
+          <td style="vertical-align: middle">
+            rating prediction - {user_id}: <br/><br/>
+            Please predict the user, which has an average rating of {avg_rating}, would give to {item_id} based on its order history -&gt; <br/>
+            {order_history_w_ratings} <br/>
+            This is the average rating given by the user -&gt; {avg_rating} <br/>
+            The score should be in a 1-5 scale
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_rating}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+</center></p>
+<hr />
+<h2 id="p5-tasks">P5 Tasks</h2>
+<p>Below there are defined the <em>Rating</em>, <em>Sequential</em>, <em>Direct</em> task prompts from the <a href="https://arxiv.org/pdf/2203.13366">P5 paper</a>.
+Each task has its <strong><em>"Eval"</em></strong> counterpart, where there are defined the prompts used by the P5 author's for the evaluation phase.
+Each <em>Eval</em> task has one <em>seen</em> prompt (a prompt used during fine-tuning) and an <em>unseen</em> one.</p>
+<h3 id="p5ratingtask">P5RatingTask</h3>
+<p>The <em>RatingPredictionTask</em> is built for <a href="../available_datasets/#amazondataset">AmazonDataset</a>: the goal is to predict
+the rating that the <em>user</em> would give to an <em>unseen</em> item.</p>
+<p><strong>Inference templates</strong>:</p>
+<p><center>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align: center">Template ID</th>
+          <th style="text-align: center">Input Placeholder text</th>
+          <th style="text-align: center">Target Placeholder text</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">1-1</td>
+          <td style="vertical-align: middle">
+            Which star rating will user_{user_id} give item_{item_id} ? ( 1 being lowest and 5 being highest )
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {star_rating}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">1-2</td>
+          <td style="vertical-align: middle">
+            How will user_{user_id} rate this product : {item_title} ? ( 1 being lowest and 5 being highest )
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {star_rating}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">1-5</td>
+          <td style="vertical-align: middle">
+            Predict the user_{user_id} 's preference on item_{item_id} ( {item_title} ) <br/> 
+            -1 <br/> 
+            -2 <br/> 
+            -3 <br/> 
+            -4 <br/> 
+            -5
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {star_rating}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">1-6</td>
+          <td style="vertical-align: middle">
+            What star rating do you think {user_name} will give item_{item_id} ? ( 1 being lowest and 5 being highest )
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {star_rating}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">1-7</td>
+          <td style="vertical-align: middle">
+            How will {user_name} rate this product : {item_title} ? ( 1 being lowest and 5 being highest )
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {star_rating}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+</center></p>
+<p><strong>Support templates</strong>:</p>
+<p><center>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align: center">Template ID</th>
+          <th style="text-align: center">Input Placeholder text</th>
+          <th style="text-align: center">Target Placeholder text</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">1-3</td>
+          <td style="vertical-align: middle">
+            Will user_{user_id} give item_{item_id} a {star_rating}-star rating ? ( 1 being lowest and 5 being highest )
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {yes_no}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">1-4</td>
+          <td style="vertical-align: middle">
+            Does user_{user_id} like or dislike item_{item_id} ?
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {like_dislike}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">1-8</td>
+          <td style="vertical-align: middle">
+            Will {user_name} give a {star_rating}-star rating for {item_title} ? ( 1 being lowest and 5 being highest )
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {yes_no}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">1-9</td>
+          <td style="vertical-align: middle">
+            Does {user_name} like or dislike {item_title} ?
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {like_dislike}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+</center></p>
+<h3 id="p5evalratingtask">P5EvalRatingTask</h3>
+<p><center>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align: center">Template ID</th>
+          <th style="text-align: center">Input Placeholder text</th>
+          <th style="text-align: center">Target Placeholder text</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">1-6</td>
+          <td style="vertical-align: middle">
+            What star rating do you think {user_name} will give item_{item_id} ? ( 1 being lowest and 5 being highest )
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {star_rating}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">1-10</td>
+          <td style="vertical-align: middle">
+            Predict {user_name} 's preference towards {item_title} ( 1 being lowest and 5 being highest )
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {star_rating}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+</center></p>
+<h3 id="p5sequentialtask">P5SequentialTask</h3>
+<p>The SequentialSideInfoTask is built for <a href="../available_datasets/#amazondataset">AmazonDataset</a>: the goal is to predict
+the next item of the <strong>order history</strong> of the user. This task has the <strong>SideInfo</strong> suffix because <strong>categories</strong> of the
+items bought by the user are used additional information for the prediction.</p>
+<p><strong>Inference templates</strong>:</p>
+<p><center>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align: center">Template ID</th>
+          <th style="text-align: center">Input Placeholder text</th>
+          <th style="text-align: center">Target Placeholder text</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">2-1</td>
+          <td style="vertical-align: middle">
+            Given the following purchase history of user_{user_id} : <br/> 
+            {order_history} <br/> 
+            predict next possible item to be purchased by the user ?
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">2-2</td>
+          <td style="vertical-align: middle">
+            I find the purchase history list of user_{user_id} : <br/> 
+            {order_history} <br/> 
+            I wonder what is the next item to recommend to the user . Can you help me decide ?
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">2-3</td>
+          <td style="vertical-align: middle">
+            Here is the purchase history list of user_{user_id} : <br/> 
+            {order_history} <br/> 
+            try to recommend next item to the user
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">2-4</td>
+          <td style="vertical-align: middle">
+            Given the following purchase history of {user_name} : <br/> 
+            {order_history} <br/> 
+            predict next possible item for the user
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">2-5</td>
+          <td style="vertical-align: middle">
+            Based on the purchase history of {user_name} : <br/> 
+            {order_history} <br/> 
+            Can you decide the next item likely to be purchased by the user ?
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">2-6</td>
+          <td style="vertical-align: middle">
+            Here is the purchase history of {user_name} : <br/> 
+            {order_history} <br/> 
+            What to recommend next for the user ?
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+</center></p>
+<p><strong>Extractive QAs templates:</strong></p>
+<p><center>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align: center">Template ID</th>
+          <th style="text-align: center">Input Placeholder text</th>
+          <th style="text-align: center">Target Placeholder text</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">2-7</td>
+          <td style="vertical-align: middle">
+            Here is the purchase history of user_{user_id} : <br/> 
+            {order_history} <br/> 
+            Select the next possible item likely to be purchased by the user from the following candidates : <br/> 
+            {candidate_items}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">2-8</td>
+          <td style="vertical-align: middle">
+            Given the following purchase history of {user_name} : <br/> 
+            {order_history} <br/> 
+            What to recommend next for the user? Select one from the following items : <br/> 
+            {candidate_items}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">2-9</td>
+          <td style="vertical-align: middle">
+            Based on the purchase history of user_{user_id} : <br/> 
+            {order_history} <br/> 
+            Choose the next possible purchased item from the following candidates : <br/> 
+            {candidate_items}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">2-10</td>
+          <td style="vertical-align: middle">
+            I find the purchase history list of {user_name} : <br/> 
+            {order_history} <br/> 
+            I wonder which is the next item to recommend to the user . Try to select one from the following candidates : <br/> 
+            {candidate_items}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+</center></p>
+<p><strong>Pairwise prediction templates</strong>:</p>
+<p><center>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align: center">Template ID</th>
+          <th style="text-align: center">Input Placeholder text</th>
+          <th style="text-align: center">Target Placeholder text</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">2-11</td>
+          <td style="vertical-align: middle">
+            user_{user_id} has the following purchase history : <br/> 
+            {order_history} <br/> 
+            does the user likely to buy {target_item} next ?
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {yes_no}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">2-12</td>
+          <td style="vertical-align: middle">
+            According to {user_name} 's purchase history list : <br/> 
+            {order_history} <br/> 
+            Predict whether the user will purchase {target_item} next ?
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {yes_no}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+</center></p>
+<h3 id="p5evalsequentialtask">P5EvalSequentialTask</h3>
+<p><center>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align: center">Template ID</th>
+          <th style="text-align: center">Input Placeholder text</th>
+          <th style="text-align: center">Target Placeholder text</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">2-3</td>
+          <td style="vertical-align: middle">
+            Here is the purchase history list of user_{user_id} : <br/> 
+            {order_history} <br/> 
+            try to recommend next item to the user
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">2-13</td>
+          <td style="vertical-align: middle">
+            According to the purchase history of {user_name} : <br/> 
+            {order_history} <br/> 
+            Can you recommend the next possible item to the user ?
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+</center></p>
+<h3 id="p5directtask">P5DirectTask</h3>
+<p>The P5DirectTask is built for <a href="../available_datasets/#amazondataset">AmazonDataset</a>: the goal is to predict
+a good item to recommend for the <em>user</em>.</p>
+<p><strong>Inference templates</strong>:</p>
+<p><center>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align: center">Template ID</th>
+          <th style="text-align: center">Input Placeholder text</th>
+          <th style="text-align: center">Target Placeholder text</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">5-5</td>
+          <td style="vertical-align: middle">
+            Which item of the following to recommend for {user_name} ? <br/> 
+            {candidate_items}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">5-6</td>
+          <td style="vertical-align: middle">
+            Choose the best item from the candidates to recommend for {user_name} ? <br/> 
+            {candidate_items}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">5-7</td>
+          <td style="vertical-align: middle">
+            Pick the most suitable item from the following list and recommend to user_{user_id} : <br/> 
+            {candidate_items}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+</center></p>
+<p><strong>Support templates</strong>:</p>
+<p><center>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align: center">Template ID</th>
+          <th style="text-align: center">Input Placeholder text</th>
+          <th style="text-align: center">Target Placeholder text</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">5-1</td>
+          <td style="vertical-align: middle">
+            Will user_{user_id} likely to interact with item_{item_id} ?
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {yes_no}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">5-2</td>
+          <td style="vertical-align: middle">
+            Shall we recommend item_{item_id} to {user_name} ?
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {yes_no}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">5-3</td>
+          <td style="vertical-align: middle">
+            For {user_name}, do you think it is good to recommend {item_title} ?
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {yes_no}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">5-4</td>
+          <td style="vertical-align: middle">
+            I would like to recommend some items for user_{user_id} . Is the following item a good choice ? <br/> 
+            {item_title}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {yes_no}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+</center></p>
+<h3 id="p5evaldirecttask">P5EvalDirectTask</h3>
+<p><center>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align: center">Template ID</th>
+          <th style="text-align: center">Input Placeholder text</th>
+          <th style="text-align: center">Target Placeholder text</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">5-5</td>
+          <td style="vertical-align: middle">
+            Which item of the following to recommend for {user_name} ? <br/> 
+            {candidate_items}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center">5-8</td>
+          <td style="vertical-align: middle">
+            We want to make recommendation for user_{user_id} .  Select the best item from these candidates : <br/> 
+            {candidate_items}
+          </td>
+          <td style="vertical-align: middle; text-align: center">
+            {target_item}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+</center></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../available_datasets/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Datasets">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Datasets
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../available_models/" class="md-footer__link md-footer__link--next" aria-label="Next: Models">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Models
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Documentation made by Antonio Silletti
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/Silleellie" target="_blank" rel="noopener" title="Personal GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://www.linkedin.com/in/antonio-silletti/" target="_blank" rel="noopener" title="Personal Likedin" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3zM135.4 416H69V202.2h66.5V416zm-33.2-243c-21.3 0-38.5-17.3-38.5-38.5S80.9 96 102.2 96c21.2 0 38.5 17.3 38.5 38.5 0 21.3-17.2 38.5-38.5 38.5zm282.1 243h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9V416z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.tabs", "navigation.sections", "toc.integrate", "navigation.footer", "content.code.copy", "search.suggest", "search.highlight", "content.code.annotate"], "search": "../../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.fe8b6f2b.min.js"></script>
+      
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      
+    
+  </body>
+</html>
